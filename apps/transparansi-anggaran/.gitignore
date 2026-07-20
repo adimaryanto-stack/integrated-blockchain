@@ -1,0 +1,34 @@
+node_modules
+dist
+dist-ssr
+*.local
+
+# Environment variables (NEVER commit these!)
+.env
+.env.local
+.env.*.local
+
+# Build output
+.next
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Prisma
+prisma/migrations
+
+# Temp / test files
+_test_db
+ocr_errors.log
+ocr_debug.log
+.vercel
+tsconfig-temp.json
+scripts/test_school_data.mjs
