@@ -1,14 +1,14 @@
 'use client';
 
-import { getPctBgColor, fmtPct } from '@/lib/utils/formatters';
+import { getPctBgColor, fmtPct, getPctEmoji } from '@/lib/utils/formatters';
 
 interface PctBadgeProps {
-  value: number;
+  value: any;
   size?: 'sm' | 'md';
 }
 
 export default function PctBadge({ value, size = 'sm' }: PctBadgeProps) {
-  const emoji = value >= 80 ? '🟢' : value >= 50 ? '🟡' : '🔴';
+  const emoji = getPctEmoji(value);
   
   return (
     <span className={`badge ${getPctBgColor(value)} ${size === 'md' ? 'text-xs px-3 py-1' : ''}`}>

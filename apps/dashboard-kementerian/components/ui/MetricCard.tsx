@@ -8,10 +8,12 @@ interface MetricCardProps {
   subtitle?: string;
   icon: ReactNode;
   accent: 'indigo' | 'emerald' | 'amber' | 'rose' | 'blue';
-  trend?: { value: number; label: string };
+  trend?: { value: any; label: string };
 }
 
 export default function MetricCard({ title, value, subtitle, icon, accent, trend }: MetricCardProps) {
+  const trendNum = trend ? (typeof trend.value === 'number' ? trend.value : Number(trend.value) || 0) : 0;
+
   return (
     <div className={`metric-card accent-${accent} animate-fade-in-up`}>
       <div className="flex items-start justify-between">
@@ -21,8 +23,8 @@ export default function MetricCard({ title, value, subtitle, icon, accent, trend
           {subtitle && <p className="text-xs text-text-secondary mt-1">{subtitle}</p>}
           {trend && (
             <div className="flex items-center gap-1 mt-2">
-              <span className={`text-xs font-semibold ${trend.value >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                {trend.value >= 0 ? '↑' : '↓'} {Math.abs(trend.value).toFixed(1)}%
+              <span className={`text-xs font-semibold ${trendNum >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                {trendNum >= 0 ? '↑' : '↓'} {Math.abs(trendNum).toFixed(1)}%
               </span>
               <span className="text-[10px] text-text-muted">{trend.label}</span>
             </div>

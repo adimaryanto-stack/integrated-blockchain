@@ -156,3 +156,16 @@ export interface TrenTahunan {
   nominal: number;
   realisasi: number;
 }
+
+export interface AuditLogItem {
+  id: string;
+  user_nama: string;
+  user_role: UserRole;
+  entitas: string;
+  entitas_id: string;
+  field: string;
+  nilai_lama: string | number;
+  nilai_baru: string | number;
+  timestamp: string;
+}
+

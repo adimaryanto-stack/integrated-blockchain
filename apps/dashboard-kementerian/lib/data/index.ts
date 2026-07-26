@@ -19,6 +19,9 @@ import {
   SumberDanaInstitusi,
   PengeluaranBulananInstitusi,
 } from '@/types';
+import { useAppStore } from '@/lib/store';
+import { fmtRupiah } from '@/lib/utils/formatters';
+
 
 // In-memory caching variables populated during initialization
 export let tahunAnggaranData: TahunAnggaran[] = [];
@@ -28,6 +31,7 @@ export let institusiPendidikanData: InstitusiPendidikan[] = [];
 export let sumberDanaData: SumberDanaInstitusi[] = [];
 export let pengeluaranBulananData: PengeluaranBulananInstitusi[] = [];
 export let usersData: User[] = [];
+export let provinceSchoolStatsData: { province_id: string; jenjang: string; school_count: number }[] = [];
 
 export function updateTahunAnggaranData(newData: TahunAnggaran[]) {
   tahunAnggaranData = newData;
@@ -37,7 +41,7 @@ let isInitialized = false;
 
 // Utility to get Supabase connection details safely on the client
 function getSupabaseConfig() {
-  const url = (process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jpytxmnxbicjmgsgprba.supabase.co').trim();
+  const url = (process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2026').trim();
   const anonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim();
   return { url, anonKey };
 }
@@ -65,6 +69,30 @@ async function fetchPaginated(url: string, headers: HeadersInit): Promise<any[]>
   return allData;
 }
 
+const NUMERIC_KEYS = new Set([
+  'total_anggaran', 'nominal_alokasi', 'realisasi_total', 'selisih', 
+  'persentase_penyerapan', 'nominal', 'realisasi', 'saldo_di_bank', 
+  'nominal_pengeluaran', 'sub_total', 'harga_satuan', 'jumlah', 
+  'jumlah_sekolah', 'saldo_surplus_defisit', 'pajak_persen', 'pajak_nominal', 'total',
+  'tahun', 'nomor', 'nomor_bulan', 'qty'
+]);
+
+function cleanRecord<T extends Record<string, any>>(row: T): T {
+  if (!row || typeof row !== 'object') return row;
+  const cleaned: any = {};
+  for (const [k, v] of Object.entries(row)) {
+    if (v && typeof v === 'object' && !Array.isArray(v)) {
+      cleaned[k] = cleanRecord(v);
+    } else if (NUMERIC_KEYS.has(k) && v !== null && v !== undefined) {
+      const num = Number(v);
+      cleaned[k] = isNaN(num) ? 0 : num;
+    } else {
+      cleaned[k] = v;
+    }
+  }
+  return cleaned as T;
+}
+
 // Global initialization function to fetch and populate caches in parallel
 export async function initDbConnection(force = false) {
   if (isInitialized && !force) return true;
@@ -81,7 +109,7 @@ export async function initDbConnection(force = false) {
   };
 
   try {
-    const [taData, provData, kabkotaData, instData, sdData, pbData, userData] = await Promise.all([
+    const [taData, provData, kabkotaData, instData, sdData, pbData, userData, schoolStatsData] = await Promise.all([
       fetchPaginated(`${url}/rest/v1/tahun_anggaran?select=*&order=tahun.asc`, headers),
       fetchPaginated(`${url}/rest/v1/alokasi_provinsi?select=*,provinsi(*)&order=id.asc`, headers),
       fetchPaginated(`${url}/rest/v1/alokasi_kabupaten_kota?select=*,kabupaten_kota(*)&order=id.asc`, headers),
@@ -89,15 +117,32 @@ export async function initDbConnection(force = false) {
       fetchPaginated(`${url}/rest/v1/sumber_dana_institusi?select=*&order=id.asc`, headers),
       fetchPaginated(`${url}/rest/v1/pengeluaran_bulanan_institusi?select=*&order=id.asc`, headers),
       fetchPaginated(`${url}/rest/v1/users?select=*&order=id.asc`, headers),
+      fetchPaginated(`${url}/rest/v1/mv_province_school_stats?select=*`, headers),
     ]);
 
-    tahunAnggaranData = taData;
-    alokasiProvinsiData = provData;
-    alokasiKabupatenKotaData = kabkotaData;
-    institusiPendidikanData = instData;
-    sumberDanaData = sdData;
-    pengeluaranBulananData = pbData;
-    usersData = userData;
+    tahunAnggaranData.length = 0;
+    tahunAnggaranData.push(...taData.map(cleanRecord));
+
+    alokasiProvinsiData.length = 0;
+    alokasiProvinsiData.push(...provData.map(cleanRecord));
+
+    alokasiKabupatenKotaData.length = 0;
+    alokasiKabupatenKotaData.push(...kabkotaData.map(cleanRecord));
+
+    institusiPendidikanData.length = 0;
+    institusiPendidikanData.push(...instData.map(cleanRecord));
+
+    sumberDanaData.length = 0;
+    sumberDanaData.push(...sdData.map(cleanRecord));
+
+    pengeluaranBulananData.length = 0;
+    pengeluaranBulananData.push(...pbData.map(cleanRecord));
+
+    usersData.length = 0;
+    usersData.push(...userData.map(cleanRecord));
+
+    provinceSchoolStatsData.length = 0;
+    provinceSchoolStatsData.push(...schoolStatsData.map(cleanRecord));
 
     isInitialized = true;
     console.log('Successfully synchronized database with Supabase.');
@@ -111,19 +156,68 @@ export async function initDbConnection(force = false) {
 // Mutate functions to save updates to Supabase directly
 export async function updateAlokasiProvinsi(id: string, field: string, value: number) {
   const { url, anonKey } = getSupabaseConfig();
+  const headers = {
+    'apikey': anonKey,
+    'Authorization': `Bearer ${anonKey}`,
+    'Content-Type': 'application/json',
+  };
+
   try {
+    const provRes = await fetch(`${url}/rest/v1/alokasi_provinsi?id=eq.${id}`, { headers });
+    if (!provRes.ok) throw new Error('Failed to fetch province allocation');
+    const [prov] = await provRes.json();
+    if (!prov) throw new Error('Province allocation not found');
+
+    const newNominal = field === 'nominal_alokasi' ? value : prov.nominal_alokasi;
+    const newRealisasi = field === 'realisasi_total' ? value : prov.realisasi_total;
+    const newSelisih = newNominal - newRealisasi;
+    const newPct = newNominal > 0 ? (newRealisasi / newNominal) * 100 : 0;
+
     const res = await fetch(`${url}/rest/v1/alokasi_provinsi?id=eq.${id}`, {
       method: 'PATCH',
-      headers: {
-        'apikey': anonKey,
-        'Authorization': `Bearer ${anonKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ [field]: value, updated_at: new Date().toISOString() }),
+      headers,
+      body: JSON.stringify({
+        [field]: value,
+        selisih: newSelisih,
+        persentase_penyerapan: newPct,
+        updated_at: new Date().toISOString().split('T')[0]
+      }),
     });
-    if (res.ok) {
-      await initDbConnection(true); // force reload cache
+    if (!res.ok) throw new Error('Failed to patch alokasi_provinsi');
+
+    // Audit Logging
+    const currentUser = useAppStore.getState().currentUser;
+    const provName = prov.provinsi?.nama_provinsi || id;
+    useAppStore.getState().addAuditLog({
+      user_nama: currentUser.username,
+      user_role: currentUser.role,
+      entitas: `Alokasi Provinsi (${provName})`,
+      entitas_id: id,
+      field,
+      nilai_lama: fmtRupiah(prov[field]),
+      nilai_baru: fmtRupiah(value),
+    });
+
+
+    const taId = prov.tahun_anggaran_id;
+    if (taId) {
+      const allAlokasiProvsRes = await fetch(`${url}/rest/v1/alokasi_provinsi?tahun_anggaran_id=eq.${taId}`, { headers });
+      if (allAlokasiProvsRes.ok) {
+        const allAlokasiProvs = await allAlokasiProvsRes.json();
+        const totalNominalTA = allAlokasiProvs.reduce((s: number, p: any) => 
+          s + (p.id === id ? newNominal : p.nominal_alokasi), 0);
+
+        await fetch(`${url}/rest/v1/tahun_anggaran?id=eq.${taId}`, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({
+            total_anggaran: totalNominalTA
+          })
+        });
+      }
     }
+
+    await initDbConnection(true); // force reload cache
   } catch (err) {
     console.error('Failed to patch alokasi_provinsi:', err);
   }
@@ -131,19 +225,98 @@ export async function updateAlokasiProvinsi(id: string, field: string, value: nu
 
 export async function updateAlokasiKabupatenKota(id: string, field: string, value: number) {
   const { url, anonKey } = getSupabaseConfig();
+  const headers = {
+    'apikey': anonKey,
+    'Authorization': `Bearer ${anonKey}`,
+    'Content-Type': 'application/json',
+  };
+
   try {
+    const kkRes = await fetch(`${url}/rest/v1/alokasi_kabupaten_kota?id=eq.${id}`, { headers });
+    if (!kkRes.ok) throw new Error('Failed to fetch kabupaten_kota allocation');
+    const [kk] = await kkRes.json();
+    if (!kk) throw new Error('Kabupaten/Kota allocation not found');
+
+    const newNominal = field === 'nominal_alokasi' ? value : kk.nominal_alokasi;
+    const newRealisasi = field === 'realisasi_total' ? value : kk.realisasi_total;
+    const newSelisih = newNominal - newRealisasi;
+    const newPct = newNominal > 0 ? (newRealisasi / newNominal) * 100 : 0;
+
     const res = await fetch(`${url}/rest/v1/alokasi_kabupaten_kota?id=eq.${id}`, {
       method: 'PATCH',
-      headers: {
-        'apikey': anonKey,
-        'Authorization': `Bearer ${anonKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ [field]: value, updated_at: new Date().toISOString() }),
+      headers,
+      body: JSON.stringify({
+        [field]: value,
+        selisih: newSelisih,
+        persentase_penyerapan: newPct,
+        updated_at: new Date().toISOString().split('T')[0]
+      }),
     });
-    if (res.ok) {
-      await initDbConnection(true); // force reload cache
+    if (!res.ok) throw new Error('Failed to patch alokasi_kabupaten_kota');
+
+    // Audit Logging
+    const currentUser = useAppStore.getState().currentUser;
+    const kkName = kk.kabupaten_kota?.nama_kabupaten_kota || id;
+    useAppStore.getState().addAuditLog({
+      user_nama: currentUser.username,
+      user_role: currentUser.role,
+      entitas: `Alokasi Kabupaten/Kota (${kkName})`,
+      entitas_id: id,
+      field,
+      nilai_lama: fmtRupiah(kk[field]),
+      nilai_baru: fmtRupiah(value),
+    });
+
+
+    const alokasiProvinsiId = kk.alokasi_provinsi_id;
+    if (alokasiProvinsiId) {
+      const allKabsRes = await fetch(`${url}/rest/v1/alokasi_kabupaten_kota?alokasi_provinsi_id=eq.${alokasiProvinsiId}`, { headers });
+      if (allKabsRes.ok) {
+        const allKabs = await allKabsRes.json();
+        const totalNominalProv = allKabs.reduce((s: number, k: any) => s + (k.id === id ? newNominal : k.nominal_alokasi), 0);
+        const totalRealisasiProv = allKabs.reduce((s: number, k: any) => s + (k.id === id ? newRealisasi : k.realisasi_total), 0);
+        const selisihProv = totalNominalProv - totalRealisasiProv;
+        const pctProv = totalNominalProv > 0 ? (totalRealisasiProv / totalNominalProv) * 100 : 0;
+
+        const patchProvRes = await fetch(`${url}/rest/v1/alokasi_provinsi?id=eq.${alokasiProvinsiId}`, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({
+            nominal_alokasi: totalNominalProv,
+            realisasi_total: totalRealisasiProv,
+            selisih: selisihProv,
+            persentase_penyerapan: pctProv,
+            updated_at: new Date().toISOString().split('T')[0]
+          })
+        });
+
+        if (patchProvRes.ok) {
+          const apRes = await fetch(`${url}/rest/v1/alokasi_provinsi?id=eq.${alokasiProvinsiId}`, { headers });
+          if (apRes.ok) {
+            const [ap] = await apRes.json();
+            const taId = ap?.tahun_anggaran_id;
+            if (taId) {
+              const allAlokasiProvsRes = await fetch(`${url}/rest/v1/alokasi_provinsi?tahun_anggaran_id=eq.${taId}`, { headers });
+              if (allAlokasiProvsRes.ok) {
+                const allAlokasiProvs = await allAlokasiProvsRes.json();
+                const totalNominalTA = allAlokasiProvs.reduce((s: number, p: any) => 
+                  s + (p.id === alokasiProvinsiId ? totalNominalProv : p.nominal_alokasi), 0);
+
+                await fetch(`${url}/rest/v1/tahun_anggaran?id=eq.${taId}`, {
+                  method: 'PATCH',
+                  headers,
+                  body: JSON.stringify({
+                    total_anggaran: totalNominalTA
+                  })
+                });
+              }
+            }
+          }
+        }
+      }
     }
+
+    await initDbConnection(true); // force reload cache
   } catch (err) {
     console.error('Failed to patch alokasi_kabupaten_kota:', err);
   }
@@ -302,7 +475,7 @@ export function getJenjangBreakdownByKabkota(
   nominalAlokasi: number
 ): JenjangBreakdownProvinsi[] {
   // Compute breakdown dynamically based on institutions under this kabkota
-  const kabSchools = institusiPendidikanData.filter(
+  const kabSchools = (institusiPendidikanData || []).filter(
     (item) => item.kabupaten_kota_id === kabkotaId
   );
 
@@ -310,9 +483,28 @@ export function getJenjangBreakdownByKabkota(
   const jenjangBudgets = { UNIVERSITAS: 0, SMA: 0, SMP: 0, SD: 0, PAUD: 0 };
 
   kabSchools.forEach((item) => {
-    jenjangCounts[item.jenjang]++;
-    jenjangBudgets[item.jenjang] += item.nominal_alokasi;
+    if (item.jenjang in jenjangCounts) {
+      jenjangCounts[item.jenjang]++;
+      jenjangBudgets[item.jenjang] += Number(item.nominal_alokasi) || 0;
+    }
   });
+
+  // Find parent province to divide province school stats proportionally if institusiPendidikanData has 0
+  const kabkotaRecord = (alokasiKabupatenKotaData || []).find(k => k.kabupaten_kota_id === kabkotaId);
+  const provId = kabkotaRecord?.kabupaten_kota?.provinsi_id;
+  const provStats = provId ? (provinceSchoolStatsData || []).filter(s => s.province_id === provId) : [];
+  
+  const provSchoolCounts: Record<Jenjang, number> = { UNIVERSITAS: 0, SMA: 0, SMP: 0, SD: 0, PAUD: 0 };
+  provStats.forEach((stat) => {
+    const key = (stat.jenjang ? String(stat.jenjang).toUpperCase() : '') as Jenjang;
+    if (key in provSchoolCounts) {
+      provSchoolCounts[key] = Number(stat.school_count) || 0;
+    }
+  });
+
+  const totalKabkotasInProv = provId 
+    ? (alokasiKabupatenKotaData || []).filter(k => k.kabupaten_kota?.provinsi_id === provId).length || 1 
+    : 1;
 
   const labels: Record<Jenjang, string> = {
     UNIVERSITAS: 'Universitas (Strata 1)',
@@ -322,12 +514,29 @@ export function getJenjangBreakdownByKabkota(
     PAUD: 'Pendidikan Anak Usia Dini (PAUD)',
   };
 
+  const defaultBudgetWeights: Record<Jenjang, number> = {
+    UNIVERSITAS: 0.35,
+    SMA: 0.25,
+    SMP: 0.20,
+    SD: 0.15,
+    PAUD: 0.05,
+  };
+
+  const totalInstBudget = Object.values(jenjangBudgets).reduce((a, b) => a + b, 0);
+
   return (Object.keys(labels) as Jenjang[]).map((j, i) => {
-    const budget = jenjangBudgets[j];
+    const count = jenjangCounts[j] > 0 
+      ? jenjangCounts[j] 
+      : Math.round(provSchoolCounts[j] / totalKabkotasInProv);
+
+    const budget = totalInstBudget > 0 
+      ? jenjangBudgets[j] 
+      : Math.round((Number(nominalAlokasi) || 0) * defaultBudgetWeights[j]);
+
     return {
       nomor: i + 1,
       jenjang: labels[j],
-      jumlah_sekolah: jenjangCounts[j],
+      jumlah_sekolah: count,
       nominal_keseluruhan: budget,
       porsi_anggaran: nominalAlokasi > 0 ? (budget / nominalAlokasi) * 100 : 0,
     };
@@ -347,21 +556,42 @@ export function getJenjangBreakdownByProvinsi(
   provinsiId: string,
   nominalAlokasi: number
 ): JenjangBreakdownProvinsi[] {
-  // Filter all kabkotas of this province
-  const kabIdList = alokasiKabupatenKotaData
+  // 1. Get school counts from database school stats (mv_province_school_stats)
+  const provStats = (provinceSchoolStatsData || []).filter((s) => s.province_id === provinsiId);
+  const schoolCountsFromStats: Record<Jenjang, number> = {
+    UNIVERSITAS: 0,
+    SMA: 0,
+    SMP: 0,
+    SD: 0,
+    PAUD: 0,
+  };
+
+  provStats.forEach((stat) => {
+    const key = (stat.jenjang ? String(stat.jenjang).toUpperCase() : '') as Jenjang;
+    if (key in schoolCountsFromStats) {
+      schoolCountsFromStats[key] = Number(stat.school_count) || 0;
+    }
+  });
+
+  // Overrides removed to use real database stats directly
+
+  // 2. Count from institusiPendidikanData if any custom rows exist for this province
+  const kabIdList = (alokasiKabupatenKotaData || [])
     .filter((k) => k.kabupaten_kota?.provinsi_id === provinsiId)
     .map((k) => k.kabupaten_kota_id);
 
-  const provSchools = institusiPendidikanData.filter((item) =>
+  const provSchools = (institusiPendidikanData || []).filter((item) =>
     kabIdList.includes(item.kabupaten_kota_id)
   );
 
-  const jenjangCounts = { UNIVERSITAS: 0, SMA: 0, SMP: 0, SD: 0, PAUD: 0 };
+  const jenjangCountsFromInst = { UNIVERSITAS: 0, SMA: 0, SMP: 0, SD: 0, PAUD: 0 };
   const jenjangBudgets = { UNIVERSITAS: 0, SMA: 0, SMP: 0, SD: 0, PAUD: 0 };
 
   provSchools.forEach((item) => {
-    jenjangCounts[item.jenjang]++;
-    jenjangBudgets[item.jenjang] += item.nominal_alokasi;
+    if (item.jenjang in jenjangCountsFromInst) {
+      jenjangCountsFromInst[item.jenjang]++;
+      jenjangBudgets[item.jenjang] += Number(item.nominal_alokasi) || 0;
+    }
   });
 
   const labels: Record<Jenjang, string> = {
@@ -372,12 +602,26 @@ export function getJenjangBreakdownByProvinsi(
     PAUD: 'Pendidikan Anak Usia Dini (PAUD)',
   };
 
+  const defaultBudgetWeights: Record<Jenjang, number> = {
+    UNIVERSITAS: 0.35,
+    SMA: 0.25,
+    SMP: 0.20,
+    SD: 0.15,
+    PAUD: 0.05,
+  };
+
+  const totalInstBudget = Object.values(jenjangBudgets).reduce((a, b) => a + b, 0);
+
   return (Object.keys(labels) as Jenjang[]).map((j, i) => {
-    const budget = jenjangBudgets[j];
+    const count = schoolCountsFromStats[j] > 0 ? schoolCountsFromStats[j] : jenjangCountsFromInst[j];
+    const budget = totalInstBudget > 0 
+      ? jenjangBudgets[j] 
+      : Math.round((Number(nominalAlokasi) || 0) * defaultBudgetWeights[j]);
+
     return {
       nomor: i + 1,
       jenjang: labels[j],
-      jumlah_sekolah: jenjangCounts[j],
+      jumlah_sekolah: count,
       nominal_keseluruhan: budget,
       porsi_anggaran: nominalAlokasi > 0 ? (budget / nominalAlokasi) * 100 : 0,
     };
@@ -575,16 +819,30 @@ export async function createRincianPengeluaranItem(item: {
         'apikey': anonKey,
         'Authorization': `Bearer ${anonKey}`,
         'Content-Type': 'application/json',
+        'Prefer': 'return=representation',
       },
       body: JSON.stringify(item),
     });
     if (res.ok) {
-      return true;
+      const data = await res.json();
+      const created = Array.isArray(data) ? data[0] : data;
+      const currentUser = useAppStore.getState().currentUser;
+      useAppStore.getState().addAuditLog({
+        user_nama: currentUser.username,
+        user_role: currentUser.role,
+        entitas: `Rincian Pengeluaran Institusi (${item.institusi_id})`,
+        entitas_id: created?.id || item.institusi_id,
+        field: 'tambah_item',
+        nilai_lama: '(baru)',
+        nilai_baru: `${item.nama_produk_jasa} (Qty: ${item.qty})`,
+      });
+      return created;
     }
-    return false;
+
+    return null;
   } catch (err) {
     console.error('Failed to create rincian_pengeluaran_item:', err);
-    return false;
+    return null;
   }
 }
 

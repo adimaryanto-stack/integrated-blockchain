@@ -505,7 +505,7 @@ export default function KabkotaDetailPage() {
                     {fmtRupiah(totals.selisih)}
                   </td>
                   <td className="sheet-cell text-center font-bold bg-emerald-500 text-white font-mono text-sm">
-                    {totals.persentase.toFixed(2).replace('.', ',')}%
+                    {(Number(totals.persentase) || 0).toFixed(2).replace('.', ',')}%
                   </td>
                 </tr>
               </tfoot>

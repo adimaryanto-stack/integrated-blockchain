@@ -8,6 +8,7 @@ pgsql/
 postgrest/
 postgrest_v11/
 pgsql_log.txt
+pgsql_log_txt
 *.log
 
 # Next.js build output

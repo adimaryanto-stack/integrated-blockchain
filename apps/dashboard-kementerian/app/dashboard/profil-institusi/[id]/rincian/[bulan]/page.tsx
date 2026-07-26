@@ -131,20 +131,9 @@ export default function RincianPengeluaranPage() {
 
   // ===== Add new item =====
   const addItem = async () => {
-    const newId = `ri-new-${Date.now()}`;
     const nextNomor = items.length + 1;
-    const newItem = {
-      id: newId,
-      nomor: nextNomor,
-      nama_produk_jasa: 'Item Baru',
-      harga_satuan: 0,
-      qty: 1,
-      jumlah: 0,
-    };
-    setItems(prev => [...prev, newItem]);
-
     const { createRincianPengeluaranItem } = await import('@/lib/data');
-    await createRincianPengeluaranItem({
+    const createdItem = await createRincianPengeluaranItem({
       institusi_id: institusiId,
       nomor_bulan: nomorBulan,
       nomor: nextNomor,
@@ -153,6 +142,11 @@ export default function RincianPengeluaranPage() {
       qty: 1,
       jumlah: 0
     });
+    if (createdItem) {
+      setItems(prev => [...prev, createdItem]);
+    } else {
+      alert('Gagal menambahkan item baru ke database.');
+    }
   };
 
   const handleExport = async () => {

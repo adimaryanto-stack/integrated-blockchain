@@ -24,6 +24,19 @@ app.use((req, res, next) => {
   next();
 });
 
+// Root / health check endpoint
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    service: 'Integrated Blockchain Proxy API Server',
+    port: 2026,
+    endpoints: {
+      rpc: '/rest/v1/rpc/:function',
+      rest: '/rest/v1/:table'
+    }
+  });
+});
+
 // ─────────────────────────────────────────────────────────
 // RPC (Remote Procedure Call) emulation
 // ─────────────────────────────────────────────────────────
@@ -242,10 +255,10 @@ function buildBaseQuery(table, selectParam) {
     return `
       SELECT r.province_id,
         CASE
-          WHEN s.name ILIKE '%universitas%' OR s.name ILIKE '%institut%' OR s.name ILIKE '%politeknik%' OR s.name ILIKE '%akademi%' OR s.name ILIKE '%sekolah tinggi%' THEN 'Universitas'
-          WHEN s.name ILIKE '%sma%' OR s.name ILIKE '%sman%' OR s.name ILIKE '%smk%' OR s.name ILIKE '%smkn%' OR s.name ILIKE '%ma%' OR s.name ILIKE '%man%' THEN 'SMA'
-          WHEN s.name ILIKE '%smp%' OR s.name ILIKE '%smpn%' OR s.name ILIKE '%mts%' OR s.name ILIKE '%mtsn%' THEN 'SMP'
-          WHEN s.name ILIKE '%sd%' OR s.name ILIKE '%sdn%' OR s.name ILIKE '%mi%' OR s.name ILIKE '%min%' THEN 'SD'
+          WHEN s.name ~* '\y(UNIVERSITAS|INSTITUT|POLITEKNIK|AKADEMI|SEKOLAH TINGGI|STIE|STIKES|STKIP|STMIK|STIMIK)\y' THEN 'Universitas'
+          WHEN s.name ~* '\y(SMA|SMK|SMAN|SMKN|MA|MAN|MAS|SMAS|SMKS|SMAIT|SLB|ALIYAH|KEJURUAN)\y' OR s.name ILIKE '%SEKOLAH MENENGAH ATAS%' OR s.name ILIKE '%SEKOLAH MENENGAH KEJURUAN%' THEN 'SMA'
+          WHEN s.name ~* '\y(SMP|SMPN|SMPS|MTS|MTSN|MTSS|SMPIT|TSANAWIYAH)\y' OR s.name ILIKE '%SEKOLAH MENENGAH PERTAMA%' THEN 'SMP'
+          WHEN s.name ~* '\y(SD|SDN|SDS|MI|MIN|MIS|SDIT|IBTIDAIYAH)\y' OR s.name ILIKE '%SEKOLAH DASAR%' THEN 'SD'
           ELSE 'PAUD'
         END as jenjang,
         COUNT(*)::integer as school_count

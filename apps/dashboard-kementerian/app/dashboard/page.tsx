@@ -30,6 +30,25 @@ export default function DashboardPage() {
     Realisasi: t.realisasi / 1_000_000_000_000,
   }));
 
+  // Calculate dynamic trends from yearly data
+  const trendNominal = useMemo(() => {
+    const trend = summary.tren_tahunan;
+    if (trend.length < 2) return null;
+    const current = trend.find(t => t.tahun === activeTahun);
+    const previous = trend.find(t => t.tahun === activeTahun - 1);
+    if (!current || !previous || previous.nominal === 0) return null;
+    return ((current.nominal - previous.nominal) / previous.nominal) * 100;
+  }, [summary.tren_tahunan, activeTahun]);
+
+  const trendRealisasi = useMemo(() => {
+    const trend = summary.tren_tahunan;
+    if (trend.length < 2) return null;
+    const current = trend.find(t => t.tahun === activeTahun);
+    const previous = trend.find(t => t.tahun === activeTahun - 1);
+    if (!current || !previous || previous.realisasi === 0) return null;
+    return ((current.realisasi - previous.realisasi) / previous.realisasi) * 100;
+  }, [summary.tren_tahunan, activeTahun]);
+
   return (
     <div className="min-h-screen">
       <Header title="Dashboard" subtitle="Ringkasan nasional anggaran Kementerian Pendidikan RI" />
@@ -43,7 +62,7 @@ export default function DashboardPage() {
             subtitle={`Anggaran Kemdikbud ${activeTahun}`}
             icon={<Wallet size={20} className="text-indigo-600" />}
             accent="indigo"
-            trend={{ value: 6.4, label: `dari ${activeTahun - 1}` }}
+            trend={trendNominal !== null ? { value: trendNominal, label: `dari ${activeTahun - 1}` } : undefined}
           />
           <MetricCard
             title="Total Realisasi"
@@ -51,7 +70,7 @@ export default function DashboardPage() {
             subtitle="Penyerapan anggaran terkini"
             icon={<TrendingUp size={20} className="text-emerald-600" />}
             accent="emerald"
-            trend={{ value: 4.2, label: 'dari bulan lalu' }}
+            trend={trendRealisasi !== null ? { value: trendRealisasi, label: `dari ${activeTahun - 1}` } : undefined}
           />
           <MetricCard
             title="% Penyerapan Nasional"

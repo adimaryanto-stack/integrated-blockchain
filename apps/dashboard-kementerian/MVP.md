@@ -51,4 +51,5 @@ Semua halaman di atas telah dijalankan dan diverifikasi pada `http://localhost:3
 - [x] Integrasi Database Production (Supabase PostgreSQL / PostgREST API).
 - [ ] Implementasi Autentikasi Pengguna nyata (NextAuth.js / Supabase Auth).
 - [ ] Fitur Progressive Web App (PWA) untuk dukungan akses offline.
-- [ ] Modul audit trail untuk merekam histori edit data per sel secara mendetail.
+- [x] Modul audit trail untuk merekam histori edit data per sel secara mendetail.
+

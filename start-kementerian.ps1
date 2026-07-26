@@ -3,7 +3,7 @@ $PGSQL_BIN = "$ROOT\pgsql\bin"
 $PGSQL_DATA = "$ROOT\pgsql\data"
 
 Write-Host "=================================================================="
-Write-Host " Blockchain Anggaran - Startup Script"
+Write-Host " Blockchain Anggaran - Startup Script (Dashboard Kementerian)"
 Write-Host "=================================================================="
 
 # --- 1. Start PostgreSQL on port 2025 ---
@@ -30,40 +30,20 @@ Write-Host "      Proxy server dimulai (PID: $($proxyJob.Id))" -ForegroundColor 
 
 Start-Sleep 2
 
-# --- 3. Start All Dashboard Applications ---
-Write-Host "`n[3/3] Memulai semua dashboard..."
-
-$apps = @(
-    @{ name = "Transparansi Publik";     port = 2020; path = "$ROOT\apps\transparansi-anggaran\apps\web-next" },
-    @{ name = "Dashboard Kementerian";   port = 2021; path = "$ROOT\apps\dashboard-kementerian" },
-    @{ name = "Dashboard Bank";          port = 2022; path = "$ROOT\apps\dashboard-bank" },
-    @{ name = "Dashboard Auditor";       port = 2023; path = "$ROOT\apps\dashboard-auditor" },
-    @{ name = "Institusi Pendidikan";    port = 2024; path = "$ROOT\apps\dashboard-institusi-pendidikan" }
-)
-
-foreach ($app in $apps) {
-    Write-Host "      Memulai $($app.name) pada port $($app.port)..."
-    Start-Process -FilePath "cmd.exe" -ArgumentList "/c npm run dev -- --port $($app.port)" -WorkingDirectory $app.path -WindowStyle Minimized
-    Start-Sleep 1
-}
+# --- 3. Start Dashboard Kementerian (Port 2021) ---
+Write-Host "`n[3/3] Memulai Dashboard Kementerian pada port 2021..."
+Start-Process -FilePath "cmd.exe" -ArgumentList "/c npm run dev -- --port 2021" -WorkingDirectory "$ROOT\apps\dashboard-kementerian" -WindowStyle Minimized
 
 Write-Host "`n=================================================================="
-Write-Host " Semua server sedang dimulai. Tunggu sekitar 30 detik..."
+Write-Host " Server sedang dimulai. Tunggu sekitar 10-15 detik..."
 Write-Host "=================================================================="
 Write-Host ""
-Write-Host " Link Dashboard:"
-Write-Host "  Transparansi Publik   -> http://localhost:2020"
-Write-Host "  Dashboard Kementerian -> http://localhost:2021"
-Write-Host "  Dashboard Bank        -> http://localhost:2022"
-Write-Host "  Dashboard Auditor     -> http://localhost:2023"
-Write-Host "  Institusi Pendidikan  -> http://localhost:2024"
-Write-Host "  Proxy DB API          -> http://localhost:2026"
-Write-Host ""
+Write-Host " Link Dashboard Kementerian -> http://localhost:2021"
+Write-Host " Proxy DB API               -> http://localhost:2026"
 Write-Host " Database PostgreSQL berjalan pada port 2025"
 Write-Host "=================================================================="
 
-Write-Host "`nMenjaga agar semua server tetap berjalan. Tekan Ctrl+C di terminal atau batalkan task untuk menghentikan."
+Write-Host "`nMenjaga agar server tetap berjalan. Tekan Ctrl+C untuk menghentikan."
 while ($true) {
     Start-Sleep 10
 }
-
