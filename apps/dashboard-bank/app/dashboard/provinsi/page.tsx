@@ -45,8 +45,11 @@ export default function ProvinsiPage() {
   const [editValue, setEditValue] = useState('');
 
   const filtered = useMemo(() => {
-    if (!search) return data;
-    return data.filter(p => p.provinsi.nama_provinsi.toLowerCase().includes(search.toLowerCase()));
+    let list = data;
+    if (search) {
+      list = list.filter(p => p.provinsi.nama_provinsi.toLowerCase().includes(search.toLowerCase()));
+    }
+    return [...list].sort((a, b) => a.provinsi.nama_provinsi.localeCompare(b.provinsi.nama_provinsi, 'id'));
   }, [data, search]);
 
   const totals = useMemo(() => {
@@ -108,7 +111,7 @@ export default function ProvinsiPage() {
         row.nominal_alokasi,
         row.realisasi_total,
         row.selisih,
-        row.persentase_penyerapan.toFixed(2),
+        (Number(row.persentase_penyerapan) || 0).toFixed(2),
       ].join(','));
     });
     

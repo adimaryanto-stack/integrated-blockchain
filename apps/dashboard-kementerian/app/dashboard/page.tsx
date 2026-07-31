@@ -14,12 +14,24 @@ import {
 import { useMemo } from 'react';
 import { useAppStore } from '@/lib/store';
 
+const JENJANG_LABELS: Record<string, string> = {
+  'UNIVERSITAS': 'Universitas (Strata 1)',
+  'SMA': 'Sekolah Menengah Atas (SMA/SMK)',
+  'SMP': 'Sekolah Menengah Pertama (SMP/Sederajat)',
+  'SD': 'Sekolah Dasar (SD/Sederajat)',
+  'PAUD': 'Pendidikan Anak Usia Dini (PAUD/TK/KB)',
+};
+
 export default function DashboardPage() {
   const { activeTahun } = useAppStore();
   const summary = useMemo(() => getDashboardSummary(activeTahun), [activeTahun]);
 
   const barData = summary.per_jenjang.map(j => ({
-    jenjang: j.jenjang === 'UNIVERSITAS' ? 'Univ' : j.jenjang,
+    jenjang: j.jenjang.includes('Universitas') ? 'Univ'
+      : j.jenjang.includes('SMA') ? 'SMA'
+      : j.jenjang.includes('SMP') ? 'SMP'
+      : j.jenjang.includes('Dasar') ? 'SD'
+      : 'PAUD',
     Nominal: j.nominal / 1_000_000_000_000,
     Realisasi: j.realisasi / 1_000_000_000_000,
   }));
@@ -109,7 +121,7 @@ export default function DashboardPage() {
                         <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full" style={{ background: barColor }} />
                           <Link href={`/dashboard/jenjang/${j.jenjang.toLowerCase()}`} className="hover:text-accent hover:underline transition-colors">
-                            {j.jenjang}
+                            {JENJANG_LABELS[j.jenjang] || j.jenjang}
                           </Link>
                         </div>
                       </td>
@@ -172,7 +184,8 @@ export default function DashboardPage() {
                 <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={{ stroke: '#e2e8f0' }} tickFormatter={(v) => `${v}T`} />
                 <Tooltip
                   contentStyle={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#1e293b', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                  formatter={(value: any) => [`${Number(value).toFixed(1)} T`, '']}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  formatter={(value: any) => [`${Number(value || 0).toFixed(1)} T`, '']}
                 />
                 <Legend wrapperStyle={{ fontSize: 11, color: '#64748b' }} />
                 <Bar dataKey="Nominal" fill="#6366f1" radius={[4, 4, 0, 0]} />
@@ -201,7 +214,8 @@ export default function DashboardPage() {
                 <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={{ stroke: '#e2e8f0' }} tickFormatter={(v) => `${v}T`} />
                 <Tooltip
                   contentStyle={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#1e293b', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                  formatter={(value: any) => [`${Number(value).toFixed(1)} T`, '']}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  formatter={(value: any) => [`${Number(value || 0).toFixed(1)} T`, '']}
                 />
                 <Legend wrapperStyle={{ fontSize: 11, color: '#64748b' }} />
                 <Area type="monotone" dataKey="Nominal" stroke="#6366f1" fill="url(#gradNominal)" strokeWidth={2} />

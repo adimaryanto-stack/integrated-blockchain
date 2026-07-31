@@ -29,16 +29,30 @@ export async function GET(request: Request) {
 
         if (provErr) throw provErr;
 
-        // 3. Fetch District Allocations
-        const { data: districts, error: distErr } = await supabase
+        // 3. Fetch District Allocations from alokasi_kabupaten_kota & district_allocations
+        const { data: akkData } = await supabase
+            .from('alokasi_kabupaten_kota')
+            .select('*, kabupaten_kota:kabupaten_kota(*)');
+
+        const { data: districts } = await supabase
             .from('district_allocations')
             .select('*')
             .eq('year', targetYear);
 
-        if (distErr) throw distErr;
-
         // 4. Map to Frontend format (allocations list)
         const allocations: any[] = [];
+
+        // Map provByName and provByCode for parent matching
+        const provByNameMap = new Map<string, any>();
+        const provByCodeMap = new Map<string, any>();
+        const provByIdMap = new Map<string, any>();
+        if (provinsi) {
+            provinsi.forEach(p => {
+                if (p.provinsi_name) provByNameMap.set(p.provinsi_name.toLowerCase(), p);
+                if (p.provinsi_code) provByCodeMap.set(p.provinsi_code, p);
+                if (p.id) provByIdMap.set(p.id, p);
+            });
+        }
 
         // ... existing APBN mapping ...
         if (apbn) {
@@ -95,16 +109,22 @@ export async function GET(request: Request) {
             });
         }
 
-        // Add Districts
+        const addedKabKeys = new Set<string>();
+
+        // Add Districts from district_allocations first
         if (districts) {
             districts.forEach(d => {
+                const parentProv = provByIdMap.get(d.provincial_id) || provByCodeMap.get(d.provinsi_code);
+                const key = d.kabkota_code || d.kabkota_name.toLowerCase();
+                addedKabKeys.add(key);
                 allocations.push({
                     id: d.id,
-                    parent_id: d.provincial_id,
+                    parent_id: parentProv?.id || d.provincial_id,
                     fiscal_year: targetYear,
                     level: 'DINAS_KAB',
                     entity_name: d.kabkota_name,
                     kabkota_code: d.kabkota_code,
+                    provinsi_code: parentProv?.provinsi_code || d.provinsi_code || '',
                     allocated: Number(d.alokasi),
                     received: Number(d.diterima),
                     disbursed: Number(d.disalurkan),
@@ -113,6 +133,43 @@ export async function GET(request: Request) {
                     gap_percent: Number(d.persen_selisih),
                     status: d.is_flagged ? 'FLAGGED' : 'OK'
                 });
+            });
+        }
+
+        // Add remaining Districts from alokasi_kabupaten_kota to cover ALL 38 provinces in Indonesia
+        if (akkData && akkData.length > 0) {
+            akkData.forEach((akk: any) => {
+                const name = akk.kabupaten_kota?.nama_kabupaten_kota || akk.provinsi_nama || 'Kab/Kota';
+                const code = akk.kabupaten_kota?.kode_kabupaten_kota || '';
+                const provName = akk.provinsi_nama || '';
+                
+                const parentProv = provByNameMap.get(provName.toLowerCase()) || 
+                                   (akk.alokasi_provinsi_id ? provByIdMap.get(akk.alokasi_provinsi_id) : null);
+                
+                const key = code || name.toLowerCase();
+                if (!addedKabKeys.has(key)) {
+                    addedKabKeys.add(key);
+                    const nom = Number(akk.nominal_alokasi || 0);
+                    const real = Number(akk.realisasi_total || 0);
+                    const selisih = nom - real;
+                    const pct = nom > 0 ? (selisih / nom) * 100 : 0;
+                    allocations.push({
+                        id: akk.id,
+                        parent_id: parentProv?.id || akk.alokasi_provinsi_id || '',
+                        fiscal_year: targetYear,
+                        level: 'DINAS_KAB',
+                        entity_name: name,
+                        kabkota_code: code,
+                        provinsi_code: parentProv?.provinsi_code || '',
+                        allocated: nom,
+                        received: real,
+                        disbursed: real,
+                        remaining: selisih,
+                        gap: selisih,
+                        gap_percent: pct,
+                        status: 'OK'
+                    });
+                }
             });
         }
 
@@ -200,13 +257,21 @@ export async function GET(request: Request) {
             year: targetYear,
             summary: {
                 total_provinsi: provinsi?.length || 0,
-                total_kabkota: districts?.length || 0,
+                total_kabkota: allocations.filter(a => a.level === 'DINAS_KAB').length,
                 total_flagged: totalFlaggedCount,
             },
             allocations,
             flowLinks
         });
     } catch (err: any) {
-        return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+        console.warn('Fund flow API warning (database connection):', err?.message || err);
+        return NextResponse.json({
+            success: false,
+            year: targetYear,
+            summary: { total_provinsi: 0, total_kabkota: 0, total_flagged: 0 },
+            allocations: [],
+            flowLinks: [],
+            error: err?.message || 'Gagal terhubung ke database Supabase.'
+        });
     }
 }

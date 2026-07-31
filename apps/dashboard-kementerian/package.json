@@ -3,7 +3,7 @@
   "version": "1.4.1",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 2021",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start --port 2021",
     "lint": "eslint"

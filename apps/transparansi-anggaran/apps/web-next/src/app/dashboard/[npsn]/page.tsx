@@ -420,8 +420,9 @@ export default function SchoolDashboardPage() {
                 }
 
             } catch (err: any) {
-                console.error('Supabase Error:', err);
-                setError(err.message || 'Gagal mengambil data dari Supabase');
+                const errMsg = err?.message || (typeof err === 'object' ? JSON.stringify(err) : String(err));
+                console.error('Supabase Error Details:', errMsg);
+                setError(err?.message || 'Gagal terhubung ke database lokal Supabase (http://localhost:2026). Pastikan database/service lokal sudah berjalan.');
             } finally {
                 setLoading(false);
             }

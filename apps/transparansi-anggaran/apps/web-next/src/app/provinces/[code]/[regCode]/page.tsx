@@ -118,24 +118,24 @@ export default function RegencyDetailPage() {
                     {!loading && (
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center">
-                                <span className="text-slate-500 font-bold text-sm">PAUD/TK/KB</span>
-                                <span className="text-2xl font-black text-slate-900">{stats.PAUD}</span>
+                                <span className="text-slate-500 font-bold text-sm text-center">PAUD/TK/KB</span>
+                                <span className="text-2xl font-black text-slate-900 mt-1">{stats.PAUD}</span>
                             </div>
                             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center">
-                                <span className="text-slate-500 font-bold text-sm">SD/Sederajat</span>
-                                <span className="text-2xl font-black text-slate-900">{stats.SD}</span>
+                                <span className="text-slate-500 font-bold text-sm text-center">SD/Sederajat</span>
+                                <span className="text-2xl font-black text-slate-900 mt-1">{stats.SD}</span>
                             </div>
                             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center">
-                                <span className="text-slate-500 font-bold text-sm">SMP/Sederajat</span>
-                                <span className="text-2xl font-black text-slate-900">{stats.SMP}</span>
+                                <span className="text-slate-500 font-bold text-sm text-center">SMP/Sederajat</span>
+                                <span className="text-2xl font-black text-slate-900 mt-1">{stats.SMP}</span>
                             </div>
                             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center">
-                                <span className="text-slate-500 font-bold text-sm">SMA/SMK</span>
-                                <span className="text-2xl font-black text-slate-900">{stats.SMA}</span>
+                                <span className="text-slate-500 font-bold text-sm text-center">SMA/SMK</span>
+                                <span className="text-2xl font-black text-slate-900 mt-1">{stats.SMA}</span>
                             </div>
                             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center">
-                                <span className="text-slate-500 font-bold text-sm">Universitas</span>
-                                <span className="text-2xl font-black text-slate-900">{stats.Universitas}</span>
+                                <span className="text-slate-500 font-bold text-sm text-center">Universitas (Strata 1)</span>
+                                <span className="text-2xl font-black text-slate-900 mt-1">{stats.Universitas}</span>
                             </div>
                         </div>
                     )}

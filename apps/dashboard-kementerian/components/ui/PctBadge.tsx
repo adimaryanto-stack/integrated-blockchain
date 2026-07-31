@@ -3,7 +3,7 @@
 import { getPctBgColor, fmtPct, getPctEmoji } from '@/lib/utils/formatters';
 
 interface PctBadgeProps {
-  value: any;
+  value: number | string | null | undefined;
   size?: 'sm' | 'md';
 }
 

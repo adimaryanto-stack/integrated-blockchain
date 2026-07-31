@@ -8,7 +8,8 @@ interface PctBadgeProps {
 }
 
 export default function PctBadge({ value, size = 'sm' }: PctBadgeProps) {
-  const emoji = value >= 80 ? '🟢' : value >= 50 ? '🟡' : '🔴';
+  const v = Number(value) || 0;
+  const emoji = v >= 80 ? '🟢' : v >= 50 ? '🟡' : '🔴';
   
   return (
     <span className={`badge ${getPctBgColor(value)} ${size === 'md' ? 'text-xs px-3 py-1' : ''}`}>

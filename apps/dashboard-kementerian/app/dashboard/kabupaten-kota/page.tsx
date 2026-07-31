@@ -13,8 +13,14 @@ import { Search, Download, Plus } from 'lucide-react';
 
 export default function KabupatenKotaPage() {
   const { activeTahun } = useAppStore();
-  // activeTahun used for display/export only — data comes from Supabase directly
-  const [selectedProvinsi, setSelectedProvinsi] = useState(alokasiProvinsiData[11].provinsi_id); // Jawa Barat
+
+  const sortedProvinsiData = useMemo(() => {
+    return [...alokasiProvinsiData].sort((a, b) =>
+      a.provinsi.nama_provinsi.localeCompare(b.provinsi.nama_provinsi, 'id')
+    );
+  }, []);
+
+  const [selectedProvinsi, setSelectedProvinsi] = useState(() => sortedProvinsiData[0]?.provinsi_id || 'p-1');
   const [search, setSearch] = useState('');
   const [editingCell, setEditingCell] = useState<{ id: string; field: 'nominal' | 'realisasi' } | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -32,8 +38,13 @@ export default function KabupatenKotaPage() {
   }
 
   const filtered = useMemo(() => {
-    if (!search) return localData;
-    return localData.filter(k => k.kabupaten_kota.nama_kabupaten_kota.toLowerCase().includes(search.toLowerCase()));
+    let list = localData;
+    if (search) {
+      list = list.filter(k => k.kabupaten_kota.nama_kabupaten_kota.toLowerCase().includes(search.toLowerCase()));
+    }
+    return [...list].sort((a, b) =>
+      a.kabupaten_kota.nama_kabupaten_kota.localeCompare(b.kabupaten_kota.nama_kabupaten_kota, 'id')
+    );
   }, [localData, search]);
 
   const totals = useMemo(() => {
@@ -172,7 +183,7 @@ export default function KabupatenKotaPage() {
               onChange={(e) => setSelectedProvinsi(e.target.value)}
               className="select-dropdown"
             >
-              {alokasiProvinsiData.map(p => (
+              {sortedProvinsiData.map(p => (
                 <option key={p.provinsi_id} value={p.provinsi_id}>{p.provinsi.nama_provinsi}</option>
               ))}
             </select>

@@ -143,7 +143,7 @@ export async function GET() {
                     reference_number: sd.id.substring(0, 12).toUpperCase()
                 };
             })
-            .filter(Boolean);
+            .filter((item): item is NonNullable<typeof item> => Boolean(item));
 
         // Bulk insert incoming funds in batches of 1000
         let insertedFundsCount = 0;

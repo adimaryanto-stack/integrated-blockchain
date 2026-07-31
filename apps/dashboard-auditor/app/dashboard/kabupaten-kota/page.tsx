@@ -17,16 +17,17 @@ import { rollupKabKotaChange } from '@/lib/utils/dbSync';
 export default function KabupatenKotaPage() {
   const { activeTahun, isSupabaseMode, dbData, setDbData } = useAppStore();
   const [selectedProvinsi, setSelectedProvinsi] = useState(() => {
-    // Safe initial default from mock data
-    const jabar = alokasiProvinsiData.find(p => p.provinsi?.nama_provinsi === 'Jawa Barat');
-    return jabar ? jabar.provinsi_id : (alokasiProvinsiData[0]?.provinsi_id || '');
+    // Default to Aceh (first alphabetical province)
+    const aceh = alokasiProvinsiData.find(p => p.provinsi?.nama_provinsi === 'Aceh');
+    return aceh ? aceh.provinsi_id : (alokasiProvinsiData[0]?.provinsi_id || 'p-1');
   });
   const [search, setSearch] = useState('');
 
   // Build the provinsi list from dbData (Supabase) or module variable (mock)
   const provinsiList = useMemo(() => {
+    let list: any[] = [];
     if (isSupabaseMode && dbData && dbData.alokasi_provinsi.length > 0) {
-      return dbData.alokasi_provinsi.map((ap: any) => {
+      list = dbData.alokasi_provinsi.map((ap: any) => {
         const prov = ap.provinsi || dbData.provinsi?.find((p: any) => p.id === ap.provinsi_id);
         return {
           provinsi_id: ap.provinsi_id,
@@ -35,11 +36,15 @@ export default function KabupatenKotaPage() {
             : { id: ap.provinsi_id, kode_provinsi: '', nama_provinsi: 'Provinsi' }
         };
       });
+    } else {
+      list = alokasiProvinsiData.map(p => ({
+        provinsi_id: p.provinsi_id,
+        provinsi: p.provinsi
+      }));
     }
-    return alokasiProvinsiData.map(p => ({
-      provinsi_id: p.provinsi_id,
-      provinsi: p.provinsi
-    }));
+    return [...list].sort((a, b) =>
+      a.provinsi.nama_provinsi.localeCompare(b.provinsi.nama_provinsi, 'id')
+    );
   }, [isSupabaseMode, dbData]);
 
   // Sync selectedProvinsi when provinsiList changes (e.g., Supabase data arrives)
@@ -48,10 +53,7 @@ export default function KabupatenKotaPage() {
     // Check if current selection is valid in the new list
     const currentValid = provinsiList.some((p: any) => p.provinsi_id === selectedProvinsi);
     if (!currentValid) {
-      const jabar = provinsiList.find((p: any) =>
-        p.provinsi.nama_provinsi === 'Jawa Barat'
-      );
-      setSelectedProvinsi(jabar ? jabar.provinsi_id : provinsiList[0].provinsi_id);
+      setSelectedProvinsi(provinsiList[0].provinsi_id);
     }
   }, [provinsiList]);
 
@@ -97,8 +99,13 @@ export default function KabupatenKotaPage() {
   }, [rawData]);
 
   const filtered = useMemo(() => {
-    if (!search) return localData;
-    return localData.filter(k => k.kabupaten_kota.nama_kabupaten_kota.toLowerCase().includes(search.toLowerCase()));
+    let list = localData;
+    if (search) {
+      list = list.filter(k => k.kabupaten_kota.nama_kabupaten_kota.toLowerCase().includes(search.toLowerCase()));
+    }
+    return [...list].sort((a, b) =>
+      a.kabupaten_kota.nama_kabupaten_kota.localeCompare(b.kabupaten_kota.nama_kabupaten_kota, 'id')
+    );
   }, [localData, search]);
 
   const totals = useMemo(() => {

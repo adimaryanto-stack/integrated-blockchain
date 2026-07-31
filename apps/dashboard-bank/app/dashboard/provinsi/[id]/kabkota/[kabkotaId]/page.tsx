@@ -8,7 +8,7 @@ import { useAppStore } from '@/lib/store';
 import { getInstitusiByKabkota } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
 import { fmtRupiah } from '@/lib/utils/formatters';
-import { AlokasiProvinsi, AlokasiKabupatenKota, InstitusiPendidikan } from '@/types';
+import { AlokasiProvinsi, AlokasiKabupatenKota, InstitusiPendidikan, JenjangBreakdownProvinsi } from '@/types';
 import { ArrowLeft, Banknote, Download, School, Sparkles } from 'lucide-react';
 import PctBadge from '@/components/ui/PctBadge';
 
@@ -99,57 +99,62 @@ export default function KabkotaDetailPage() {
     return { nominal, realisasi, selisih, persentase };
   }, [schoolList]);
 
-  // Jenjang Breakdown calculation (linked to dynamic district school list total budget)
-  const jenjangBreakdown = useMemo(() => {
-    const counts: Record<string, { count: number; nominal: number }> = {
-      'UNIVERSITAS': { count: 0, nominal: 0 },
-      'SMA': { count: 0, nominal: 0 },
-      'SMP': { count: 0, nominal: 0 },
-      'SD': { count: 0, nominal: 0 },
-      'PAUD': { count: 0, nominal: 0 },
-    };
+  // Jenjang Breakdown calculation — loaded async from schools table (same source as port 2020)
+  const [jenjangBreakdown, setJenjangBreakdown] = useState<JenjangBreakdownProvinsi[]>([]);
 
-    schoolList.forEach(s => {
-      const key = s.jenjang.toUpperCase();
-      if (counts[key]) {
-        counts[key].count++;
-        counts[key].nominal += Number(s.nominal_alokasi);
+  useEffect(() => {
+    const loadJenjangBreakdown = async () => {
+      const numNominal = kabkotaData?.nominal_alokasi || totals.nominal || 0;
+      const jenjangs = [
+        { label: 'Universitas (Strata 1)', key: 'UNIVERSITAS', weight: 0.35, porsi: 35.0 },
+        { label: 'Sekolah Menengah Atas (SMA/SMK)', key: 'SMA', weight: 0.25, porsi: 25.0 },
+        { label: 'Sekolah Menengah Pertama (SMP/Sederajat)', key: 'SMP', weight: 0.20, porsi: 20.0 },
+        { label: 'Sekolah Dasar (SD/Sederajat)', key: 'SD', weight: 0.15, porsi: 15.0 },
+        { label: 'Pendidikan Anak Usia Dini (PAUD/TK/KB)', key: 'PAUD', weight: 0.05, porsi: 5.0 },
+      ];
+
+      try {
+        const { data: schools } = await supabase
+          .from('schools')
+          .select('name')
+          .eq('regency_id', kabkotaId)
+          .limit(5000);
+
+        const counts: Record<string, number> = { UNIVERSITAS: 0, SMA: 0, SMP: 0, SD: 0, PAUD: 0 };
+
+        (schools || []).forEach((s: any) => {
+          const n = (s.name || '').toUpperCase();
+          if (n.match(/\b(UNIVERSITAS|INSTITUT|POLITEKNIK|AKADEMI|SEKOLAH TINGGI)\b/)) counts.UNIVERSITAS++;
+          else if (n.match(/\b(SMA|SMAN|SMAS|SMK|SMKN|SMKS|MA|MAN|MAS)\b/)) counts.SMA++;
+          else if (n.match(/\b(SMP|SMPN|SMPS|MTS|MTSN|MTSS)\b/)) counts.SMP++;
+          else if (n.match(/\b(SD|SDN|SDS|MI|MIN|MIS)\b/)) counts.SD++;
+          else counts.PAUD++;
+        });
+
+        setJenjangBreakdown(jenjangs.map((j, i) => ({
+          nomor: i + 1,
+          jenjang: j.label,
+          jumlah_sekolah: counts[j.key],
+          nominal_keseluruhan: Math.round(numNominal * j.weight),
+          porsi_anggaran: j.porsi,
+        })));
+        return;
+      } catch (err) {
+        console.error('[Bank Kabkota] breakdown failed:', err);
       }
-    });
 
-    const jenjangs = [
-      { label: 'Universitas (Strata 1)', key: 'UNIVERSITAS', porsi: 10 },
-      { label: 'Sekolah Menengah Atas (SMA)', key: 'SMA', porsi: 20 },
-      { label: 'Sekolah Menengah Kejuruan (SMK)', key: 'SMA', porsi: 15 },
-      { label: 'Sekolah Menengah Pertama (SMP)', key: 'SMP', porsi: 20 },
-      { label: 'Sekolah Dasar (SD)', key: 'SD', porsi: 30 },
-      { label: 'Pendidikan Anak Usia Dini (PAUD)', key: 'PAUD', porsi: 5 },
-    ];
-
-    const nominalAlokasi = totals.nominal;
-
-    return jenjangs.map((j, i) => {
-      let nominal = counts[j.key].nominal;
-      let count = counts[j.key].count;
-      
-      if (j.label.includes('SMK')) {
-        count = schoolList.filter(s => s.jenjang === 'SMA' && s.nama_institusi.includes('SMK')).length;
-        nominal = schoolList.filter(s => s.jenjang === 'SMA' && s.nama_institusi.includes('SMK')).reduce((sum, s) => sum + s.nominal_alokasi, 0);
-      } else if (j.label.includes('Sekolah Menengah Atas')) {
-        count = schoolList.filter(s => s.jenjang === 'SMA' && !s.nama_institusi.includes('SMK')).length;
-        nominal = schoolList.filter(s => s.jenjang === 'SMA' && !s.nama_institusi.includes('SMK')).reduce((sum, s) => sum + s.nominal_alokasi, 0);
-      }
-
-      const porsi = nominalAlokasi > 0 ? (nominal / nominalAlokasi) * 100 : j.porsi;
-      return {
+      // Fallback
+      setJenjangBreakdown(jenjangs.map((j, i) => ({
         nomor: i + 1,
         jenjang: j.label,
-        jumlah_sekolah: count,
-        nominal_keseluruhan: nominal,
-        porsi_anggaran: Math.round(porsi * 10) / 10,
-      };
-    });
-  }, [schoolList, totals.nominal]);
+        jumlah_sekolah: 0,
+        nominal_keseluruhan: Math.round(numNominal * j.weight),
+        porsi_anggaran: j.porsi,
+      })));
+    };
+
+    if (kabkotaId) loadJenjangBreakdown();
+  }, [kabkotaId, kabkotaData, totals.nominal]);
 
   if (loading) {
     return (
@@ -463,30 +468,21 @@ export default function KabkotaDetailPage() {
                 </tr>
               </thead>
               <tbody>
-                {jenjangBreakdown.map((row) => {
-                  let label = row.jenjang;
-                  if (row.jenjang.includes('Universitas')) label = 'Universitas';
-                  else if (row.jenjang.includes('Sekolah Menengah Atas')) label = 'SMA / SMK';
-                  else if (row.jenjang.includes('Sekolah Menengah Pertama')) label = 'SMP';
-                  else if (row.jenjang.includes('Sekolah Dasar')) label = 'SD';
-                  else if (row.jenjang.includes('Anak Usia Dini')) label = 'PAUD';
-                  
-                  return (
-                    <tr key={row.nomor} className="hover:bg-indigo-50/50 transition">
-                      <td className="sheet-cell text-center text-text-muted text-xs">{row.nomor}</td>
-                      <td className="sheet-cell text-left font-semibold text-slate-700">{label}</td>
-                      <td className="sheet-cell text-right font-mono text-text-primary font-medium">{row.jumlah_sekolah}</td>
-                      <td className="sheet-cell text-right font-mono font-medium text-indigo-700 bg-indigo-50/10">
-                        {fmtRupiah(row.nominal_keseluruhan)}
-                      </td>
-                      <td className="sheet-cell text-center">
-                        <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-sm">
-                          {row.porsi_anggaran}%
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {jenjangBreakdown.map((row) => (
+                  <tr key={row.nomor} className="hover:bg-indigo-50/50 transition">
+                    <td className="sheet-cell text-center text-text-muted text-xs">{row.nomor}</td>
+                    <td className="sheet-cell text-left font-semibold text-slate-700">{row.jenjang}</td>
+                    <td className="sheet-cell text-right font-mono text-text-primary font-medium">{row.jumlah_sekolah}</td>
+                    <td className="sheet-cell text-right font-mono font-medium text-indigo-700 bg-indigo-50/10">
+                      {fmtRupiah(row.nominal_keseluruhan)}
+                    </td>
+                    <td className="sheet-cell text-center">
+                      <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-sm">
+                        {row.porsi_anggaran}%
+                      </span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

@@ -251,14 +251,14 @@ function buildBaseQuery(table, selectParam) {
          FROM kabupaten_kota kk WHERE kk.id = akk.kabupaten_kota_id) as kabupaten_kota
       FROM alokasi_kabupaten_kota akk
     `;
-  } else if (table === 'mv_province_school_stats') {
+  } else if (table === 'mv_province_school_stats' || table === 'province_school_stats') {
     return `
       SELECT r.province_id,
         CASE
-          WHEN s.name ~* '\y(UNIVERSITAS|INSTITUT|POLITEKNIK|AKADEMI|SEKOLAH TINGGI|STIE|STIKES|STKIP|STMIK|STIMIK)\y' THEN 'Universitas'
-          WHEN s.name ~* '\y(SMA|SMK|SMAN|SMKN|MA|MAN|MAS|SMAS|SMKS|SMAIT|SLB|ALIYAH|KEJURUAN)\y' OR s.name ILIKE '%SEKOLAH MENENGAH ATAS%' OR s.name ILIKE '%SEKOLAH MENENGAH KEJURUAN%' THEN 'SMA'
-          WHEN s.name ~* '\y(SMP|SMPN|SMPS|MTS|MTSN|MTSS|SMPIT|TSANAWIYAH)\y' OR s.name ILIKE '%SEKOLAH MENENGAH PERTAMA%' THEN 'SMP'
-          WHEN s.name ~* '\y(SD|SDN|SDS|MI|MIN|MIS|SDIT|IBTIDAIYAH)\y' OR s.name ILIKE '%SEKOLAH DASAR%' THEN 'SD'
+          WHEN s.name ~* '\\y(UNIVERSITAS|INSTITUT|POLITEKNIK|AKADEMI|SEKOLAH TINGGI|STIE|STIKES|STKIP|STMIK|STIMIK)\\y' THEN 'UNIVERSITAS'
+          WHEN s.name ~* '\\y(SMA|SMK|SMAN|SMKN|MA|MAN|MAS|SMAS|SMKS|SMAIT|SLB|ALIYAH|KEJURUAN)\\y' OR s.name ILIKE '%SEKOLAH MENENGAH ATAS%' OR s.name ILIKE '%SEKOLAH MENENGAH KEJURUAN%' THEN 'SMA'
+          WHEN s.name ~* '\\y(SMP|SMPN|SMPS|MTS|MTSN|MTSS|SMPIT|TSANAWIYAH)\\y' OR s.name ILIKE '%SEKOLAH MENENGAH PERTAMA%' THEN 'SMP'
+          WHEN s.name ~* '\\y(SD|SDN|SDS|MI|MIN|MIS|SDIT|IBTIDAIYAH)\\y' OR s.name ILIKE '%SEKOLAH DASAR%' THEN 'SD'
           ELSE 'PAUD'
         END as jenjang,
         COUNT(*)::integer as school_count

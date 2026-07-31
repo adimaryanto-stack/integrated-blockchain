@@ -15,6 +15,7 @@ interface DbData {
   rincian_pengeluaran_item: any[];
   users: any[];
   audit_anomaly: any[];
+  province_school_stats?: any[];
 }
 
 interface AppState {
@@ -68,8 +69,6 @@ export const useAppStore = create<AppState>()(
       partialize: (state) => ({
         activeTahun: state.activeTahun,
         sidebarOpen: state.sidebarOpen,
-        isSupabaseMode: state.isSupabaseMode,
-        dbData: state.dbData,
       }),
     }
   )

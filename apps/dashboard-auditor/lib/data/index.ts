@@ -102,6 +102,16 @@ export function updateAlokasiProvinsiData(newData: AlokasiProvinsi[]) {
   alokasiProvinsiData = newData;
 }
 
+export let alokasiKabupatenKotaData: AlokasiKabupatenKota[] = [];
+export function updateAlokasiKabupatenKotaData(newData: AlokasiKabupatenKota[]) {
+  alokasiKabupatenKotaData = newData;
+}
+
+export let provinceSchoolStatsData: any[] = [];
+export function updateProvinceSchoolStatsData(newData: any[]) {
+  provinceSchoolStatsData = newData;
+}
+
 export let alokasiProvinsiData: AlokasiProvinsi[] = provinsiNames.map((nama, i) => {
   const isLast = i === provinsiNames.length - 1;
   const baseNom = nominalDistribution[i] * 1_000_000_000_000;
@@ -220,29 +230,41 @@ const kabkotaPctSeeds = seededValues(600, 42, 92, 42);
 export function getKabkotaByProvinsi(provinsiId: string): AlokasiKabupatenKota[] {
   const db = getDb();
   if (db) {
-    const provAlokasi = db.alokasi_provinsi.find((p: any) => p.provinsi_id === provinsiId);
-    if (!provAlokasi) return [];
+    const provAllocIds = db.alokasi_provinsi
+      .filter((ap: any) => ap.provinsi_id === provinsiId)
+      .map((ap: any) => ap.id);
+
     return db.alokasi_kabupaten_kota
-      .filter((akk: any) => akk.alokasi_provinsi_id === provAlokasi.id)
+      .filter((akk: any) => {
+        if (provAllocIds.includes(akk.alokasi_provinsi_id)) return true;
+        const kab = db.kabupaten_kota?.find((k: any) => k.id === akk.kabupaten_kota_id);
+        if (kab?.provinsi_id === provinsiId) return true;
+        if (akk.kabupaten_kota_id && akk.kabupaten_kota_id.includes(provinsiId.replace('p-', 'kab-p-'))) return true;
+        return false;
+      })
       .map((akk: any) => {
-        const kab = db.kabupaten_kota.find((k: any) => k.id === akk.kabupaten_kota_id);
+        const kab = db.kabupaten_kota?.find((k: any) => k.id === akk.kabupaten_kota_id);
+        const provAlloc = db.alokasi_provinsi?.find((ap: any) => ap.id === akk.alokasi_provinsi_id);
+        const prov = db.provinsi?.find((p: any) => p.id === (provAlloc?.provinsi_id || kab?.provinsi_id || provinsiId));
+        const nominal = Number(akk.nominal_alokasi || 0);
+        const realisasi = Number(akk.realisasi_total || 0);
         return {
           id: akk.id,
           alokasi_provinsi_id: akk.alokasi_provinsi_id,
           kabupaten_kota_id: akk.kabupaten_kota_id,
-          kabupaten_kota: kab || {
+          kabupaten_kota: kab || akk.kabupaten_kota || {
             id: akk.kabupaten_kota_id,
             provinsi_id: provinsiId,
             kode_kabupaten_kota: '',
-            nama_kabupaten_kota: akk.provinsi_nama,
+            nama_kabupaten_kota: akk.provinsi_nama || 'Kab/Kota',
             tipe: 'KABUPATEN'
           },
-          provinsi_nama: akk.provinsi_nama,
-          nominal_alokasi: Number(akk.nominal_alokasi),
-          realisasi_total: Number(akk.realisasi_total),
-          selisih: Number(akk.selisih),
-          persentase_penyerapan: Number(akk.persentase_penyerapan),
-          updated_at: akk.updated_at
+          provinsi_nama: prov?.nama_provinsi || akk.provinsi_nama || '',
+          nominal_alokasi: nominal,
+          realisasi_total: realisasi,
+          selisih: nominal - realisasi,
+          persentase_penyerapan: nominal > 0 ? (realisasi / nominal) * 100 : 0,
+          updated_at: akk.updated_at || '',
         };
       });
   }
@@ -441,6 +463,14 @@ export let usersData: User[] = [
 // Pre-computed realisasi values for trend (deterministic)
 const trendRealisasiPct = [68.2, 70.5, 72.1, 65.8, 71.3, 73.8, 67.5];
 
+const JENJANG_LABELS: Record<string, string> = {
+  'UNIVERSITAS': 'Universitas (Strata 1)',
+  'SMA': 'Sekolah Menengah Atas (SMA/SMK)',
+  'SMP': 'Sekolah Menengah Pertama (SMP/Sederajat)',
+  'SD': 'Sekolah Dasar (SD/Sederajat)',
+  'PAUD': 'Pendidikan Anak Usia Dini (PAUD/TK/KB)',
+};
+
 export function getDashboardSummary(tahun: number = 2026): DashboardSummary {
   const db = getDb();
   if (db) {
@@ -448,17 +478,25 @@ export function getDashboardSummary(tahun: number = 2026): DashboardSummary {
     if (!targetTahun) {
       return { total_nominal: 0, total_realisasi: 0, persentase_penyerapan: 0, per_jenjang: [], tren_tahunan: [] };
     }
+
     const totalNominal = Number(targetTahun.total_anggaran);
     const provAlokasis = db.alokasi_provinsi.filter((ap: any) => ap.tahun_anggaran_id === targetTahun.id);
     const totalRealisasi = provAlokasis.reduce((sum: number, ap: any) => sum + Number(ap.realisasi_total), 0);
 
+    const defaultWeights: Record<string, number> = {
+      UNIVERSITAS: 0.35,
+      SMA: 0.25,
+      SMP: 0.20,
+      SD: 0.15,
+      PAUD: 0.05,
+    };
     const jenjangs: Jenjang[] = ['UNIVERSITAS', 'SMA', 'SMP', 'SD', 'PAUD'];
     const perJenjang = jenjangs.map(j => {
-      const schools = db.institusi_pendidikan.filter((i: any) => i.jenjang === j);
-      const nominal = schools.reduce((sum: number, i: any) => sum + Number(i.nominal_alokasi), 0);
-      const realisasi = schools.reduce((sum: number, i: any) => sum + Number(i.realisasi_total), 0);
+      const w = defaultWeights[j] || 0.1;
+      const nominal = Math.round(totalNominal * w);
+      const realisasi = Math.round(totalRealisasi * w);
       return {
-        jenjang: j,
+        jenjang: JENJANG_LABELS[j] || j,
         nominal,
         realisasi,
         persentase: nominal > 0 ? (realisasi / nominal) * 100 : 0
@@ -468,11 +506,11 @@ export function getDashboardSummary(tahun: number = 2026): DashboardSummary {
     const activeYears = db.tahun_anggaran.filter((t: any) => t.status !== 'DRAFT');
     const trenTahunan = activeYears.map((t: any) => {
       const yearAlokasis = db.alokasi_provinsi.filter((ap: any) => ap.tahun_anggaran_id === t.id);
-      const real = yearAlokasis.reduce((sum: number, ap: any) => sum + Number(ap.realisasi_total), 0);
+      const yearRealisasi = yearAlokasis.reduce((sum: number, ap: any) => sum + Number(ap.realisasi_total), 0);
       return {
         tahun: Number(t.tahun),
         nominal: Number(t.total_anggaran),
-        realisasi: real || Math.round(t.total_anggaran * 0.7)
+        realisasi: yearRealisasi > 0 ? yearRealisasi : Math.round(Number(t.total_anggaran) * 0.7)
       };
     });
 
@@ -527,7 +565,7 @@ export function getDashboardSummary(tahun: number = 2026): DashboardSummary {
     total_realisasi: totalRealisasi,
     persentase_penyerapan: totalNominal > 0 ? (totalRealisasi / totalNominal) * 100 : 0,
     per_jenjang: (Object.keys(jenjangData) as Jenjang[]).map(j => ({
-      jenjang: j,
+      jenjang: JENJANG_LABELS[j] || j,
       nominal: jenjangData[j].nominal,
       realisasi: jenjangData[j].realisasi,
       persentase: jenjangData[j].nominal > 0 ? (jenjangData[j].realisasi / jenjangData[j].nominal) * 100 : 0,
@@ -1016,19 +1054,23 @@ export function getInstitusiByKabkota(
 ): InstitusiPendidikan[] {
   const db = getDb();
   if (db) {
-    return db.institusi_pendidikan.filter((i: any) => i.kabupaten_kota_id === kabkotaId).map((i: any) => ({
-      ...i,
-      nominal_alokasi: Number(i.nominal_alokasi),
-      realisasi_total: Number(i.realisasi_total),
-      selisih: Number(i.selisih),
-      persentase_penyerapan: Number(i.persentase_penyerapan)
-    }));
+    const list = db.institusi_pendidikan.filter((i: any) => i.kabupaten_kota_id === kabkotaId);
+    if (list && list.length > 0) {
+      return list.map((i: any) => ({
+        ...i,
+        nominal_alokasi: Number(i.nominal_alokasi),
+        realisasi_total: Number(i.realisasi_total),
+        selisih: Number(i.selisih),
+        persentase_penyerapan: Number(i.persentase_penyerapan)
+      }));
+    }
   }
 
   const match = kabkotaId.match(/kab-p-(\d+)-(\d+)/);
   const provIdx = match ? parseInt(match[1], 10) : 1;
   const kabIdx = match ? parseInt(match[2], 10) : 0;
-  const seed = provIdx * 31 + kabIdx + 3;
+  const charSeed = kabkotaId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const seed = provIdx * 31 + kabIdx + charSeed;
 
   let pUniv = 10;
   let pSMA = 20;
@@ -1129,19 +1171,58 @@ export function getJenjangBreakdownByProvinsi(
   nominalAlokasi: number
 ): JenjangBreakdownProvinsi[] {
   const db = getDb();
+  const allStats = (db?.province_school_stats || provinceSchoolStatsData || []);
+  const provStatRows = allStats.filter((s: any) => s.province_id === provinsiId);
+  
+  if (provStatRows.length > 0) {
+    const numNominal = Number(nominalAlokasi) || 0;
+    // Build statsMap from key-value format: {province_id, jenjang, school_count}
+    const statsMap: Record<string, number> = {};
+    provStatRows.forEach((row: any) => {
+      // Support both key-value format (jenjang/school_count) and columnar format (univ/sma/etc)
+      if (row.jenjang && row.school_count !== undefined) {
+        statsMap[String(row.jenjang).toUpperCase()] = Number(row.school_count) || 0;
+      } else {
+        // Columnar format fallback
+        if (row.univ !== undefined) statsMap['UNIVERSITAS'] = Number(row.univ) || 0;
+        if (row.sma !== undefined) statsMap['SMA'] = Number(row.sma) || 0;
+        if (row.smp !== undefined) statsMap['SMP'] = Number(row.smp) || 0;
+        if (row.sd !== undefined) statsMap['SD'] = Number(row.sd) || 0;
+        if (row.paud !== undefined) statsMap['PAUD'] = Number(row.paud) || 0;
+      }
+    });
+
+    const jenjangs = [
+      { label: 'Universitas (Strata 1)', key: 'UNIVERSITAS', weight: 0.35, porsi: 35 },
+      { label: 'Sekolah Menengah Atas (SMA/SMK)', key: 'SMA', weight: 0.25, porsi: 25 },
+      { label: 'Sekolah Menengah Pertama (SMP/Sederajat)', key: 'SMP', weight: 0.20, porsi: 20 },
+      { label: 'Sekolah Dasar (SD/Sederajat)', key: 'SD', weight: 0.15, porsi: 15 },
+      { label: 'Pendidikan Anak Usia Dini (PAUD/TK/KB)', key: 'PAUD', weight: 0.05, porsi: 5 },
+    ];
+    return jenjangs.map((j, i) => ({
+      nomor: i + 1,
+      jenjang: j.label,
+      jumlah_sekolah: statsMap[j.key] || 0,
+      nominal_keseluruhan: Math.round(numNominal * j.weight),
+      porsi_anggaran: j.porsi,
+    }));
+  }
+
   if (db) {
+
     const kabkotaIds = db.kabupaten_kota.filter((k: any) => k.provinsi_id === provinsiId).map((k: any) => k.id);
-    const schools = db.institusi_pendidikan.filter((i: any) => kabkotaIds.includes(i.kabupaten_kota_id));
+    const schools = db.institusi_pendidikan.filter((i: any) => i.provinsi_id === provinsiId || kabkotaIds.includes(i.kabupaten_kota_id));
     const jenjangs: Jenjang[] = ['UNIVERSITAS', 'SMA', 'SMP', 'SD', 'PAUD'];
+    const weights = [0.35, 0.25, 0.20, 0.15, 0.05];
     const resultBreakdown = jenjangs.map((j, i) => {
       const jSchools = schools.filter(s => s.jenjang === j);
-      const nominal = jSchools.reduce((sum, s) => sum + Number(s.nominal_alokasi), 0);
-      const realisasi = jSchools.reduce((sum, s) => sum + Number(s.realisasi_total), 0);
+      const instNominal = jSchools.reduce((sum, s) => sum + Number(s.nominal_alokasi), 0);
+      const nominal = instNominal > 0 ? instNominal : Math.round(Number(nominalAlokasi || 0) * weights[i]);
       let label = j === 'UNIVERSITAS' ? 'Universitas (Strata 1)' :
-                  j === 'SMA' ? 'Sekolah Menengah Atas (SMA)' :
-                  j === 'SMP' ? 'Sekolah Menengah Pertama (SMP)' :
-                  j === 'SD' ? 'Sekolah Dasar (SD)' :
-                  'Pendidikan Anak Usia Dini (PAUD)';
+                  j === 'SMA' ? 'Sekolah Menengah Atas (SMA/SMK)' :
+                  j === 'SMP' ? 'Sekolah Menengah Pertama (SMP/Sederajat)' :
+                  j === 'SD' ? 'Sekolah Dasar (SD/Sederajat)' :
+                  'Pendidikan Anak Usia Dini (PAUD/TK/KB)';
       return {
         nomor: i + 1,
         jenjang: label,
@@ -1156,18 +1237,18 @@ export function getJenjangBreakdownByProvinsi(
   const provIdx = parseInt(provinsiId.replace('p-', ''), 10) - 1;
   const seed = isNaN(provIdx) ? 1 : provIdx + 1;
 
+  const numNominal = Number(nominalAlokasi) || 0;
   const jenjangs = [
-    { label: 'Universitas (Strata 1)', porsi: 5, baseCount: 15, countMod: 50, countMul: 11 },
-    { label: 'Sekolah Menengah Atas (SMA)', porsi: 15, baseCount: 150, countMod: 400, countMul: 43 },
-    { label: 'Sekolah Menengah Kejuruan (SMK)', porsi: 10, baseCount: 100, countMod: 300, countMul: 29 },
-    { label: 'Sekolah Menengah Pertama (SMP)', porsi: 25, baseCount: 400, countMod: 1000, countMul: 83 },
-    { label: 'Sekolah Dasar (SD)', porsi: 40, baseCount: 1000, countMod: 2500, countMul: 113 },
-    { label: 'Pendidikan Anak Usia Dini (PAUD)', porsi: 5, baseCount: 1200, countMod: 3500, countMul: 157 },
+    { label: 'Universitas (Strata 1)', weight: 0.35, porsi: 35, baseCount: 15, countMod: 50, countMul: 11 },
+    { label: 'Sekolah Menengah Atas (SMA/SMK)', weight: 0.25, porsi: 25, baseCount: 150, countMod: 400, countMul: 43 },
+    { label: 'Sekolah Menengah Pertama (SMP/Sederajat)', weight: 0.20, porsi: 20, baseCount: 400, countMod: 1000, countMul: 83 },
+    { label: 'Sekolah Dasar (SD/Sederajat)', weight: 0.15, porsi: 15, baseCount: 1000, countMod: 2500, countMul: 113 },
+    { label: 'Pendidikan Anak Usia Dini (PAUD/TK/KB)', weight: 0.05, porsi: 5, baseCount: 1200, countMod: 3500, countMul: 157 },
   ];
 
   return jenjangs.map((j, i) => {
     const count = j.baseCount + ((seed * j.countMul) % j.countMod);
-    const nominal = Math.round(nominalAlokasi * j.porsi / 100);
+    const nominal = Math.round(numNominal * j.weight);
     return {
       nomor: i + 1,
       jenjang: j.label,

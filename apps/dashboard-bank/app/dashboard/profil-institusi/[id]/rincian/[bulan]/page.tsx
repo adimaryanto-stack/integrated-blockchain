@@ -126,7 +126,7 @@ export default function RincianPengeluaranPage() {
     items.forEach((row, idx) => {
       csvRows.push([
         idx + 1,
-        `"${row.keterangan}"`,
+        `"${row.nama_produk_jasa || (row as any).keterangan || ''}"`,
         row.harga_satuan,
         row.qty,
         row.harga_satuan * row.qty,

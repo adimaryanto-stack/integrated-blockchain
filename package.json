@@ -4,11 +4,11 @@
   "private": true,
   "scripts": {
     "dev:db": "node proxy/proxy.js",
-    "dev:public": "npm run dev --prefix apps/transparansi-anggaran/apps/web-next -- --port 2020",
-    "dev:kementerian": "npm run dev --prefix apps/dashboard-kementerian -- --port 2021",
-    "dev:bank": "npm run dev --prefix apps/dashboard-bank -- --port 2022",
-    "dev:auditor": "npm run dev --prefix apps/dashboard-auditor -- --port 2023",
-    "dev:institusi": "npm run dev --prefix apps/dashboard-institusi-pendidikan -- --port 2024"
+    "dev:public": "npm run dev --prefix apps/transparansi-anggaran/apps/web-next -- -p 2020",
+    "dev:kementerian": "npm run dev --prefix apps/dashboard-kementerian -- -p 2021",
+    "dev:bank": "npm run dev --prefix apps/dashboard-bank -- -p 2022",
+    "dev:auditor": "npm run dev --prefix apps/dashboard-auditor -- -p 2023",
+    "dev:institusi": "npm run dev --prefix apps/dashboard-institusi-pendidikan -- -p 2024"
   },
   "dependencies": {
     "axios": "^1.18.1",

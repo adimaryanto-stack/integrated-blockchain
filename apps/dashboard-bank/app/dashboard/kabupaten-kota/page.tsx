@@ -24,10 +24,15 @@ export default function KabupatenKotaPage() {
   useEffect(() => {
     getAlokasiProvinsi(activeTahun)
       .then(res => {
-        setProvList(res);
-        if (res.length > 0) {
-          const jabar = res.find(p => p.provinsi_id === 'p-12') || res[0];
-          setSelectedProvinsi(jabar.provinsi_id);
+        const sorted = [...res].sort((a, b) =>
+          a.provinsi.nama_provinsi.localeCompare(b.provinsi.nama_provinsi, 'id')
+        );
+        setProvList(sorted);
+        if (sorted.length > 0) {
+          setSelectedProvinsi(prev => {
+            const exists = sorted.some(p => p.provinsi_id === prev);
+            return exists ? prev : sorted[0].provinsi_id;
+          });
         }
       })
       .catch(console.error);
@@ -53,8 +58,13 @@ export default function KabupatenKotaPage() {
   }, [selectedProvinsi, activeTahun]);
 
   const filtered = useMemo(() => {
-    if (!search) return localData;
-    return localData.filter(k => k.kabupaten_kota.nama_kabupaten_kota.toLowerCase().includes(search.toLowerCase()));
+    let list = localData;
+    if (search) {
+      list = list.filter(k => k.kabupaten_kota.nama_kabupaten_kota.toLowerCase().includes(search.toLowerCase()));
+    }
+    return [...list].sort((a, b) =>
+      a.kabupaten_kota.nama_kabupaten_kota.localeCompare(b.kabupaten_kota.nama_kabupaten_kota, 'id')
+    );
   }, [localData, search]);
 
   const totals = useMemo(() => {

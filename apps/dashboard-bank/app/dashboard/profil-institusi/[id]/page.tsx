@@ -249,7 +249,7 @@ export default function ProfilInstitusiDetailPage() {
     );
   };
 
-  let segmentLabel = institusi.jenjang;
+  let segmentLabel: string = institusi.jenjang;
   if (institusi.jenjang === 'UNIVERSITAS') segmentLabel = 'Universitas';
   else if (institusi.jenjang === 'SMA') segmentLabel = 'SMA / SMK';
   const layanan = institusi.status_sekolah === 'NEGERI' ? 'Konvensional' : 'Syariah';

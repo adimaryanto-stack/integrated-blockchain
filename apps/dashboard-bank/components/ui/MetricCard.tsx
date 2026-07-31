@@ -22,7 +22,7 @@ export default function MetricCard({ title, value, subtitle, icon, accent, trend
           {trend && (
             <div className="flex items-center gap-1 mt-2">
               <span className={`text-xs font-semibold ${trend.value >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                {trend.value >= 0 ? '↑' : '↓'} {Math.abs(trend.value).toFixed(1)}%
+                {trend.value >= 0 ? '↑' : '↓'} {Math.abs(Number(trend.value) || 0).toFixed(1)}%
               </span>
               <span className="text-[10px] text-text-muted">{trend.label}</span>
             </div>

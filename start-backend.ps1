@@ -12,6 +12,9 @@ $pgStatus = & "$PGSQL_BIN\pg_ctl.exe" status -D $PGSQL_DATA 2>&1
 if ($pgStatus -like "*server is running*") {
     Write-Host "      PostgreSQL sudah berjalan."
 } else {
+    if (Test-Path "$PGSQL_DATA\postmaster.pid") {
+        Remove-Item "$PGSQL_DATA\postmaster.pid" -Force
+    }
     & "$PGSQL_BIN\pg_ctl.exe" start -D $PGSQL_DATA -o "-p 2025" -l "pgsql_log.txt"
     Start-Sleep 4
     $test = & "$PGSQL_BIN\psql.exe" -U postgres -h 127.0.0.1 -p 2025 -c "SELECT 1" 2>&1

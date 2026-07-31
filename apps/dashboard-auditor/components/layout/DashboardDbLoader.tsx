@@ -6,6 +6,8 @@ import { supabase } from '@/lib/supabase';
 import {
   updateTahunAnggaranData,
   updateAlokasiProvinsiData,
+  updateAlokasiKabupatenKotaData,
+  updateProvinceSchoolStatsData,
   updateUsersData,
   updateMockAnomalies
 } from '@/lib/data';
@@ -52,6 +54,8 @@ export default function DashboardDbLoader({
 
       updateTahunAnggaranData(dbData.tahun_anggaran || []);
       updateAlokasiProvinsiData(populated);
+      updateAlokasiKabupatenKotaData(dbData.alokasi_kabupaten_kota || []);
+      updateProvinceSchoolStatsData(dbData.province_school_stats || []);
       updateUsersData(dbData.users || []);
       updateMockAnomalies(dbData.audit_anomaly || []);
       return;
@@ -123,12 +127,14 @@ export default function DashboardDbLoader({
 
         setLoaderText('Mengunduh data wilayah...');
 
-        // Batch 2: Kabupaten/kota — menengah
-        const [dataKab, dataAlokasiKab, dataUsers, dataAnoms] = await Promise.all([
+        // Batch 2: Kabupaten/kota & Institusi & Stats
+        const [dataKab, dataAlokasiKab, dataUsers, dataAnoms, dataInstitusi, dataStats] = await Promise.all([
           fetchAll('kabupaten_kota'),
           fetchAll('alokasi_kabupaten_kota'),
           fetchAll('users'),
           fetchAll('audit_anomaly'),
+          fetchAll('institusi_pendidikan'),
+          fetchAll('province_school_stats').catch(() => []),
         ]);
 
         setLoaderText('Sinkronisasi selesai...');
@@ -144,14 +150,23 @@ export default function DashboardDbLoader({
           };
         });
 
+        // Populate kabupaten_kota relation on alokasi_kabupaten_kota
+        const populatedAlokasiKab = dataAlokasiKab.map((ak: any) => {
+          const kk = dataKab.find((k: any) => k.id === ak.kabupaten_kota_id);
+          return {
+            ...ak,
+            kabupaten_kota: kk ? kk : { id: ak.kabupaten_kota_id, provinsi_id: '', kode_kabupaten_kota: '', nama_kabupaten_kota: ak.kabupaten_kota_nama || '', tipe: 'KABUPATEN' }
+          };
+        });
+
         const loadedDb = {
           tahun_anggaran: dataTahun,
           provinsi: dataProv,
           alokasi_provinsi: populatedAlokasiProv,
           kabupaten_kota: dataKab,
-          alokasi_kabupaten_kota: dataAlokasiKab,
-          // Tabel berat dimuat lazy di halaman masing-masing
-          institusi_pendidikan: [],
+          alokasi_kabupaten_kota: populatedAlokasiKab,
+          institusi_pendidikan: dataInstitusi,
+          province_school_stats: dataStats,
           sumber_dana_institusi: [],
           pengeluaran_bulanan_institusi: [],
           rincian_pengeluaran_item: [],
@@ -165,6 +180,8 @@ export default function DashboardDbLoader({
         // Sync variabel modul lib/data
         updateTahunAnggaranData(loadedDb.tahun_anggaran);
         updateAlokasiProvinsiData(loadedDb.alokasi_provinsi);
+        updateAlokasiKabupatenKotaData(loadedDb.alokasi_kabupaten_kota);
+        updateProvinceSchoolStatsData(loadedDb.province_school_stats || []);
         updateUsersData(loadedDb.users);
         updateMockAnomalies(loadedDb.audit_anomaly);
 
@@ -221,11 +238,11 @@ export default function DashboardDbLoader({
               <div className="space-y-2">
                 <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-emerald-400 uppercase tracking-widest">
                   <Sparkles size={12} />
-                  <span>Supabase Mode Active</span>
+                  <span>Database Lokal Aktif</span>
                 </div>
                 <h3 className="text-md font-bold text-white tracking-wide">{loaderText}</h3>
                 <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
-                  Menyinkronkan data anggaran pendidikan nasional dari cloud database
+                  Menyinkronkan data anggaran pendidikan dari database PostgreSQL lokal (port 2025)
                 </p>
               </div>
             </>

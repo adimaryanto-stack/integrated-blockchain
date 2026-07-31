@@ -147,7 +147,7 @@ export default function ProfilInstitusiPage() {
             </thead>
             <tbody>
               {filtered.map((row, idx) => {
-                let segmentLabel = row.jenjang;
+                let segmentLabel: string = row.jenjang;
                 if (row.jenjang === 'UNIVERSITAS') segmentLabel = 'Universitas';
                 else if (row.jenjang === 'SMA') segmentLabel = 'SMA / SMK';
 

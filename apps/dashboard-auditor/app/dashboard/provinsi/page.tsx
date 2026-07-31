@@ -66,8 +66,11 @@ export default function ProvinsiPage() {
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {
-    if (!search) return data;
-    return data.filter(p => p.provinsi.nama_provinsi.toLowerCase().includes(search.toLowerCase()));
+    let list = data;
+    if (search) {
+      list = list.filter(p => p.provinsi.nama_provinsi.toLowerCase().includes(search.toLowerCase()));
+    }
+    return [...list].sort((a, b) => a.provinsi.nama_provinsi.localeCompare(b.provinsi.nama_provinsi, 'id'));
   }, [data, search]);
 
   const totals = useMemo(() => {

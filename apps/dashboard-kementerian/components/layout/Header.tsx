@@ -3,10 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '@/lib/store';
 import { useRouter } from 'next/navigation';
-import { tahunAnggaranData, institusiPendidikanData, usersData } from '@/lib/data';
-import { Bell, Search, Menu, CheckCheck, Info, AlertTriangle, Sparkles, History, UserCheck, ShieldAlert } from 'lucide-react';
+import { tahunAnggaranData, institusiPendidikanData } from '@/lib/data';
+import { Bell, Search, Menu, CheckCheck, Info, AlertTriangle, Sparkles, History, UserCheck } from 'lucide-react';
 import AuditTrailDrawer from '@/components/ui/AuditTrailDrawer';
-import { UserRole } from '@/types';
+import { UserRole, InstitusiPendidikan } from '@/types';
 
 interface HeaderProps {
   title: string;
@@ -38,7 +38,7 @@ export default function Header({ title, subtitle }: HeaderProps) {
 
   // Search States
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<InstitusiPendidikan[]>([]);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -203,7 +203,7 @@ export default function Header({ title, subtitle }: HeaderProps) {
                   <div className="max-h-60 overflow-y-auto divide-y divide-slate-100">
                     {searchResults.length === 0 ? (
                       <div className="p-4 text-center text-xs text-text-muted">
-                        Tidak ditemukan institusi "{searchQuery}"
+                        Tidak ditemukan institusi &quot;{searchQuery}&quot;
                       </div>
                     ) : (
                       searchResults.map((school) => (

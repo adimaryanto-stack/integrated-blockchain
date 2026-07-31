@@ -225,14 +225,17 @@ function AliranDanaPageContent() {
 
     // Get list of provinces
     const provincesList = data?.allocations
-        ? data.allocations.filter(a => a.level === 'DINAS_PROV').sort((a, b) => a.entity_name.localeCompare(b.entity_name))
+        ? data.allocations.filter(a => a.level === 'DINAS_PROV').sort((a, b) => a.entity_name.localeCompare(b.entity_name, 'id'))
         : [];
+
+    const selectedProv = provincesList.find(p => p.id === selectedProvinceId);
+    const selectedProvCode = selectedProv?.provinsi_code;
 
     // Get list of districts, optionally filtered by selected province
     const filteredDistrictsList = data?.allocations
         ? data.allocations
-            .filter(a => a.level === 'DINAS_KAB' && (!selectedProvinceId || a.parent_id === selectedProvinceId))
-            .sort((a, b) => a.entity_name.localeCompare(b.entity_name))
+            .filter(a => a.level === 'DINAS_KAB' && (!selectedProvinceId || a.parent_id === selectedProvinceId || (selectedProvCode && a.provinsi_code === selectedProvCode)))
+            .sort((a, b) => a.entity_name.localeCompare(b.entity_name, 'id'))
         : [];
 
     // Filter allocations based on selected filters
@@ -248,7 +251,12 @@ function AliranDanaPageContent() {
                 return a.id === selectedDistrictId;
             }
 
-            return a.level === 'DINAS_KAB' && a.parent_id === selectedProvinceId;
+            return a.level === 'DINAS_KAB' && (a.parent_id === selectedProvinceId || (selectedProvCode && a.provinsi_code === selectedProvCode));
+        }).sort((a, b) => {
+            if (a.level === b.level) {
+                return a.entity_name.localeCompare(b.entity_name, 'id');
+            }
+            return 0;
         })
         : [];
 
@@ -258,15 +266,15 @@ function AliranDanaPageContent() {
     const endIndex = startIndex + itemsPerPage;
     const paginatedAllocations = filteredAllocations.slice(startIndex, endIndex);
 
+    const xferSelectedProv = provincesList.find(p => p.id === xferSelectedProvinceId);
+    const xferSelectedProvCode = xferSelectedProv?.provinsi_code;
+
     // Districts list for Log Transfer section
     const xferFilteredDistrictsList = data?.allocations
         ? data.allocations
-            .filter(a => a.level === 'DINAS_KAB' && (!xferSelectedProvinceId || a.parent_id === xferSelectedProvinceId))
-            .sort((a, b) => a.entity_name.localeCompare(b.entity_name))
+            .filter(a => a.level === 'DINAS_KAB' && (!xferSelectedProvinceId || a.parent_id === xferSelectedProvinceId || (xferSelectedProvCode && a.provinsi_code === xferSelectedProvCode)))
+            .sort((a, b) => a.entity_name.localeCompare(b.entity_name, 'id'))
         : [];
-
-    const xferSelectedProv = provincesList.find(p => p.id === xferSelectedProvinceId);
-    const xferSelectedProvCode = xferSelectedProv?.provinsi_code;
 
     const xferSelectedDist = xferFilteredDistrictsList.find(d => d.id === xferSelectedDistrictId);
     const xferSelectedDistCode = xferSelectedDist?.kabkota_code;

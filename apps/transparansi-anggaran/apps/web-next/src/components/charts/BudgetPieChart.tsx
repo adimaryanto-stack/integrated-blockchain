@@ -26,7 +26,7 @@ export const BudgetPieChart = ({ data }: BudgetPieChartProps) => {
                         ))}
                     </Pie>
                     <Tooltip
-                        formatter={(value: number | undefined) => formatIDR(value || 0)}
+                        formatter={(value: any) => formatIDR(value || 0)}
                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                     />
                     <Legend

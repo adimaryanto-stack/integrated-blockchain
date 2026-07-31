@@ -133,7 +133,11 @@ export default function ProvinceDetailPage() {
 
     useEffect(() => {
         const fetch = async () => {
-            const { data: prov } = await supabase.from('provinces').select('*').eq('code', code).single();
+            let { data: prov } = await supabase.from('provinces').select('*').eq('code', code).maybeSingle();
+            if (!prov) {
+                const { data: provById } = await supabase.from('provinces').select('*').eq('id', code).maybeSingle();
+                prov = provById;
+            }
             if (!prov) { setLoading(false); return; }
             setProvince(prov);
 

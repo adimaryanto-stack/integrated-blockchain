@@ -8,7 +8,7 @@ interface MetricCardProps {
   subtitle?: string;
   icon: ReactNode;
   accent: 'indigo' | 'emerald' | 'amber' | 'rose' | 'blue';
-  trend?: { value: any; label: string };
+  trend?: { value: number | string; label: string };
 }
 
 export default function MetricCard({ title, value, subtitle, icon, accent, trend }: MetricCardProps) {

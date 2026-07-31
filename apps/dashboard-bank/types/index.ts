@@ -148,7 +148,7 @@ export interface DashboardSummary {
 }
 
 export interface JenjangSummary {
-  jenjang: Jenjang;
+  jenjang: string;
   nominal: number;
   realisasi: number;
   persentase: number;

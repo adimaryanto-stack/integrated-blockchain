@@ -81,8 +81,8 @@ export default function ProvinsiDetailPage() {
 
   // Calculate dynamic totals based on Kabupaten/Kota state
   const totals = useMemo(() => {
-    const nominal = kabkotaList.reduce((sum, item) => sum + item.nominal_alokasi, 0);
-    const realisasi = kabkotaList.reduce((sum, item) => sum + item.realisasi_total, 0);
+    const nominal = kabkotaList.reduce((sum, item) => sum + Number(item.nominal_alokasi || 0), 0);
+    const realisasi = kabkotaList.reduce((sum, item) => sum + Number(item.realisasi_total || 0), 0);
     const selisih = nominal - realisasi;
     const persentase = nominal > 0 ? (realisasi / nominal) * 100 : 0;
     return { nominal, realisasi, selisih, persentase };
@@ -196,7 +196,7 @@ export default function ProvinsiDetailPage() {
         row.nominal_alokasi,
         row.realisasi_total,
         row.selisih,
-        row.persentase_penyerapan.toFixed(2),
+        (Number(row.persentase_penyerapan) || 0).toFixed(2),
       ].join(','));
     });
     
@@ -341,30 +341,21 @@ export default function ProvinsiDetailPage() {
                 </tr>
               </thead>
               <tbody>
-                {jenjangBreakdown.map((row) => {
-                  let label = row.jenjang;
-                  if (row.jenjang.includes('Universitas')) label = 'Universitas';
-                  else if (row.jenjang.includes('Sekolah Menengah Atas')) label = 'SMA / SMK';
-                  else if (row.jenjang.includes('Sekolah Menengah Pertama')) label = 'SMP';
-                  else if (row.jenjang.includes('Sekolah Dasar')) label = 'SD';
-                  else if (row.jenjang.includes('Anak Usia Dini')) label = 'PAUD';
-                  
-                  return (
-                    <tr key={row.nomor} className="hover:bg-indigo-50/50 transition">
-                      <td className="sheet-cell text-center text-text-muted text-xs">{row.nomor}</td>
-                      <td className="sheet-cell text-left font-semibold text-slate-700">{label}</td>
-                      <td className="sheet-cell text-right font-mono text-text-primary font-medium">{row.jumlah_sekolah}</td>
-                      <td className="sheet-cell text-right font-mono font-medium text-indigo-700 bg-indigo-50/10">
-                        {fmtRupiah(row.nominal_keseluruhan)}
-                      </td>
-                      <td className="sheet-cell text-center">
-                        <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-sm">
-                          {row.porsi_anggaran}%
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {jenjangBreakdown.map((row) => (
+                  <tr key={row.nomor} className="hover:bg-indigo-50/50 transition">
+                    <td className="sheet-cell text-center text-text-muted text-xs">{row.nomor}</td>
+                    <td className="sheet-cell text-left font-semibold text-slate-700">{row.jenjang}</td>
+                    <td className="sheet-cell text-right font-mono text-text-primary font-medium">{row.jumlah_sekolah}</td>
+                    <td className="sheet-cell text-right font-mono font-medium text-indigo-700 bg-indigo-50/10">
+                      {fmtRupiah(row.nominal_keseluruhan)}
+                    </td>
+                    <td className="sheet-cell text-center">
+                      <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-sm">
+                        {(Number(row.porsi_anggaran) || 0).toFixed(1)}%
+                      </span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -414,10 +405,13 @@ export default function ProvinsiDetailPage() {
                 ))}
               </tbody>
               <tfoot>
-                {/* Realisasi Anggaran Row (Identical to Google Sheets Screenshot) */}
+                {/* Realisasi Anggaran Row */}
                 <tr className="border-t-2 border-slate-300">
-                  <td className="sheet-cell font-bold text-center bg-emerald-100 text-emerald-800 border-r border-slate-200" colSpan={3}>
-                    Realisasi Dana Cair
+                  <td className="sheet-cell font-bold text-center bg-indigo-50 text-indigo-900 border-r border-slate-200" colSpan={2}>
+                    Total / Realisasi Dana Cair
+                  </td>
+                  <td className="sheet-cell text-right font-bold bg-indigo-600 text-white font-mono border-r border-slate-200 text-sm">
+                    {fmtRupiah(totals.nominal)}
                   </td>
                   <td className="sheet-cell text-right font-bold bg-emerald-500 text-white font-mono border-r border-slate-200 text-sm">
                     {fmtRupiah(totals.realisasi)}
@@ -426,7 +420,7 @@ export default function ProvinsiDetailPage() {
                     {fmtRupiah(totals.selisih)}
                   </td>
                   <td className="sheet-cell text-center font-bold bg-emerald-500 text-white font-mono text-sm">
-                    {totals.persentase.toFixed(2).replace('.', ',')}%
+                    {(Number(totals.persentase) || 0).toFixed(2).replace('.', ',')}%
                   </td>
                 </tr>
               </tfoot>

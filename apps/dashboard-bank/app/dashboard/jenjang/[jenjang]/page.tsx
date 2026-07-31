@@ -452,7 +452,7 @@ export default function JenjangPage() {
                 <td className="sheet-footer-cell text-right">{fmtRupiah(totals.realisasi)}</td>
                 <td className="sheet-footer-cell text-right text-rose-600">{fmtTriliun(totals.selisih)}</td>
                 <td className="sheet-footer-cell text-center font-bold">
-                  {(totals.pct).toFixed(1)}%
+                  {(Number(totals.pct) || 0).toFixed(1)}%
                 </td>
                 <td className="sheet-footer-cell" />
               </tr>

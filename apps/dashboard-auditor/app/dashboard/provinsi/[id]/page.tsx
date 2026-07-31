@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import PctBadge from '@/components/ui/PctBadge';
 import { useAppStore } from '@/lib/store';
-import { alokasiProvinsiData, getKabkotaByProvinsi, getJenjangBreakdownByProvinsi, tahunAnggaranData } from '@/lib/data';
+import { alokasiProvinsiData, getKabkotaByProvinsi, getJenjangBreakdownByProvinsi } from '@/lib/data';
 import { fmtRupiah, fmtTriliun } from '@/lib/utils/formatters';
 import { AlokasiProvinsi, AlokasiKabupatenKota, JenjangBreakdownProvinsi } from '@/types';
 import { ArrowLeft, Banknote, Download, Sparkles } from 'lucide-react';
@@ -21,83 +21,27 @@ export default function ProvinsiDetailPage() {
   const id = params.id as string; // provinsi_id e.g. p-1
   const { activeTahun, isSupabaseMode, dbData, setDbData } = useAppStore();
 
-  // Find target province data scaled dynamically
+  // Use real Supabase data directly — no scaling
   const provData = useMemo(() => {
-    const baseData = alokasiProvinsiData.find(p => p.provinsi_id === id);
-    if (!baseData) return null;
+    return alokasiProvinsiData.find(p => p.provinsi_id === id) || null;
+  }, [id]);
 
-    if (isSupabaseMode && dbData) {
-      const dbAlokasiProv = dbData.alokasi_provinsi.find((p: any) => p.provinsi_id === id);
-      if (dbAlokasiProv) {
-        return {
-          ...baseData,
-          nominal_alokasi: Number(dbAlokasiProv.nominal_alokasi),
-          realisasi_total: Number(dbAlokasiProv.realisasi_total),
-          selisih: Number(dbAlokasiProv.selisih),
-          persentase_penyerapan: Number(dbAlokasiProv.persentase_penyerapan)
-        };
-      }
-    }
-
-    const targetTahun = tahunAnggaranData.find(t => t.tahun === activeTahun) || tahunAnggaranData[6];
-    const baseTahun = tahunAnggaranData[6];
-    const scale = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
-    const seed = (activeTahun % 7) || 1;
-    const shift = 0.95 + (seed * 0.012);
-
-    const nominal = Math.round(baseData.nominal_alokasi * scale);
-    const realisasi = Math.min(nominal, Math.round(baseData.realisasi_total * scale * shift));
-
-    return {
-      ...baseData,
-      nominal_alokasi: nominal,
-      realisasi_total: realisasi,
-      selisih: nominal - realisasi,
-      persentase_penyerapan: nominal > 0 ? (realisasi / nominal) * 100 : 0,
-    };
-  }, [id, activeTahun, isSupabaseMode, dbData]);
-
-  // Scaled Kabkota list
-  const scaledKabkotaList = useMemo(() => {
+  // Real Kabkota list from Supabase
+  const realKabkotaList = useMemo(() => {
     const list = getKabkotaByProvinsi(id);
-
-    if (isSupabaseMode && dbData) {
-      return list.map(item => ({
-        ...item,
-        nominal_alokasi: Number(item.nominal_alokasi),
-        realisasi_total: Number(item.realisasi_total),
-        selisih: Number(item.nominal_alokasi) - Number(item.realisasi_total),
-        persentase_penyerapan: Number(item.nominal_alokasi) > 0 
-          ? Math.round((Number(item.realisasi_total) / Number(item.nominal_alokasi)) * 1000) / 10 
-          : 0
-      }));
-    }
-
-    const targetTahun = tahunAnggaranData.find(t => t.tahun === activeTahun) || tahunAnggaranData[6];
-    const baseTahun = tahunAnggaranData[6];
-    const scale = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
-    const seed = (activeTahun % 7) || 1;
-    const shift = 0.95 + (seed * 0.012);
-
-    return list.map(item => {
-      const nominal = Math.round(item.nominal_alokasi * scale);
-      const realisasi = Math.min(nominal, Math.round(item.realisasi_total * scale * shift));
-      return {
-        ...item,
-        nominal_alokasi: nominal,
-        realisasi_total: realisasi,
-        selisih: nominal - realisasi,
-        persentase_penyerapan: nominal > 0 ? Math.round((realisasi / nominal) * 1000) / 10 : 0
-      };
-    });
-  }, [id, activeTahun, isSupabaseMode, dbData]);
+    return [...list].sort((a, b) =>
+      a.kabupaten_kota.nama_kabupaten_kota.localeCompare(b.kabupaten_kota.nama_kabupaten_kota, 'id')
+    );
+  }, [id]);
 
   // States
-  const [kabkotaList, setKabkotaList] = useState<AlokasiKabupatenKota[]>(scaledKabkotaList);
+  const [prevRealKabkotaList, setPrevRealKabkotaList] = useState(realKabkotaList);
+  const [kabkotaList, setKabkotaList] = useState<AlokasiKabupatenKota[]>(realKabkotaList);
 
-  useEffect(() => {
-    setKabkotaList(scaledKabkotaList);
-  }, [scaledKabkotaList]);
+  if (realKabkotaList !== prevRealKabkotaList) {
+    setPrevRealKabkotaList(realKabkotaList);
+    setKabkotaList(realKabkotaList);
+  }
 
   // Calculate dynamic totals based on Kabupaten/Kota state
   const totals = useMemo(() => {
@@ -108,9 +52,69 @@ export default function ProvinsiDetailPage() {
     return { nominal, realisasi, selisih, persentase };
   }, [kabkotaList]);
 
-  // Jenjang Breakdown calculation (linked to total nominal)
-  const jenjangBreakdown = useMemo(() => {
-    return getJenjangBreakdownByProvinsi(id, totals.nominal);
+  // Jenjang Breakdown — loaded async from schools table (same source as port 2020)
+  const [jenjangBreakdown, setJenjangBreakdown] = useState<JenjangBreakdownProvinsi[]>([]);
+
+  useEffect(() => {
+    const loadJenjangBreakdown = async () => {
+      const numNominal = totals.nominal;
+      const jenjangs = [
+        { label: 'Universitas (Strata 1)', weight: 0.35, porsi: 35.0,
+          patterns: ['%universitas%', '%institut%', '%politeknik%', '%akademi%', '%sekolah tinggi%'] },
+        { label: 'Sekolah Menengah Atas (SMA/SMK)', weight: 0.25, porsi: 25.0,
+          patterns: ['%sma%', '%sman%', '%smas%', '%smk%', '%smkn%', '%smks%', '%ma%', '%man%', '%mas%'] },
+        { label: 'Sekolah Menengah Pertama (SMP/Sederajat)', weight: 0.20, porsi: 20.0,
+          patterns: ['%smp%', '%smpn%', '%smps%', '%mts%', '%mtsn%', '%mtss%'] },
+        { label: 'Sekolah Dasar (SD/Sederajat)', weight: 0.15, porsi: 15.0,
+          patterns: ['%sd%', '%sdn%', '%sds%', '%mi%', '%min%', '%mis%'] },
+        { label: 'Pendidikan Anak Usia Dini (PAUD/TK/KB)', weight: 0.05, porsi: 5.0,
+          patterns: ['%paud%', '%tk%', '%kb%', '%tpa%', '%sps%'] },
+      ];
+
+      try {
+        const { data: regencies } = await supabase
+          .from('regencies')
+          .select('id')
+          .eq('province_id', id);
+
+        const regencyIds = (regencies || []).map((r: any) => r.id);
+
+        if (regencyIds.length > 0) {
+          const countPromises = jenjangs.map(async (j) => {
+            const orFilter = j.patterns.map(p => `name.ilike.${p}`).join(',');
+            const allIds = new Set<string>();
+            const chunkSize = 50;
+            for (let i = 0; i < regencyIds.length; i += chunkSize) {
+              const chunk = regencyIds.slice(i, i + chunkSize);
+              const { data } = await supabase
+                .from('schools')
+                .select('id')
+                .in('regency_id', chunk)
+                .or(orFilter);
+              (data || []).forEach((s: any) => allIds.add(s.id));
+            }
+            return allIds.size;
+          });
+
+          const counts = await Promise.all(countPromises);
+          setJenjangBreakdown(jenjangs.map((j, i) => ({
+            nomor: i + 1,
+            jenjang: j.label,
+            jumlah_sekolah: counts[i],
+            nominal_keseluruhan: Math.round(numNominal * j.weight),
+            porsi_anggaran: j.porsi,
+          })));
+          return;
+        }
+      } catch (err) {
+        console.error('[Auditor] jenjang breakdown from schools failed:', err);
+      }
+
+      // Fallback to sync function
+      setJenjangBreakdown(getJenjangBreakdownByProvinsi(id, totals.nominal));
+    };
+
+    loadJenjangBreakdown();
   }, [id, totals.nominal]);
 
   if (!provData) {
@@ -270,7 +274,7 @@ export default function ProvinsiDetailPage() {
                     </td>
                     <td className="sheet-cell text-center">
                       <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-sm">
-                        {row.porsi_anggaran}%
+                        {(Number(row.porsi_anggaran) || 0).toFixed(1)}%
                       </span>
                     </td>
                   </tr>
@@ -324,10 +328,13 @@ export default function ProvinsiDetailPage() {
                 ))}
               </tbody>
               <tfoot>
-                {/* Realisasi Anggaran Row (Identical to Google Sheets Screenshot) */}
+                {/* Realisasi Anggaran Row */}
                 <tr className="border-t-2 border-slate-300">
-                  <td className="sheet-cell font-bold text-center bg-emerald-100 text-emerald-800 border-r border-slate-200" colSpan={3}>
-                    Realisasi Anggaran
+                  <td className="sheet-cell font-bold text-center bg-indigo-50 text-indigo-900 border-r border-slate-200" colSpan={2}>
+                    Total / Realisasi Anggaran
+                  </td>
+                  <td className="sheet-cell text-right font-bold bg-indigo-600 text-white font-mono border-r border-slate-200 text-sm">
+                    {fmtRupiah(totals.nominal)}
                   </td>
                   <td className="sheet-cell text-right font-bold bg-emerald-500 text-white font-mono border-r border-slate-200 text-sm">
                     {fmtRupiah(totals.realisasi)}
