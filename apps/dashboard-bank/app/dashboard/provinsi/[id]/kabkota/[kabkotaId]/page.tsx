@@ -544,8 +544,11 @@ export default function KabkotaDetailPage() {
               <tfoot>
                 {/* Realisasi Anggaran Row (Identical to Google Sheets Screenshot) */}
                 <tr className="border-t-2 border-slate-300">
-                  <td className="sheet-cell font-bold text-center bg-emerald-100 text-emerald-800 border-r border-slate-200" colSpan={3}>
-                    Realisasi Dana Cair
+                  <td className="sheet-cell font-bold text-center bg-slate-100 text-slate-700 border-r border-slate-200" colSpan={3}>
+                    Total / Realisasi Dana Cair
+                  </td>
+                  <td className="sheet-cell text-right font-bold bg-indigo-600 text-white font-mono border-r border-slate-200 text-sm">
+                    {fmtRupiah(totals.nominal)}
                   </td>
                   <td className="sheet-cell text-right font-bold bg-emerald-500 text-white font-mono border-r border-slate-200 text-sm">
                     {fmtRupiah(totals.realisasi)}
