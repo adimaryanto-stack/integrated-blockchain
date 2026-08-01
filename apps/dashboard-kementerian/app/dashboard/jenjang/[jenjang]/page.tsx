@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
@@ -8,6 +8,7 @@ import PctBadge from '@/components/ui/PctBadge';
 import { useAppStore } from '@/lib/store';
 import { 
   getInstitusiByJenjang, 
+  fetchInstitusiByJenjang,
   alokasiProvinsiData, 
   getKabkotaByProvinsi, 
   updateInstitusiPendidikan
@@ -15,15 +16,15 @@ import {
 import { fmtRupiah, fmtTriliun } from '@/lib/utils/formatters';
 import { exportToExcel, getPctColorHex } from '@/lib/utils/excelExport';
 import { Jenjang, InstitusiPendidikan } from '@/types';
-import { Search, Download, Plus, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Download, Plus, Upload, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 
 const jenjangLabels: Record<string, { label: string; jenjang: Jenjang }> = {
-  universitas: { label: 'Universitas', jenjang: 'UNIVERSITAS' },
-  sma: { label: 'SMA', jenjang: 'SMA' },
-  smp: { label: 'SMP', jenjang: 'SMP' },
-  sd: { label: 'SD', jenjang: 'SD' },
-  paud: { label: 'PAUD', jenjang: 'PAUD' },
+  universitas: { label: 'Universitas (Strata 1)', jenjang: 'UNIVERSITAS' },
+  sma: { label: 'Sekolah Menengah Atas (SMA/Sederajat)', jenjang: 'SMA' },
+  smp: { label: 'Sekolah Menengah Pertama (SMP/Sederajat)', jenjang: 'SMP' },
+  sd: { label: 'Sekolah Dasar (SD/Sederajat)', jenjang: 'SD' },
+  paud: { label: 'Pendidikan Anak Usia Dini (PAUD/Sederajat)', jenjang: 'PAUD' },
 };
 
 export default function JenjangPage() {
@@ -32,19 +33,33 @@ export default function JenjangPage() {
   const config = jenjangLabels[slug] || jenjangLabels.universitas;
   const { activeTahun } = useAppStore();
 
-  const rawData = useMemo(() => {
-    return getInstitusiByJenjang(config.jenjang);
-  }, [config.jenjang]);
-
-  const [prevRawData, setPrevRawData] = useState(rawData);
-  const [data, setData] = useState<InstitusiPendidikan[]>(rawData);
+  const [data, setData] = useState<InstitusiPendidikan[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 100;
+  const [totalCount, setTotalCount] = useState<number | null>(null);
 
-  if (rawData !== prevRawData) {
-    setPrevRawData(rawData);
-    setData(rawData);
-  }
+  useEffect(() => {
+    let isMounted = true;
+    // Fetch total count from DB (lightweight)
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2026';
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'anon-key-davinci-2026';
+    fetch(`${url}/rest/v1/institusi_pendidikan?jenjang=eq.${config.jenjang}&select=id`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}`, Prefer: 'count=exact' }
+    }).then(r => {
+      const cr = r.headers.get('content-range');
+      if (cr && isMounted) {
+        const total = parseInt(cr.split('/')[1], 10);
+        if (!isNaN(total)) setTotalCount(total);
+      }
+    }).catch(() => {});
+    // Fetch paginated data for table display
+    fetchInstitusiByJenjang(config.jenjang).then(fetched => {
+      if (isMounted && fetched) {
+        setData(fetched);
+      }
+    }).catch(console.error);
+    return () => { isMounted = false; };
+  }, [config.jenjang]);
 
   const [search, setSearch] = useState('');
   const [selectedProvinsiId, setSelectedProvinsiId] = useState('');
@@ -138,11 +153,25 @@ export default function JenjangPage() {
     });
   }, [data, search, selectedProvinsiId, selectedKabKotaName, selectedStatus]);
 
+  const JENJANG_TOTAL_BUDGETS: Record<string, { nominal: number; realisasi: number }> = {
+    UNIVERSITAS: { nominal: 269185000000000, realisasi: 186095618126720 },
+    SMA: { nominal: 192275000000000, realisasi: 121275577143176 },
+    SMP: { nominal: 153820000000000, realisasi: 96745156109368 },
+    SD: { nominal: 115365000000000, realisasi: 75150774734422 },
+    PAUD: { nominal: 38455000000000, realisasi: 25933306222917 },
+  };
+
+  const hasFilter = Boolean(search || selectedProvinsiId || selectedKabKotaName || selectedStatus);
+
   const totals = useMemo(() => {
-    const nom = filtered.reduce((s, i) => s + i.nominal_alokasi, 0);
-    const real = filtered.reduce((s, i) => s + i.realisasi_total, 0);
+    if (!hasFilter && JENJANG_TOTAL_BUDGETS[config.jenjang]) {
+      const b = JENJANG_TOTAL_BUDGETS[config.jenjang];
+      return { nominal: b.nominal, realisasi: b.realisasi, selisih: b.nominal - b.realisasi, pct: (b.realisasi / b.nominal) * 100 };
+    }
+    const nom = filtered.reduce((s, i) => s + Number(i.nominal_alokasi || 0), 0);
+    const real = filtered.reduce((s, i) => s + Number(i.realisasi_total || 0), 0);
     return { nominal: nom, realisasi: real, selisih: nom - real, pct: nom > 0 ? (real / nom) * 100 : 0 };
-  }, [filtered]);
+  }, [filtered, hasFilter, config.jenjang]);
 
   const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
   const paginatedData = useMemo(() => {
@@ -341,7 +370,7 @@ export default function JenjangPage() {
               className="search-input"
             />
           </div>
-          <span className="text-xs text-text-muted flex-1">{filtered.length} institusi</span>
+          <span className="text-xs text-text-muted flex-1">{(totalCount ?? filtered.length).toLocaleString('id-ID')} institusi (menampilkan {filtered.length.toLocaleString('id-ID')} terbaru)</span>
           <input 
             type="file" 
             accept=".csv" 
@@ -411,7 +440,7 @@ export default function JenjangPage() {
             <tfoot>
               <tr>
                 <td className="sheet-footer-cell" />
-                <td className="sheet-footer-cell text-left font-bold">TOTAL ({filtered.length})</td>
+                <td className="sheet-footer-cell text-left font-bold">TOTAL ({(totalCount ?? filtered.length).toLocaleString('id-ID')})</td>
                 <td className="sheet-footer-cell" />
                 <td className="sheet-footer-cell" />
                 <td className="sheet-footer-cell" />
@@ -450,40 +479,81 @@ export default function JenjangPage() {
               <p className="text-xs text-slate-700">
                 Menampilkan <span className="font-semibold">{filtered.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> sampai{' '}
                 <span className="font-semibold">{Math.min(currentPage * itemsPerPage, filtered.length)}</span> dari{' '}
-                <span className="font-semibold">{filtered.length}</span> data institusi
+                <span className="font-semibold">{(totalCount ?? filtered.length).toLocaleString('id-ID')}</span> data institusi
               </p>
             </div>
             <div>
-              <nav className="isolate inline-flex -space-x-px rounded-md shadow-xs" aria-label="Pagination">
+              <nav className="isolate inline-flex -space-x-px rounded-md shadow-xs items-center gap-1" aria-label="Pagination">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  title="Halaman Pertama"
+                  className="relative inline-flex items-center rounded-md p-1.5 text-slate-400 border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronsLeft size={16} />
+                </button>
                 <button
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  className="relative inline-flex items-center rounded-l-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Halaman Sebelumnya"
+                  className="relative inline-flex items-center rounded-md p-1.5 text-slate-400 border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   <ChevronLeft size={16} />
                 </button>
+
                 {Array.from({ length: totalPages }).map((_, idx) => {
                   const pageNum = idx + 1;
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`relative inline-flex items-center px-4 py-2 text-xs font-semibold focus:z-20 ${
-                        currentPage === pageNum
-                          ? 'z-10 bg-indigo-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
-                          : 'text-slate-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:outline-offset-0'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
+                  const isSelected = pageNum === currentPage;
+
+                  if (
+                    pageNum === 1 ||
+                    pageNum === totalPages ||
+                    (pageNum >= currentPage - 2 && pageNum <= currentPage + 2)
+                  ) {
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`relative inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-md border transition-all ${
+                          isSelected
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                            : 'text-slate-700 border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  }
+
+                  if (
+                    (pageNum === 2 && currentPage > 4) ||
+                    (pageNum === totalPages - 1 && currentPage < totalPages - 3)
+                  ) {
+                    return (
+                      <span key={pageNum} className="px-2 py-1 text-xs font-bold text-slate-400">
+                        ...
+                      </span>
+                    );
+                  }
+
+                  return null;
                 })}
+
                 <button
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  className="relative inline-flex items-center rounded-r-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Halaman Selanjutnya"
+                  className="relative inline-flex items-center rounded-md p-1.5 text-slate-400 border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   <ChevronRight size={16} />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  title="Halaman Terakhir"
+                  className="relative inline-flex items-center rounded-md p-1.5 text-slate-400 border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronsRight size={16} />
                 </button>
               </nav>
             </div>

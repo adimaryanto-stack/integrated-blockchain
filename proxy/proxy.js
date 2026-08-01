@@ -127,6 +127,19 @@ app.post('/rest/v1/rpc/:function', async (req, res) => {
       return res.json(Array.from(uniqueKecs).sort().map(k => ({ kec_name: k })));
     }
 
+    else if (func === 'get_jenjang_summary') {
+      const p_jenjang = body.p_jenjang || 'PAUD';
+      const dbRes = await pool.query(`
+        SELECT 
+          COUNT(*)::integer as count,
+          COALESCE(SUM(CAST(nominal_alokasi AS NUMERIC)), 0) as total_nominal,
+          COALESCE(SUM(CAST(realisasi_total AS NUMERIC)), 0) as total_realisasi
+        FROM public.institusi_pendidikan
+        WHERE jenjang = $1
+      `, [p_jenjang]);
+      return res.json(dbRes.rows);
+    }
+
     return res.status(404).json({ error: `RPC function ${func} not supported` });
   } catch (err) {
     console.error(`[Proxy RPC Error] ${func}:`, err.message);

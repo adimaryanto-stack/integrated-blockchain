@@ -10,16 +10,16 @@ import { getInstitusiByJenjang, alokasiProvinsiData, getKabkotaByProvinsi, tahun
 import { supabase } from '@/lib/supabase';
 import { fmtRupiah, fmtTriliun } from '@/lib/utils/formatters';
 import { Jenjang, InstitusiPendidikan } from '@/types';
-import { Search, Download, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Download, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import EditableCell from '@/components/spreadsheet/EditableCell';
 import { rollupInstitusiChange } from '@/lib/utils/dbSync';
 
 const jenjangLabels: Record<string, { label: string; jenjang: Jenjang }> = {
-  universitas: { label: 'Universitas', jenjang: 'UNIVERSITAS' },
-  sma: { label: 'SMA', jenjang: 'SMA' },
-  smp: { label: 'SMP', jenjang: 'SMP' },
-  sd: { label: 'SD', jenjang: 'SD' },
-  paud: { label: 'PAUD', jenjang: 'PAUD' },
+  universitas: { label: 'Universitas (Strata 1)', jenjang: 'UNIVERSITAS' },
+  sma: { label: 'Sekolah Menengah Atas (SMA/Sederajat)', jenjang: 'SMA' },
+  smp: { label: 'Sekolah Menengah Pertama (SMP/Sederajat)', jenjang: 'SMP' },
+  sd: { label: 'Sekolah Dasar (SD/Sederajat)', jenjang: 'SD' },
+  paud: { label: 'Pendidikan Anak Usia Dini (PAUD/Sederajat)', jenjang: 'PAUD' },
 };
 
 export default function JenjangPage() {
@@ -28,69 +28,71 @@ export default function JenjangPage() {
   const config = jenjangLabels[slug] || jenjangLabels.universitas;
   const { activeTahun, isSupabaseMode, dbData, setDbData, updateInstitusiData } = useAppStore();
 
-  const [isLoadingInstitusi, setIsLoadingInstitusi] = useState(false);
+  const [data, setData] = useState<InstitusiPendidikan[]>([]);
+  const [isLoadingInstitusi, setIsLoadingInstitusi] = useState(true);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
 
-  // Lazy-load institusi dari Supabase jika belum ada di dbData
   useEffect(() => {
-    if (!isSupabaseMode || !dbData) return;
-    if (dbData.institusi_pendidikan.length > 0) return; // sudah ada
-
+    let isMounted = true;
     setIsLoadingInstitusi(true);
-    supabase
-      .from('institusi_pendidikan')
-      .select('*')
-      .then(({ data, error }) => {
-        if (!error && data) {
-          updateInstitusiData(data);
-        }
-        setIsLoadingInstitusi(false);
-      });
-  }, [isSupabaseMode, dbData]);
 
-  const rawData = useMemo(() => {
-    const list = getInstitusiByJenjang(config.jenjang);
+    // Fetch total count lightweight
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2026';
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'anon-key-davinci-2026';
+    fetch(`${url}/rest/v1/institusi_pendidikan?jenjang=eq.${config.jenjang}&select=id`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}`, Prefer: 'count=exact' }
+    }).then(r => {
+      const cr = r.headers.get('content-range');
+      if (cr && isMounted) {
+        const total = parseInt(cr.split('/')[1], 10);
+        if (!isNaN(total)) setTotalCount(total);
+      }
+    }).catch(() => {});
 
-    if (isSupabaseMode && dbData && dbData.institusi_pendidikan.length > 0) {
-      // Filter dari dbData yang sudah lazy-loaded
-      return dbData.institusi_pendidikan
-        .filter((i: any) => i.jenjang === config.jenjang)
-        .map((item: any) => ({
-          ...item,
-          nominal_alokasi: Number(item.nominal_alokasi),
-          realisasi_total: Number(item.realisasi_total),
-          selisih: Number(item.nominal_alokasi) - Number(item.realisasi_total),
-          persentase_penyerapan:
-            Number(item.nominal_alokasi) > 0
-              ? Math.round((Number(item.realisasi_total) / Number(item.nominal_alokasi)) * 1000) / 10
-              : 0,
-        }));
-    }
+    const fetchAllInstitusi = async () => {
+      let all: any[] = [];
+      let from = 0;
+      const step = 1000;
+      const maxRows = 2000;
+      while (all.length < maxRows) {
+        const { data: batch, error } = await supabase
+          .from('institusi_pendidikan')
+          .select('*')
+          .eq('jenjang', config.jenjang)
+          .order('npsn', { ascending: true })
+          .range(from, from + step - 1);
 
-    // Fallback ke mock data dengan scaling tahun
-    const targetTahun = tahunAnggaranData.find(t => t.tahun === activeTahun) || tahunAnggaranData[6];
-    const baseTahun = tahunAnggaranData[6];
-    const scale = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
-    const seed = (activeTahun % 7) || 1;
-    const shift = 0.95 + (seed * 0.012);
+        if (error || !batch || batch.length === 0) break;
+        all = all.concat(batch);
+        if (batch.length < step) break;
+        from += step;
+      }
 
-    return list.map(item => {
-      const nominal = Math.round(item.nominal_alokasi * scale);
-      const realisasi = Math.min(nominal, Math.round(item.realisasi_total * scale * shift));
-      return {
+      const seen = new Set<string>();
+      const unique = all.filter(item => {
+        if (!item.id || seen.has(item.id)) return false;
+        seen.add(item.id);
+        return true;
+      }).map((item: any) => ({
         ...item,
-        nominal_alokasi: nominal,
-        realisasi_total: realisasi,
-        selisih: nominal - realisasi,
-        persentase_penyerapan: nominal > 0 ? Math.round((realisasi / nominal) * 1000) / 10 : 0
-      };
-    });
-  }, [config.jenjang, activeTahun, isSupabaseMode, dbData]);
+        nominal_alokasi: Number(item.nominal_alokasi || 0),
+        realisasi_total: Number(item.realisasi_total || 0),
+        selisih: Number(item.nominal_alokasi || 0) - Number(item.realisasi_total || 0),
+        persentase_penyerapan:
+          Number(item.nominal_alokasi) > 0
+            ? Math.round((Number(item.realisasi_total) / Number(item.nominal_alokasi)) * 1000) / 10
+            : 0,
+      }));
 
-  const [data, setData] = useState<InstitusiPendidikan[]>(rawData);
+      if (isMounted) {
+        setData(unique);
+        setIsLoadingInstitusi(false);
+      }
+    };
 
-  useEffect(() => {
-    setData(rawData);
-  }, [rawData]);
+    fetchAllInstitusi();
+    return () => { isMounted = false; };
+  }, [config.jenjang]);
 
   const [search, setSearch] = useState('');
   const [selectedProvinsiId, setSelectedProvinsiId] = useState('');
@@ -136,11 +138,25 @@ export default function JenjangPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 100;
 
+  const JENJANG_TOTAL_BUDGETS: Record<string, { nominal: number; realisasi: number }> = {
+    UNIVERSITAS: { nominal: 269185000000000, realisasi: 186095618126720 },
+    SMA: { nominal: 192275000000000, realisasi: 121275577143176 },
+    SMP: { nominal: 153820000000000, realisasi: 96745156109368 },
+    SD: { nominal: 115365000000000, realisasi: 75150774734422 },
+    PAUD: { nominal: 38455000000000, realisasi: 25933306222917 },
+  };
+
+  const hasFilter = Boolean(search || selectedProvinsiId || selectedKabKotaName || selectedStatus);
+
   const totals = useMemo(() => {
-    const nom = filtered.reduce((s, i) => s + i.nominal_alokasi, 0);
-    const real = filtered.reduce((s, i) => s + i.realisasi_total, 0);
+    if (!hasFilter && JENJANG_TOTAL_BUDGETS[config.jenjang]) {
+      const b = JENJANG_TOTAL_BUDGETS[config.jenjang];
+      return { nominal: b.nominal, realisasi: b.realisasi, selisih: b.nominal - b.realisasi, pct: (b.realisasi / b.nominal) * 100 };
+    }
+    const nom = filtered.reduce((s, i) => s + Number(i.nominal_alokasi || 0), 0);
+    const real = filtered.reduce((s, i) => s + Number(i.realisasi_total || 0), 0);
     return { nominal: nom, realisasi: real, selisih: nom - real, pct: nom > 0 ? (real / nom) * 100 : 0 };
-  }, [filtered]);
+  }, [filtered, hasFilter, config.jenjang]);
 
   const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
   const paginatedData = useMemo(() => {
@@ -265,7 +281,7 @@ export default function JenjangPage() {
               className="search-input"
             />
           </div>
-          <span className="text-xs text-text-muted flex-1">{filtered.length} institusi</span>
+          <span className="text-xs text-text-muted flex-1">{(totalCount ?? filtered.length).toLocaleString('id-ID')} institusi (menampilkan {filtered.length.toLocaleString('id-ID')} terbaru)</span>
           <button className="btn btn-primary">
             <Download size={14} />
             Ekspor Excel
@@ -320,7 +336,7 @@ export default function JenjangPage() {
             <tfoot>
               <tr>
                 <td className="sheet-footer-cell" />
-                <td className="sheet-footer-cell text-left font-bold">TOTAL ({filtered.length})</td>
+                <td className="sheet-footer-cell text-left font-bold">TOTAL ({(totalCount ?? filtered.length).toLocaleString('id-ID')})</td>
                 <td className="sheet-footer-cell" />
                 <td className="sheet-footer-cell" />
                 <td className="sheet-footer-cell" />
@@ -343,40 +359,81 @@ export default function JenjangPage() {
               <p className="text-xs text-slate-700">
                 Menampilkan <span className="font-semibold">{filtered.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> sampai{' '}
                 <span className="font-semibold">{Math.min(currentPage * itemsPerPage, filtered.length)}</span> dari{' '}
-                <span className="font-semibold">{filtered.length}</span> data institusi
+                <span className="font-semibold">{(totalCount ?? filtered.length).toLocaleString('id-ID')}</span> data institusi
               </p>
             </div>
             <div>
-              <nav className="isolate inline-flex -space-x-px rounded-md shadow-xs" aria-label="Pagination">
+              <nav className="isolate inline-flex -space-x-px rounded-md shadow-xs items-center gap-1" aria-label="Pagination">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  title="Halaman Pertama"
+                  className="relative inline-flex items-center rounded-md p-1.5 text-slate-400 border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronsLeft size={16} />
+                </button>
                 <button
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  className="relative inline-flex items-center rounded-l-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Halaman Sebelumnya"
+                  className="relative inline-flex items-center rounded-md p-1.5 text-slate-400 border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   <ChevronLeft size={16} />
                 </button>
+
                 {Array.from({ length: totalPages }).map((_, idx) => {
                   const pageNum = idx + 1;
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`relative inline-flex items-center px-4 py-2 text-xs font-semibold focus:z-20 ${
-                        currentPage === pageNum
-                          ? 'z-10 bg-indigo-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
-                          : 'text-slate-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:outline-offset-0'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
+                  const isSelected = pageNum === currentPage;
+
+                  if (
+                    pageNum === 1 ||
+                    pageNum === totalPages ||
+                    (pageNum >= currentPage - 2 && pageNum <= currentPage + 2)
+                  ) {
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`relative inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-md border transition-all ${
+                          isSelected
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                            : 'text-slate-700 border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  }
+
+                  if (
+                    (pageNum === 2 && currentPage > 4) ||
+                    (pageNum === totalPages - 1 && currentPage < totalPages - 3)
+                  ) {
+                    return (
+                      <span key={pageNum} className="px-2 py-1 text-xs font-bold text-slate-400">
+                        ...
+                      </span>
+                    );
+                  }
+
+                  return null;
                 })}
+
                 <button
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  className="relative inline-flex items-center rounded-r-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Halaman Selanjutnya"
+                  className="relative inline-flex items-center rounded-md p-1.5 text-slate-400 border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   <ChevronRight size={16} />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  title="Halaman Terakhir"
+                  className="relative inline-flex items-center rounded-md p-1.5 text-slate-400 border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronsRight size={16} />
                 </button>
               </nav>
             </div>
@@ -384,7 +441,5 @@ export default function JenjangPage() {
         </div>
       </div>
     </div>
-  );
-}
   );
 }

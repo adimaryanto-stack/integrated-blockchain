@@ -11,11 +11,11 @@ import {
 import { useState } from 'react';
 
 const jenjangItems = [
-  { label: 'Universitas', href: '/dashboard/jenjang/universitas' },
-  { label: 'SMA', href: '/dashboard/jenjang/sma' },
-  { label: 'SMP', href: '/dashboard/jenjang/smp' },
-  { label: 'SD', href: '/dashboard/jenjang/sd' },
-  { label: 'PAUD', href: '/dashboard/jenjang/paud' },
+  { label: 'Universitas (Strata 1)', href: '/dashboard/jenjang/universitas' },
+  { label: 'Sekolah Menengah Atas (SMA/Sederajat)', href: '/dashboard/jenjang/sma' },
+  { label: 'Sekolah Menengah Pertama (SMP/Sederajat)', href: '/dashboard/jenjang/smp' },
+  { label: 'Sekolah Dasar (SD/Sederajat)', href: '/dashboard/jenjang/sd' },
+  { label: 'Pendidikan Anak Usia Dini (PAUD/TK/KB)', href: '/dashboard/jenjang/paud' },
 ];
 
 export default function Sidebar() {
@@ -90,11 +90,11 @@ export default function Sidebar() {
               className={`sidebar-item w-full ${isJenjangActive ? 'active' : ''}`}
             >
               <GraduationCap size={18} />
-              <span className="flex-1 text-left">Kategori Sekolah</span>
+              <span className="flex-1 text-left">Jenjang Pendidikan</span>
               {jenjangOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             </button>
             
-            <div className={`overflow-hidden transition-all duration-300 ${jenjangOpen ? 'max-h-60' : 'max-h-0'}`}>
+            <div className={`overflow-hidden transition-all duration-300 ${jenjangOpen ? 'max-h-96' : 'max-h-0'}`}>
               <div className="ml-4 pl-4 border-l border-border/50 space-y-0.5 py-1">
                 {jenjangItems.map(item => (
                   <Link

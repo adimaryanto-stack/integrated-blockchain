@@ -19,6 +19,7 @@ import {
   AuditAnomaly,
 } from '@/types';
 import { useAppStore } from '@/lib/store';
+import { supabase } from '@/lib/supabase';
 
 function getDb() {
   if (typeof window === 'undefined') return null;
@@ -657,105 +658,68 @@ function generatePengeluaranBulanan(institusi: InstitusiPendidikan): Pengeluaran
   });
 }
 
-export function getProfilInstitusi(id: string, tahun: number = 2026): ProfilInstitusi | null {
-  const db = getDb();
-  if (db) {
-    const inst = db.institusi_pendidikan.find((i: any) => i.id === id);
-    if (!inst) return null;
-    const sumberDana = db.sumber_dana_institusi.filter((sd: any) => sd.institusi_id === id);
-    const pb = db.pengeluaran_bulanan_institusi
-      .filter((p: any) => p.institusi_id === id)
-      .sort((a: any, b: any) => a.nomor - b.nomor);
-    const totalNominalSumber = sumberDana.reduce((s: number, d: any) => s + Number(d.nominal), 0);
-    const totalRealisasiSumber = sumberDana.reduce((s: number, d: any) => s + Number(d.realisasi), 0);
-    const saldoSurplusDefisit = totalNominalSumber - totalRealisasiSumber;
+export async function getProfilInstitusi(id: string, tahun: number = 2026): Promise<ProfilInstitusi | null> {
+  const { data: school } = await supabase
+    .from('institusi_pendidikan')
+    .select('*')
+    .eq('id', id)
+    .single();
 
-    return {
-      institusi: {
-        ...inst,
-        nominal_alokasi: Number(inst.nominal_alokasi),
-        realisasi_total: Number(inst.realisasi_total),
-        selisih: Number(inst.selisih),
-        persentase_penyerapan: Number(inst.persentase_penyerapan)
-      },
-      sumber_dana: sumberDana.map((sd: any) => ({
-        ...sd,
-        nominal: Number(sd.nominal),
-        realisasi: Number(sd.realisasi),
-        saldo_di_bank: Number(sd.saldo_di_bank)
-      })),
-      pengeluaran_bulanan: pb.map((p: any) => ({
-        ...p,
-        nominal_pengeluaran: Number(p.nominal_pengeluaran),
-        sub_total: Number(p.sub_total)
-      })),
-      saldo_surplus_defisit: saldoSurplusDefisit,
-    };
-  }
+  if (!school) return null;
 
-  let found: InstitusiPendidikan | null = null;
+  const { data: sumberDana } = await supabase
+    .from('sumber_dana_institusi')
+    .select('*')
+    .eq('institusi_id', id);
 
-  const targetTahun = tahunAnggaranData.find(t => t.tahun === tahun) || tahunAnggaranData[6];
-  const baseTahun = tahunAnggaranData[6];
-  const scale = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
-  const seed = (tahun % 7) || 1;
-  const shift = 0.95 + (seed * 0.012);
+  const { data: monthlySpend } = await supabase
+    .from('pengeluaran_bulanan_institusi')
+    .select('*')
+    .eq('institusi_id', id)
+    .order('nomor', { ascending: true });
 
-  if (id.startsWith('inst-k-p-') || id.startsWith('inst-kab-')) {
-    const match = id.match(/(k(?:ab)?-p-\d+-\d+)/);
-    if (match) {
-      const kabkotaId = match[1];
-      const provMatch = kabkotaId.match(/k(?:ab)?-p-(\d+)-/);
-      const provId = provMatch ? `p-${provMatch[1]}` : 'p-1';
-      const provData = alokasiProvinsiData.find(p => p.provinsi_id === provId);
-      const kabkotaData = getKabkotaByProvinsi(provId).find(k => k.kabupaten_kota_id === kabkotaId);
-      
-      if (provData && kabkotaData) {
-        const scaledKabkotaNominal = Math.round(kabkotaData.nominal_alokasi * scale);
-        const schools = getInstitusiByKabkota(
-          kabkotaId,
-          kabkotaData.kabupaten_kota.nama_kabupaten_kota,
-          provData.provinsi.nama_provinsi,
-          scaledKabkotaNominal
-        );
-        found = schools.find(inst => inst.id === id) || null;
-      }
+  const cleanSchool = {
+    ...school,
+    nominal_alokasi: Number(school.nominal_alokasi || 0),
+    realisasi_total: Number(school.realisasi_total || 0),
+    selisih: Number(school.nominal_alokasi || 0) - Number(school.realisasi_total || 0),
+    persentase_penyerapan: Number(school.nominal_alokasi) > 0 
+      ? Math.round((Number(school.realisasi_total) / Number(school.nominal_alokasi)) * 1000) / 10 
+      : 0,
+  };
+
+  const finalSumberDana = (sumberDana && sumberDana.length > 0) ? sumberDana.map(sd => ({
+    ...sd,
+    nominal: Number(sd.nominal || 0),
+    realisasi: Number(sd.realisasi || 0),
+    saldo_di_bank: Number(sd.saldo_di_bank || (Number(sd.nominal || 0) - Number(sd.realisasi || 0))),
+  })) : [
+    {
+      id: `sd-${cleanSchool.id}`,
+      institusi_id: cleanSchool.id,
+      tahun_anggaran: String(tahun),
+      sumber_dana: 'APBN (DANA INDUK PENDIDIKAN)',
+      nominal: cleanSchool.nominal_alokasi,
+      realisasi: cleanSchool.realisasi_total,
+      saldo_di_bank: cleanSchool.realisasi_total,
+      persentase: cleanSchool.persentase_penyerapan,
     }
-  } else {
-    // Search across all jenjang
-    const allJenjang: Jenjang[] = ['UNIVERSITAS', 'SMA', 'SMP', 'SD', 'PAUD'];
-    for (const j of allJenjang) {
-      const list = getInstitusiByJenjang(j);
-      const match = list.find(inst => inst.id === id);
-      if (match) {
-        const nominal = Math.round(match.nominal_alokasi * scale);
-        const realisasi = Math.min(nominal, Math.round(match.realisasi_total * scale * shift));
-        found = {
-          ...match,
-          nominal_alokasi: nominal,
-          realisasi_total: realisasi,
-          selisih: nominal - realisasi,
-          persentase_penyerapan: nominal > 0 ? Math.round((realisasi / nominal) * 1000) / 10 : 0,
-        };
-        break;
-      }
-    }
-  }
+  ];
 
-  if (!found) return null;
+  const finalMonthlySpend = (monthlySpend || []).map(m => ({
+    ...m,
+    nominal_pengeluaran: Number(m.nominal_pengeluaran || 0),
+    sub_total: Number(m.sub_total || 0),
+    qty: Number(m.qty || 1),
+  }));
 
-  const sumberDana = generateSumberDana(found, tahun);
-  const pengeluaranBulanan = generatePengeluaranBulanan(found);
-
-  const totalNominalSumber = sumberDana.reduce((s, d) => s + d.nominal, 0);
-  const totalRealisasiSumber = sumberDana.reduce((s, d) => s + d.realisasi, 0);
-  const saldoSurplusDefisit = totalNominalSumber - totalRealisasiSumber;
+  const totalMonthlySpend = finalMonthlySpend.reduce((sum, m) => sum + Number(m.sub_total || 0), 0);
 
   return {
-    institusi: found,
-    sumber_dana: sumberDana,
-    pengeluaran_bulanan: pengeluaranBulanan,
-    saldo_surplus_defisit: saldoSurplusDefisit,
+    institusi: cleanSchool,
+    sumber_dana: finalSumberDana,
+    pengeluaran_bulanan: finalMonthlySpend,
+    saldo_surplus_defisit: cleanSchool.realisasi_total - totalMonthlySpend,
   };
 }
 

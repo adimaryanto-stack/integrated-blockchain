@@ -133,7 +133,7 @@ export default function DashboardDbLoader({
           fetchAll('alokasi_kabupaten_kota'),
           fetchAll('users'),
           fetchAll('audit_anomaly'),
-          fetchAll('institusi_pendidikan'),
+          Promise.resolve([]),
           fetchAll('province_school_stats').catch(() => []),
         ]);
 

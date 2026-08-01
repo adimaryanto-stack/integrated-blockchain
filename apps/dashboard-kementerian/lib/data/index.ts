@@ -52,8 +52,9 @@ async function fetchPaginated(url: string, headers: HeadersInit): Promise<any[]>
   let allData: any[] = [];
   let offset = 0;
   const limit = 1000;
+  const maxRows = 2000;
 
-  while (true) {
+  while (allData.length < maxRows) {
     const sep = url.includes('?') ? '&' : '?';
     const res = await fetch(`${url}${sep}limit=${limit}&offset=${offset}`, { headers });
     if (!res.ok) {
@@ -114,9 +115,9 @@ export async function initDbConnection(force = false) {
       fetchPaginated(`${url}/rest/v1/tahun_anggaran?select=*&order=tahun.asc`, headers),
       fetchPaginated(`${url}/rest/v1/alokasi_provinsi?select=*,provinsi(*)&order=id.asc`, headers),
       fetchPaginated(`${url}/rest/v1/alokasi_kabupaten_kota?select=*,kabupaten_kota(*)&order=id.asc`, headers),
-      fetchPaginated(`${url}/rest/v1/institusi_pendidikan?select=*&order=id.asc`, headers),
-      fetchPaginated(`${url}/rest/v1/sumber_dana_institusi?select=*&order=id.asc`, headers),
-      fetchPaginated(`${url}/rest/v1/pengeluaran_bulanan_institusi?select=*&order=id.asc`, headers),
+      Promise.resolve([]),
+      Promise.resolve([]),
+      Promise.resolve([]),
       fetchPaginated(`${url}/rest/v1/users?select=*&order=id.asc`, headers),
       fetchPaginated(`${url}/rest/v1/province_school_stats?select=*`, headers).catch(() => []),
     ]);
@@ -320,6 +321,22 @@ export function getInstitusiByJenjang(jenjang: Jenjang): InstitusiPendidikan[] {
   return institusiPendidikanData.filter((item) => item.jenjang === jenjang);
 }
 
+export async function fetchInstitusiByJenjang(jenjang: Jenjang): Promise<InstitusiPendidikan[]> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2026';
+  const headers = {
+    apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'anon-key-davinci-2026',
+    Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'anon-key-davinci-2026'}`,
+  };
+  const data = await fetchPaginated(`${url}/rest/v1/institusi_pendidikan?select=*&jenjang=eq.${jenjang}&order=npsn.asc,id.asc`, headers);
+  const cleaned = data.map(cleanRecord);
+  const seen = new Set<string>();
+  return cleaned.filter(item => {
+    if (!item.id || seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}
+
 export function getDashboardSummary(tahun: number = 2026): DashboardSummary {
   const targetTahun = tahunAnggaranData.find((t) => t.tahun === tahun) || tahunAnggaranData.find((t) => t.tahun === 2026);
   const totalNominal = targetTahun ? targetTahun.total_anggaran : 769_100_000_000_000;
@@ -383,25 +400,69 @@ export function getDashboardSummary(tahun: number = 2026): DashboardSummary {
   };
 }
 
-export function getProfilInstitusi(id: string, _tahun: number = 2026): ProfilInstitusi | null {
-  const institusi = institusiPendidikanData.find((item) => item.id === id);
-  if (!institusi) return null;
-
-  const sumber_dana = sumberDanaData.filter((sd) => sd.institusi_id === id);
-  const pengeluaran_bulanan = pengeluaranBulananData
-    .filter((pb) => pb.institusi_id === id)
-    .sort((a, b) => a.nomor - b.nomor);
-
-  const totalNominalSumber = sumber_dana.reduce((s, d) => s + d.nominal, 0);
-  const totalRealisasiSumber = sumber_dana.reduce((s, d) => s + d.realisasi, 0);
-  const saldoSurplusDefisit = totalNominalSumber - totalRealisasiSumber;
-
-  return {
-    institusi,
-    sumber_dana,
-    pengeluaran_bulanan,
-    saldo_surplus_defisit: saldoSurplusDefisit,
+export async function getProfilInstitusi(id: string, tahun: number = 2026): Promise<ProfilInstitusi | null> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2026';
+  const headers = {
+    apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'anon-key-davinci-2026',
+    Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'anon-key-davinci-2026'}`,
   };
+
+  try {
+    const resInst = await fetch(`${url}/rest/v1/institusi_pendidikan?id=eq.${id}`, { headers });
+    const instData = await resInst.json();
+    if (!Array.isArray(instData) || instData.length === 0) return null;
+
+    const rawInst = cleanRecord(instData[0]);
+    const institusi = {
+      ...rawInst,
+      nominal_alokasi: Number(rawInst.nominal_alokasi || 0),
+      realisasi_total: Number(rawInst.realisasi_total || 0),
+      selisih: Number(rawInst.nominal_alokasi || 0) - Number(rawInst.realisasi_total || 0),
+      persentase_penyerapan: Number(rawInst.nominal_alokasi) > 0 
+        ? Math.round((Number(rawInst.realisasi_total) / Number(rawInst.nominal_alokasi)) * 1000) / 10 
+        : 0,
+    };
+
+    const resSd = await fetch(`${url}/rest/v1/sumber_dana_institusi?institusi_id=eq.${id}`, { headers });
+    const sdData = await resSd.json();
+    const sumber_dana_raw = Array.isArray(sdData) ? sdData.map(cleanRecord) : [];
+
+    const sumber_dana = sumber_dana_raw.length > 0 ? sumber_dana_raw.map(sd => ({
+      ...sd,
+      nominal: Number(sd.nominal || 0),
+      realisasi: Number(sd.realisasi || 0),
+      saldo_di_bank: Number(sd.saldo_di_bank || (Number(sd.nominal || 0) - Number(sd.realisasi || 0))),
+    })) : [
+      {
+        id: `sd-${institusi.id}`,
+        institusi_id: institusi.id,
+        tahun_anggaran: String(tahun),
+        sumber_dana: 'APBN (DANA INDUK PENDIDIKAN)',
+        nominal: institusi.nominal_alokasi,
+        realisasi: institusi.realisasi_total,
+        saldo_di_bank: institusi.realisasi_total,
+        persentase: institusi.persentase_penyerapan,
+      }
+    ];
+
+    const resPb = await fetch(`${url}/rest/v1/pengeluaran_bulanan_institusi?institusi_id=eq.${id}&order=nomor.asc`, { headers });
+    const pbData = await resPb.json();
+    const pengeluaran_bulanan = Array.isArray(pbData) ? pbData.map(cleanRecord) : [];
+
+    const totalNominalSumber = sumber_dana.reduce((s, d) => s + Number(d.nominal || 0), 0);
+    const totalRealisasiSumber = sumber_dana.reduce((s, d) => s + Number(d.realisasi || 0), 0);
+    const saldoSurplusDefisit = totalNominalSumber - totalRealisasiSumber;
+
+    return {
+      institusi,
+      sumber_dana,
+      pengeluaran_bulanan,
+      saldo_surplus_defisit: saldoSurplusDefisit,
+    };
+  } catch (err) {
+    console.error('Error fetching profil institusi:', err);
+    return null;
+  }
 }
 
 export function getAllInstitusi(): InstitusiPendidikan[] {

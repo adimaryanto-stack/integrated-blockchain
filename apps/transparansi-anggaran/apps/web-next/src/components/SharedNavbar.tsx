@@ -24,6 +24,16 @@ const NAV_LINKS: NavLink[] = [
             { href: "/funding", label: "Sumber Dana" },
         ]
     },
+    {
+        label: "Jenjang Pendidikan",
+        subLinks: [
+            { href: "/provinces?jenjang=UNIVERSITAS", label: "Universitas (Strata 1)" },
+            { href: "/provinces?jenjang=SMA", label: "SMA / Sederajat" },
+            { href: "/provinces?jenjang=SMP", label: "SMP / Sederajat" },
+            { href: "/provinces?jenjang=SD", label: "SD / Sederajat" },
+            { href: "/provinces?jenjang=PAUD", label: "PAUD / TK / KB" },
+        ]
+    },
     { href: "/reporting", label: "Laporkan" },
     { href: "/about", label: "Tentang" },
     { href: "/faq", label: "FAQ" },

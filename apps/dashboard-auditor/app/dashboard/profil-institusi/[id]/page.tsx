@@ -7,8 +7,8 @@ import Header from '@/components/layout/Header';
 import { useAppStore } from '@/lib/store';
 import { getProfilInstitusi } from '@/lib/data';
 import { fmtRupiah } from '@/lib/utils/formatters';
-import { SumberDanaInstitusi, PengeluaranBulananInstitusi } from '@/types';
-import { ArrowLeft, Banknote, CreditCard, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
+import { SumberDanaInstitusi, PengeluaranBulananInstitusi, ProfilInstitusi } from '@/types';
+import { ArrowLeft, Banknote, CreditCard, TrendingUp, TrendingDown, Loader2, Edit3 } from 'lucide-react';
 
 import { supabase } from '@/lib/supabase';
 import EditableCell from '@/components/spreadsheet/EditableCell';
@@ -17,64 +17,60 @@ export default function ProfilInstitusiDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
-  const { activeTahun, isSupabaseMode, dbData, setDbData } = useAppStore();
+  const { activeTahun } = useAppStore();
 
-  const profilData = useMemo(() => getProfilInstitusi(id, activeTahun), [id, activeTahun, isSupabaseMode, dbData]);
+  const [profilData, setProfilData] = useState<ProfilInstitusi | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Editable state
   const [sumberDana, setSumberDana] = useState<SumberDanaInstitusi[]>([]);
   const [pengeluaran, setPengeluaran] = useState<PengeluaranBulananInstitusi[]>([]);
   const [nomorRekening, setNomorRekening] = useState('');
-  const [loadingLazy, setLoadingLazy] = useState(false);
+
+  const [editingSDNameId, setEditingSDNameId] = useState<string | null>(null);
+  const [editSDNameValue, setEditSDNameValue] = useState('');
+
+  const startEditSDName = (id: string, currentName: string) => {
+    setEditingSDNameId(id);
+    setEditSDNameValue(currentName);
+  };
+
+  const commitEditSDName = async (rowId: string) => {
+    const trimmed = editSDNameValue.trim();
+    if (trimmed) {
+      setSumberDana(prev => prev.map(item => item.id === rowId ? { ...item, sumber_dana: trimmed, nama_sumber: trimmed } : item));
+      await supabase.from('sumber_dana_institusi').update({ sumber_dana: trimmed }).eq('id', rowId);
+    }
+    setEditingSDNameId(null);
+  };
 
   useEffect(() => {
-    async function fetchLazyData() {
-      if (!isSupabaseMode || !dbData) return;
-
-      // Check if we already have these in the store
-      const hasSD = dbData.sumber_dana_institusi?.some((sd: any) => sd.institusi_id === id);
-      const hasPB = dbData.pengeluaran_bulanan_institusi?.some((pb: any) => pb.institusi_id === id);
-
-      if (hasSD && hasPB) return; // already loaded/cached
-
-      setLoadingLazy(true);
-      try {
-        const [sdRes, pbRes] = await Promise.all([
-          supabase.from('sumber_dana_institusi').select('*').eq('institusi_id', id),
-          supabase.from('pengeluaran_bulanan_institusi').select('*').eq('institusi_id', id)
-        ]);
-
-        if (sdRes.error) throw sdRes.error;
-        if (pbRes.error) throw pbRes.error;
-
-        const fetchedSD = sdRes.data || [];
-        const fetchedPB = pbRes.data || [];
-
-        const otherSD = (dbData.sumber_dana_institusi || []).filter((sd: any) => sd.institusi_id !== id);
-        const otherPB = (dbData.pengeluaran_bulanan_institusi || []).filter((pb: any) => pb.institusi_id !== id);
-
-        setDbData({
-          ...dbData,
-          sumber_dana_institusi: [...otherSD, ...fetchedSD],
-          pengeluaran_bulanan_institusi: [...otherPB, ...fetchedPB]
-        });
-      } catch (err: any) {
-        console.error('Error lazy loading details from Supabase:', err.message);
-      } finally {
-        setLoadingLazy(false);
+    let isMounted = true;
+    setLoading(true);
+    getProfilInstitusi(id, activeTahun).then(res => {
+      if (isMounted) {
+        setProfilData(res);
+        if (res) {
+          setSumberDana(res.sumber_dana);
+          setPengeluaran(res.pengeluaran_bulanan);
+          setNomorRekening(res.institusi.nomor_rekening || '');
+        }
+        setLoading(false);
       }
-    }
+    }).catch(console.error);
+    return () => { isMounted = false; };
+  }, [id, activeTahun]);
 
-    fetchLazyData();
-  }, [id, isSupabaseMode, dbData, setDbData]);
-
-  useEffect(() => {
-    if (profilData) {
-      setSumberDana(profilData.sumber_dana);
-      setPengeluaran(profilData.pengeluaran_bulanan);
-      setNomorRekening(profilData.institusi.nomor_rekening || '');
-    }
-  }, [profilData]);
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        <Header title="Profil Institusi" subtitle="Memuat profil data..." />
+        <div className="p-6 flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600"></div>
+        </div>
+      </div>
+    );
+  }
 
   if (!profilData) {
     return (
@@ -319,7 +315,7 @@ export default function ProfilInstitusiDetailPage() {
                 </tr>
               </thead>
               <tbody>
-                {loadingLazy ? (
+                {loading ? (
                   <tr>
                     <td colSpan={5} className="sheet-cell text-center py-8 text-text-muted text-xs">
                       <div className="flex items-center justify-center gap-2 py-4">
@@ -338,7 +334,31 @@ export default function ProfilInstitusiDetailPage() {
                   sumberDana.map((row, idx) => (
                     <tr key={row.id} className="hover:bg-indigo-50/50 transition">
                       <td className="sheet-cell text-center text-text-muted text-xs">{idx + 1}</td>
-                      <td className="sheet-cell text-left font-medium text-text-primary">{row.nama_sumber}</td>
+                      <td className="sheet-cell text-left font-medium text-text-primary">
+                        {(() => {
+                          const displayName = row.sumber_dana || row.nama_sumber || `APBN Pendidikan ${activeTahun}`;
+                          return editingSDNameId === row.id ? (
+                            <input
+                              type="text"
+                              value={editSDNameValue}
+                              onChange={(e) => setEditSDNameValue(e.target.value)}
+                              onBlur={() => commitEditSDName(row.id)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') commitEditSDName(row.id); }}
+                              autoFocus
+                              className="w-full bg-white border border-indigo-400 rounded px-2 py-1 text-xs font-medium outline-none shadow-sm"
+                            />
+                          ) : (
+                            <div 
+                              onClick={() => startEditSDName(row.id, displayName)}
+                              className="cursor-pointer hover:text-indigo-600 transition flex items-center gap-1.5 group py-1"
+                              title="Klik untuk mengubah nama sumber dana / tahun anggaran"
+                            >
+                              <span>{displayName}</span>
+                              <Edit3 size={12} className="text-text-muted opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                            </div>
+                          );
+                        })()}
+                      </td>
                       {renderEditableCellSD(row, 'nominal')}
                       {renderEditableCellSD(row, 'realisasi')}
                       <td className={`sheet-cell text-right font-medium ${row.saldo_di_bank >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -382,7 +402,7 @@ export default function ProfilInstitusiDetailPage() {
                 </tr>
               </thead>
               <tbody>
-                {loadingLazy ? (
+                {loading ? (
                   <tr>
                     <td colSpan={5} className="sheet-cell text-center py-8 text-text-muted text-xs">
                       <div className="flex items-center justify-center gap-2 py-4">

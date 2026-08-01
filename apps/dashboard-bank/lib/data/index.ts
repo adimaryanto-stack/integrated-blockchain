@@ -333,12 +333,32 @@ export async function getAllKabkota(tahun: number = 2026): Promise<AlokasiKabupa
 }
 
 export async function getInstitusiByJenjang(jenjang: Jenjang): Promise<InstitusiPendidikan[]> {
-  const { data, error } = await supabase
-    .from('institusi_pendidikan')
-    .select('*')
-    .eq('jenjang', jenjang);
-  if (error) throw error;
-  return data || [];
+  let allData: InstitusiPendidikan[] = [];
+  let from = 0;
+  const step = 1000;
+  const maxRows = 2000;
+
+  while (allData.length < maxRows) {
+    const { data, error } = await supabase
+      .from('institusi_pendidikan')
+      .select('*')
+      .eq('jenjang', jenjang)
+      .order('npsn', { ascending: true })
+      .range(from, from + step - 1);
+
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    allData = allData.concat(data);
+    if (data.length < step) break;
+    from += step;
+  }
+
+  const seen = new Set<string>();
+  return allData.filter(item => {
+    if (!item.id || seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
 }
 
 export async function getUsersData(): Promise<User[]> {
@@ -447,8 +467,7 @@ export async function getProfilInstitusi(
   const { data: sumberDana } = await supabase
     .from('sumber_dana_institusi')
     .select('*')
-    .eq('institusi_id', id)
-    .eq('tahun_anggaran', String(tahun));
+    .eq('institusi_id', id);
 
   const { data: monthlySpend } = await supabase
     .from('pengeluaran_bulanan_institusi')
@@ -456,13 +475,48 @@ export async function getProfilInstitusi(
     .eq('institusi_id', id)
     .order('nomor', { ascending: true });
 
-  const totalMonthlySpend = monthlySpend?.reduce((sum, m) => sum + Number(m.sub_total || 0), 0) || 0;
+  const cleanSchool = {
+    ...school,
+    nominal_alokasi: Number(school.nominal_alokasi || 0),
+    realisasi_total: Number(school.realisasi_total || 0),
+    selisih: Number(school.nominal_alokasi || 0) - Number(school.realisasi_total || 0),
+    persentase_penyerapan: Number(school.nominal_alokasi) > 0 
+      ? Math.round((Number(school.realisasi_total) / Number(school.nominal_alokasi)) * 1000) / 10 
+      : 0,
+  };
+
+  const finalSumberDana = (sumberDana && sumberDana.length > 0) ? sumberDana.map(sd => ({
+    ...sd,
+    nominal: Number(sd.nominal || 0),
+    realisasi: Number(sd.realisasi || 0),
+    saldo_di_bank: Number(sd.saldo_di_bank || (Number(sd.nominal || 0) - Number(sd.realisasi || 0))),
+  })) : [
+    {
+      id: `sd-${cleanSchool.id}`,
+      institusi_id: cleanSchool.id,
+      tahun_anggaran: String(tahun),
+      sumber_dana: 'APBN (DANA INDUK PENDIDIKAN)',
+      nominal: cleanSchool.nominal_alokasi,
+      realisasi: cleanSchool.realisasi_total,
+      saldo_di_bank: cleanSchool.realisasi_total,
+      persentase: cleanSchool.persentase_penyerapan,
+    }
+  ];
+
+  const finalMonthlySpend = (monthlySpend || []).map(m => ({
+    ...m,
+    nominal_pengeluaran: Number(m.nominal_pengeluaran || 0),
+    sub_total: Number(m.sub_total || 0),
+    qty: Number(m.qty || 1),
+  }));
+
+  const totalMonthlySpend = finalMonthlySpend.reduce((sum, m) => sum + Number(m.sub_total || 0), 0);
 
   return {
-    institusi: school,
-    sumber_dana: sumberDana || [],
-    pengeluaran_bulanan: monthlySpend || [],
-    saldo_surplus_defisit: Number(school.realisasi_total) - totalMonthlySpend,
+    institusi: cleanSchool,
+    sumber_dana: finalSumberDana,
+    pengeluaran_bulanan: finalMonthlySpend,
+    saldo_surplus_defisit: cleanSchool.realisasi_total - totalMonthlySpend,
   };
 }
 

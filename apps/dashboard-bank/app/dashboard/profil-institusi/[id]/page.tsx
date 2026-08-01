@@ -48,6 +48,23 @@ export default function ProfilInstitusiDetailPage() {
   }, [id, activeTahun]);
 
   // Sumber Dana editing
+  const [editingSDNameId, setEditingSDNameId] = useState<string | null>(null);
+  const [editSDNameValue, setEditSDNameValue] = useState('');
+
+  const startEditSDName = (id: string, currentName: string) => {
+    setEditingSDNameId(id);
+    setEditSDNameValue(currentName);
+  };
+
+  const commitEditSDName = async (rowId: string) => {
+    const trimmed = editSDNameValue.trim();
+    if (trimmed) {
+      setSumberDana(prev => prev.map(item => item.id === rowId ? { ...item, sumber_dana: trimmed, nama_sumber: trimmed } : item));
+      await supabase.from('sumber_dana_institusi').update({ sumber_dana: trimmed }).eq('id', rowId);
+    }
+    setEditingSDNameId(null);
+  };
+
   const [editingSD, setEditingSD] = useState<{ id: string; field: 'nominal' | 'realisasi' } | null>(null);
   const [editSDValue, setEditSDValue] = useState('');
 
@@ -359,7 +376,31 @@ export default function ProfilInstitusiDetailPage() {
                 {sumberDana.map((row, idx) => (
                   <tr key={row.id} className="hover:bg-indigo-50/50 transition">
                     <td className="sheet-cell text-center text-text-muted text-xs">{idx + 1}</td>
-                    <td className="sheet-cell text-left font-medium text-text-primary">{row.nama_sumber}</td>
+                    <td className="sheet-cell text-left font-medium text-text-primary">
+                      {(() => {
+                        const displayName = row.sumber_dana || row.nama_sumber || `APBN Pendidikan ${activeTahun}`;
+                        return editingSDNameId === row.id ? (
+                          <input
+                            type="text"
+                            value={editSDNameValue}
+                            onChange={(e) => setEditSDNameValue(e.target.value)}
+                            onBlur={() => commitEditSDName(row.id)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') commitEditSDName(row.id); }}
+                            autoFocus
+                            className="w-full bg-white border border-indigo-400 rounded px-2 py-1 text-xs font-medium outline-none shadow-sm"
+                          />
+                        ) : (
+                          <div 
+                            onClick={() => startEditSDName(row.id, displayName)}
+                            className="cursor-pointer hover:text-indigo-600 transition flex items-center gap-1.5 group py-1"
+                            title="Klik untuk mengubah nama sumber dana / tahun anggaran"
+                          >
+                            <span>{displayName}</span>
+                            <Edit3 size={12} className="text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        );
+                      })()}
+                    </td>
                     {renderEditableCellSD(row, 'nominal')}
                     {renderEditableCellSD(row, 'realisasi')}
                     <td className={`sheet-cell text-right font-medium ${row.saldo_di_bank >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
