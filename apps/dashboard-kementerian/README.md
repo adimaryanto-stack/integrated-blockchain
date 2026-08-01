@@ -16,13 +16,17 @@ Dapatkan aplikasi ini online dalam satu klik menggunakan tombol di bawah ini:
 
 ## ✨ Fitur Utama
 
-- **Navigasi Berjenjang (Hierarki)**: Pemantauan dana mulai dari **APBN Nasional -> Provinsi -> Kabupaten/Kota -> Jenjang Pendidikan** (Universitas, SMA, SMP, SD, PAUD).
+- **Navigasi Berjenjang & Sinkronisasi Presisi (2-Way Cascading)**: Pemantauan dan alokasi dana berjenjang mulai dari **APBN Nasional ↔ 38 Provinsi ↔ 514 Kabupaten/Kota ↔ 367.865 Institusi Pendidikan** (Universitas, SMA, SMP, SD, PAUD) dengan kalkulasi otomatis selisih 0 rupiah.
 - **Antarmuka Bergaya Spreadsheet**: 
   - Input data nominal dan realisasi secara langsung *(inline editing)*.
-  - Perhitungan **Selisih** dan **Persentase Penyerapan** otomatis (kaskade) dari bawah ke atas.
+  - Perhitungan **Selisih** dan **Persentase Penyerapan** otomatis (kaskade) dari bawah ke atas dan atas ke bawah.
+- **Koneksi Database PostgreSQL & Server-Side Paginasi**:
+  - Terhubung langsung ke **PostgreSQL Database** via proxy REST API (**PostgREST**).
+  - Paginasi server-side **100 sekolah per halaman** mencakup seluruh 38 provinsi dengan pengurutan presisi 3 tingkat (Provinsi A-Z ➔ Kab/Kota A-Z ➔ Nama Institusi A-Z).
+- **Audit Trail Real-Time Murni**: Histori log perubahan data asli real-time yang merekam user, role, entitas, nilai lama ➔ nilai baru, dan timestamp tanpa data dummy/sample.
 - **Visualisasi Data**: *Dashboard* analitik dengan metrik utama dan grafik tren tahunan menggunakan *Recharts*.
 - **Desain Modern (Glassmorphism)**: UI/UX premium dengan *Light Mode*, efek *frosted glass* (transparan-blur), serta aksen warna yang halus.
-- **Manajemen Pengguna (RBAC)**: Role-Based Access Control (Super Admin, Admin Provinsi, Auditor, Viewer, dll.) dengan kontrol status aktif/non-aktif.
+- **Manajemen Pengguna & Pengaturan Peran (RBAC Matrix)**: Role-Based Access Control 6 Tingkat (`Super Admin`, `Admin Pusat`, `Admin Provinsi`, `Admin Kab/Kota`, `Public Researcher`, `Auditor BPK`) dilengkapi matrik pengaturan pembagian tugas interaktif.
 
 ---
 
@@ -31,6 +35,7 @@ Dapatkan aplikasi ini online dalam satu klik menggunakan tombol di bawah ini:
 Sistem ini dibangun menggunakan ekosistem *web modern* dengan performa tinggi:
 
 - **Framework**: [Next.js 16 (App Router)](https://nextjs.org/) & React 19
+- **Database Backend**: PostgreSQL Database (Port 2025) & PostgREST Proxy Engine (Port 2026)
 - **Bahasa**: TypeScript (Strict Typing)
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/) dengan arsitektur variabel berbasis `@theme`.
 - **State Management**: [Zustand](https://github.com/pmndrs/zustand)

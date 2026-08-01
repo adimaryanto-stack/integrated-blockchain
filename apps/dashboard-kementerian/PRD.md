@@ -1,10 +1,10 @@
 # PRD — Dashboard Kementerian
 
-**Version:** 1.4.1 (Mockup Client-Side Consolidated)  
-**Date:** 24 Juni 2026  
-**Status:** ✅ APPROVED FOR DEVELOPMENT  
+**Version:** 1.4.1+ (Live PostgreSQL & PostgREST Database Integrated)  
+**Date:** 1 Agustus 2026  
+**Status:** ✅ PRODUCTION READY & LIVE DATABASE INTEGRATED  
 **Project Type:** Web-Based Spreadsheet Dashboard — Education Budget Transparency  
-**Backend Platform:** None (Pure Client-Side Mockup / Static Demo)
+**Backend Platform:** PostgreSQL Database (Port 2025) & PostgREST Proxy API (Port 2026)
 
 ---
 
@@ -24,27 +24,26 @@
 ## 1. Project Overview
 
 ### 1.1 Deskripsi Aplikasi
-Dashboard Kementerian adalah aplikasi web berbasis **spreadsheet interface** untuk menampilkan, mengelola, dan mengaudit aliran dana pendidikan Indonesia dari tingkat nasional (APBN) hingga institusi pendidikan di seluruh daerah. Tampilannya menyerupai Excel/Google Sheets dengan semua kalkulasi angka terhubung secara real-time antar menu.
-
-Aplikasi ini berjalan sebagai demo frontend statis (pure mockup) dengan data deterministik dalam memori untuk simulasi interaksi spreadsheet.
+Dashboard Kementerian adalah aplikasi web berbasis **spreadsheet interface** untuk menampilkan, mengelola, dan mengaudit aliran dana pendidikan Indonesia dari tingkat nasional (APBN) hingga 367.865 institusi pendidikan di seluruh daerah. Tampilannya menyerupai Excel/Google Sheets dengan semua kalkulasi angka terhubung secara real-time presisi 100% antar menu dan tersimpan langsung ke PostgreSQL Database.
 
 ### 1.2 Target User & Role
 
-| Role | Akses | Keterangan |
-|------|-------|------------|
-| `SUPER_ADMIN` | Full access | Semua menu, termasuk User Manager |
-| `ADMIN` | Create, Read, Update | Semua menu data anggaran |
-| `ADMIN_PROVINSI` | CRUD untuk provinsinya | Terbatas pada wilayah provinsi |
-| `ADMIN_KABKOTA` | CRUD untuk kabkotanya | Terbatas pada wilayah kabkota |
-| `VIEWER` | Read-only | Semua menu, tidak bisa edit |
-| `AUDITOR` | Read-only + Export | Semua menu, fokus audit trail |
+| Role | Akses | Keterangan & Tugas Utama |
+|------|-------|--------------------------|
+| `SUPER_ADMIN` | Full access | Mengesahkan APBN, kelola pengguna, audit trail master, dan atur tugas peran |
+| `ADMIN` | Create, Read, Update | Monitoring alokasi anggaran nasional & verifikasi realisasi daerah |
+| `ADMIN_PROVINSI` | CRUD provinsinya | Terbatas pada wilayah provinsi & kabupaten/kota di bawahnya |
+| `ADMIN_KABKOTA` | CRUD kabkotanya | Terbatas pada wilayah kabupaten/kota & institusi pendidikan lokal |
+| `AUDITOR` | Read-only + Audit | Pemeriksaan independen, investigasi anomali, & audit trail real-time |
+| `PUBLIC_RESEARCHER` | Read-only | Akses publik/akademisi untuk riset transparansi anggaran pendidikan |
 
 ### 1.3 Core Concept: Spreadsheet-Like Interface
 - **Tampilan seperti Excel** — table rows & columns, sticky header & footer
-- **Inline Editing** — klik sel angka langsung edit, tekan Enter/Tab untuk simpan
-- **Kalkulasi Real-Time** — `Selisih = Nominal − Realisasi`, `% = (Realisasi / Nominal) × 100`
+- **Inline Editing & PostgreSQL Persist** — klik sel angka langsung edit, simpan otomatis ke PostgreSQL DB
+- **Kalkulasi Real-Time & 2-Way Cascading** — `Selisih = Nominal − Realisasi`, `% = (Realisasi / Nominal) × 100` (Top-down & bottom-up)
 - **Conditional Formatting** — badge warna: 🟢 ≥80%, 🟡 50–79%, 🔴 <50%
-- **Cascade Update** — edit Institusi → auto-update Kabkota → auto-update Provinsi → auto-update Dashboard
+- **Exact DB Count Paginasi** — 100 sekolah per halaman dengan urutan A-Z (Provinsi ➔ Kab/Kota ➔ Institusi)
+- **Authentic Audit Trail** — Log event asli tanpa hardcode/sample data
 - **Export Excel** — download `.xlsx` dengan formula Excel tersimpan, bukan nilai statis
 
 ---

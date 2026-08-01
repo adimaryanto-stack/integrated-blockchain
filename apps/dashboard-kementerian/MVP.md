@@ -34,22 +34,29 @@ Berikut adalah daftar sprint pengembangan dan status checklist fungsionalitas:
 - [x] Fungsionalitas **Export Excel** menggunakan `ExcelJS` & `file-saver` untuk menyimpan data beserta formula Excel asli (`SUM`, pembagian persentase) dan conditional formatting warna badge.
 
 ### 👥 SPRINT 5: User Manager & RBAC (Role-Based Access Control)
-- [x] Pembuatan halaman User Manager dengan data mock user yang komprehensif.
+- [x] Pembuatan halaman User Manager dengan data user terhubung ke database.
 - [x] Operasi CRUD user (Tambah, Edit, Hapus, Aktif/Nonaktifkan akun).
-- [x] Implementasi Role-Based Access Control (Super Admin, Admin, Admin Provinsi, Admin Kabkota, Viewer, Auditor).
-- [x] Pembatasan menu dan aksi edit data (inline editing terkunci untuk viewer/auditor atau wilayah yang tidak sesuai).
+- [x] Implementasi Role-Based Access Control 6 Tingkat (`SUPER_ADMIN`, `ADMIN`, `ADMIN_PROVINSI`, `ADMIN_KABKOTA`, `PUBLIC_RESEARCHER`, `AUDITOR`).
+- [x] Pembatasan menu dan aksi edit data (inline editing terkunci untuk Public Researcher/Auditor atau wilayah yang tidak sesuai).
+- [x] Fitur **Pengaturan Peran & Pembagian Tugas (RBAC Matrix)** interaktif untuk konfigurasi wewenang oleh Super Admin.
+
+### 🗄️ SPRINT 6: Integrasi Database PostgreSQL, 2-Way Cascading Sync & Authentic Audit Trail
+- [x] Integrasi penuh ke **PostgreSQL Database** (Port 2025) via **PostgREST Engine** (Port 2026).
+- [x] Sinkronisasi Anggaran 2-Arah Presisi 100% (*Top-down & Bottom-up*) antara APBN, 38 Provinsi, dan 514 Kabupaten/Kota.
+- [x] Paginasi Server-Side **100 sekolah per halaman** mencakup seluruh 367.865 institusi dengan 3-tier A-Z sorting (Provinsi ➔ Kab/Kota ➔ Institusi).
+- [x] Modul **Audit Trail Real-Time Murni** tanpa data sampel/dummy/hardcode dengan rekaman log kejadian asli persistent.
 
 ---
 
 ## 📷 Screenshots Validasi
 
-Semua halaman di atas telah dijalankan dan diverifikasi pada `http://localhost:3009`. Cuplikan gambar layar telah dilampirkan di file **[`README.md`](./README.md)** untuk referensi cepat.
+Semua halaman di atas telah dijalankan dan diverifikasi pada `http://localhost:2021`. Cuplikan gambar layar telah dilampirkan di file **[`README.md`](./README.md)** untuk referensi cepat.
 
 ---
 
 ## 🚀 Langkah Selanjutnya (Post-MVP)
 - [x] Integrasi Database Production (Supabase PostgreSQL / PostgREST API).
+- [x] Modul audit trail murni real-time untuk merekam histori edit data per sel secara mendetail.
 - [ ] Implementasi Autentikasi Pengguna nyata (NextAuth.js / Supabase Auth).
 - [ ] Fitur Progressive Web App (PWA) untuk dukungan akses offline.
-- [x] Modul audit trail untuk merekam histori edit data per sel secara mendetail.
 
