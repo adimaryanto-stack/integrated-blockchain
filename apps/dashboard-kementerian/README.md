@@ -86,7 +86,123 @@ Pastikan Anda memiliki [Node.js](https://nodejs.org/) (versi 18+ disarankan) ter
    ```
 
 4. **Akses Aplikasi**
-   Buka [http://localhost:3000](http://localhost:3000) di browser Anda. Halaman utama berada pada rute `/dashboard`.
+   Buka [http://localhost:2021](http://localhost:2021) di browser Anda. Halaman utama berada pada rute `/dashboard`.
+
+---
+
+## 🌐 Panduan Deployment ke Server VPS (Production)
+
+Berikut adalah panduan lengkap memasang **Dashboard Kementerian**, **PostgreSQL**, dan **PostgREST Engine** pada server Linux VPS (Ubuntu 22.04 / 24.04 LTS):
+
+### 1. Persiapan Server VPS
+```bash
+# Update sistem paket
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y postgresql postgresql-contrib curl git Nginx xz-utils
+```
+
+### 2. Konfigurasi Database PostgreSQL
+```bash
+# Buat database & user PostgreSQL
+sudo -u postgres psql -c "CREATE DATABASE integrated_blockchain;"
+sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'PasswordSubstansial123';"
+
+# Restorasi schema & data
+sudo -u postgres psql -d integrated_blockchain -f dump.sql
+```
+
+### 3. Install & Jalankan Service PostgREST (REST API Proxy)
+```bash
+# Download binary PostgREST terbaru
+cd /tmp
+wget https://github.com/PostgREST/postgrest/releases/download/v12.2.0/postgrest-v12.2.0-linux-static-x64.tar.xz
+tar -xf postgrest-v12.2.0-linux-static-x64.tar.xz
+sudo mv postgrest /usr/local/bin/
+
+# Buat file konfigurasi /etc/postgrest.conf
+sudo bash -c 'cat <<EOF > /etc/postgrest.conf
+db-uri = "postgres://postgres:PasswordSubstansial123@127.0.0.1:5432/integrated_blockchain"
+db-schemas = "public"
+db-anon-role = "postgres"
+server-port = 2026
+EOF'
+
+# Buat Systemd Service untuk PostgREST (/etc/systemd/system/postgrest.service)
+sudo bash -c 'cat <<EOF > /etc/systemd/system/postgrest.service
+[Unit]
+Description=PostgREST Engine Service
+After=network.target postgresql.service
+
+[Service]
+ExecStart=/usr/local/bin/postgrest /etc/postgrest.conf
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target
+EOF'
+
+# Enable & Start Service
+sudo systemctl daemon-reload
+sudo systemctl enable --now postgrest
+```
+
+### 4. Build & Jalankan Next.js App dengan PM2
+```bash
+# Install Node.js 20 LTS & PM2
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+sudo npm install -g pm2
+
+# Clone repository & set environment
+git clone https://github.com/adimaryanto-stack/integrated-blockchain.git
+cd integrated-blockchain/apps/dashboard-kementerian
+
+# Set URL PostgREST REST API (.env.local)
+echo "NEXT_PUBLIC_SUPABASE_URL=http://IP_VPS_ANDA:2026" > .env.local
+echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=dummy-anon-key" >> .env.local
+
+# Install & Production Build
+npm install
+npm run build
+
+# Jalankan aplikasi pada Port 2021 dengan PM2
+pm2 start npm --name "dashboard-kementerian" -- start -- -p 2021
+pm2 save
+pm2 startup
+```
+
+### 5. Konfigurasi Nginx Reverse Proxy & Domain SSL (Opsional)
+```nginx
+# /etc/nginx/sites-available/dashboard-kementerian
+server {
+    listen 80;
+    server_name domain-anda.com;
+
+    # Forward ke Next.js Dashboard
+    location / {
+        proxy_pass http://127.0.0.1:2021;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Proxy ke PostgREST API
+    location /rest/v1/ {
+        proxy_pass http://127.0.0.1:2026/;
+        proxy_set_header Host $host;
+    }
+}
+```
+Aktifkan site Nginx dan pasang SSL gratis dengan Certbot:
+```bash
+sudo ln -s /etc/nginx/sites-available/dashboard-kementerian /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d domain-anda.com
+```
 
 ---
 
