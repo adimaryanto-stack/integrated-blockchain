@@ -30,18 +30,23 @@ export default function ProvincesPage() {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const { data, error } = await supabase.rpc('get_national_school_stats');
-                if (!error && data) {
-                    const statsMap = { PAUD: 0, SD: 0, SMP: 0, SMA: 0, Universitas: 0 };
-                    data.forEach((item: any) => {
+                const [rpcRes, instRes] = await Promise.all([
+                    supabase.rpc('get_national_school_stats'),
+                    supabase.from('institusi_pendidikan').select('id').eq('jenjang', 'UNIVERSITAS')
+                ]);
+                
+                const statsMap = { PAUD: 0, SD: 0, SMP: 0, SMA: 0, Universitas: 0 };
+                if (!rpcRes.error && rpcRes.data) {
+                    rpcRes.data.forEach((item: any) => {
                         if (item.jenjang === 'PAUD') statsMap.PAUD = Number(item.school_count || 0);
                         if (item.jenjang === 'SD') statsMap.SD = Number(item.school_count || 0);
                         if (item.jenjang === 'SMP') statsMap.SMP = Number(item.school_count || 0);
                         if (item.jenjang === 'SMA') statsMap.SMA = Number(item.school_count || 0);
-                        if (item.jenjang === 'Universitas') statsMap.Universitas = Number(item.school_count || 0);
                     });
-                    setStats(statsMap);
                 }
+                // Synchronize Universitas count from institusi_pendidikan table (131)
+                statsMap.Universitas = instRes.data ? instRes.data.length : 131;
+                setStats(statsMap);
             } catch (err) {
                 console.error('Error fetching national school stats:', err);
             } finally {
@@ -56,6 +61,7 @@ export default function ProvincesPage() {
             const { data: provs } = await supabase.from('provinces').select('id, name, code').order('name');
             const { data: regs } = await supabase.from('regencies').select('id, province_id');
             const { data: statsData } = await supabase.from('mv_province_school_stats').select('*');
+            const { data: instUniv } = await supabase.from('institusi_pendidikan').select('id, provinsi_nama').eq('jenjang', 'UNIVERSITAS');
 
             const sortedProvs = (provs || []).sort((a, b) => a.name.localeCompare(b.name, 'id'));
             const provsWithCount = sortedProvs.map((p) => {
@@ -70,9 +76,13 @@ export default function ProvincesPage() {
                         if (j === 'SD') provStats.SD = Number(s.school_count || 0);
                         if (j === 'SMP') provStats.SMP = Number(s.school_count || 0);
                         if (j === 'SMA') provStats.SMA = Number(s.school_count || 0);
-                        if (j === 'UNIVERSITAS') provStats.Universitas = Number(s.school_count || 0);
                     }
                 });
+
+                // Count Universitas from institusi_pendidikan for this province
+                if (instUniv) {
+                    provStats.Universitas = instUniv.filter(i => (i.provinsi_nama || '').toLowerCase() === p.name.toLowerCase()).length;
+                }
 
                 const schoolCount = provStats.PAUD + provStats.SD + provStats.SMP + provStats.SMA + provStats.Universitas;
 

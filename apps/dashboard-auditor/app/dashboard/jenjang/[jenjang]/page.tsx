@@ -10,7 +10,7 @@ import { getInstitusiByJenjang, alokasiProvinsiData, getKabkotaByProvinsi, tahun
 import { supabase } from '@/lib/supabase';
 import { fmtRupiah, fmtTriliun } from '@/lib/utils/formatters';
 import { Jenjang, InstitusiPendidikan } from '@/types';
-import { Search, Download, Loader2 } from 'lucide-react';
+import { Search, Download, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import EditableCell from '@/components/spreadsheet/EditableCell';
 import { rollupInstitusiChange } from '@/lib/utils/dbSync';
 
@@ -133,11 +133,20 @@ export default function JenjangPage() {
     });
   }, [data, search, selectedProvinsiId, selectedKabKotaName, selectedStatus]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 100;
+
   const totals = useMemo(() => {
     const nom = filtered.reduce((s, i) => s + i.nominal_alokasi, 0);
     const real = filtered.reduce((s, i) => s + i.realisasi_total, 0);
     return { nominal: nom, realisasi: real, selisih: nom - real, pct: nom > 0 ? (real / nom) * 100 : 0 };
   }, [filtered]);
+
+  const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filtered.slice(start, start + itemsPerPage);
+  }, [filtered, currentPage]);
 
   const handleCellSave = async (rowId: string, field: 'nominal' | 'realisasi', newValue: number) => {
     setData(prev => prev.map(item => {
@@ -201,6 +210,7 @@ export default function JenjangPage() {
               onChange={(e) => {
                 setSelectedProvinsiId(e.target.value);
                 setSelectedKabKotaName('');
+                setCurrentPage(1);
               }}
               className="select-dropdown"
             >
@@ -214,7 +224,10 @@ export default function JenjangPage() {
             <span className="text-xs text-text-muted">Kab/Kota:</span>
             <select
               value={selectedKabKotaName}
-              onChange={(e) => setSelectedKabKotaName(e.target.value)}
+              onChange={(e) => {
+                setSelectedKabKotaName(e.target.value);
+                setCurrentPage(1);
+              }}
               className="select-dropdown"
               disabled={!selectedProvinsiId}
             >
@@ -228,7 +241,10 @@ export default function JenjangPage() {
             <span className="text-xs text-text-muted">Status:</span>
             <select
               value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
+              onChange={(e) => {
+                setSelectedStatus(e.target.value);
+                setCurrentPage(1);
+              }}
               className="select-dropdown"
             >
               <option value="">Semua Status</option>
@@ -242,7 +258,10 @@ export default function JenjangPage() {
               type="text"
               placeholder={`Cari nama ${config.label.toLowerCase()}...`}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
               className="search-input"
             />
           </div>
@@ -271,9 +290,9 @@ export default function JenjangPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((row, idx) => (
+              {paginatedData.map((row, idx) => (
                 <tr key={row.id} className="hover:bg-indigo-50/50 transition">
-                  <td className="sheet-cell text-center text-text-muted text-xs">{idx + 1}</td>
+                  <td className="sheet-cell text-center text-text-muted text-xs">{(currentPage - 1) * itemsPerPage + idx + 1}</td>
                   <td className="sheet-cell text-left font-medium text-text-primary">
                     <Link href={`/dashboard/profil-institusi/${row.id}`} className="hover:text-accent hover:underline transition-colors">
                       {row.nama_institusi}
@@ -305,9 +324,9 @@ export default function JenjangPage() {
                 <td className="sheet-footer-cell" />
                 <td className="sheet-footer-cell" />
                 <td className="sheet-footer-cell" />
-                <td className="sheet-footer-cell text-right">{fmtRupiah(totals.nominal)}</td>
-                <td className="sheet-footer-cell text-right">{fmtRupiah(totals.realisasi)}</td>
-                <td className="sheet-footer-cell text-right text-rose-600">{fmtTriliun(totals.selisih)}</td>
+                <td className="sheet-footer-cell text-right font-bold font-mono">{fmtRupiah(totals.nominal)}</td>
+                <td className="sheet-footer-cell text-right font-bold font-mono">{fmtRupiah(totals.realisasi)}</td>
+                <td className="sheet-footer-cell text-right text-rose-600 font-bold font-mono">{fmtRupiah(totals.selisih)}</td>
                 <td className="sheet-footer-cell text-center">
                   <PctBadge value={totals.pct} size="md" />
                 </td>
@@ -316,7 +335,56 @@ export default function JenjangPage() {
             </tfoot>
           </table>
         </div>
+
+        {/* Pagination */}
+        <div className="mt-4 flex items-center justify-between bg-white px-4 py-3 border border-slate-200 rounded-lg shadow-sm">
+          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between animate-fade-in">
+            <div>
+              <p className="text-xs text-slate-700">
+                Menampilkan <span className="font-semibold">{filtered.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> sampai{' '}
+                <span className="font-semibold">{Math.min(currentPage * itemsPerPage, filtered.length)}</span> dari{' '}
+                <span className="font-semibold">{filtered.length}</span> data institusi
+              </p>
+            </div>
+            <div>
+              <nav className="isolate inline-flex -space-x-px rounded-md shadow-xs" aria-label="Pagination">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center rounded-l-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                {Array.from({ length: totalPages }).map((_, idx) => {
+                  const pageNum = idx + 1;
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`relative inline-flex items-center px-4 py-2 text-xs font-semibold focus:z-20 ${
+                        currentPage === pageNum
+                          ? 'z-10 bg-indigo-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
+                          : 'text-slate-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:outline-offset-0'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="relative inline-flex items-center rounded-r-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+  );
+}
   );
 }
