@@ -2,6 +2,29 @@
 
 Semua perubahan penting pada proyek **Dashboard Kementerian** akan didokumentasikan di file ini. Format berkas ini mengacu pada [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) dan mematuhi penomoran [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 01-08-2026
+
+### Ditambahkan
+- **Integrasi Database PostgreSQL & PostgREST**: Terhubung langsung ke **PostgreSQL Database** (Port 2025) via proxy API **PostgREST** (Port 2026) untuk sinkronisasi data APBN, 38 Provinsi, 514 Kab/Kota, 367.865 Institusi Pendidikan, dan pengguna.
+- **Kalkulasi & Sinkronisasi Presisi 2-Arah (2-Way Cascading Sync)**:
+  - *Top-Down Cascading*: Perubahan nominal alokasi provinsi otomatis mendistribusikan ulang secara proporsional ke 514 kabupaten/kota di PostgreSQL DB.
+  - *Bottom-Up Cascading*: Perubahan nominal di tingkat kabupaten/kota otomatis mengkalkulasi ulang alokasi provinsi dan total APBN nasional.
+  - Penyelarasan nominal APBN 2026 menjadi **Rp 769.100.000.000.000 (769,1 Triliun)** dengan selisih 0 rupiah di seluruh hirarki DB.
+- **Matriks Pengaturan Peran & Pembagian Tugas (RBAC Matrix)**:
+  - Ditambahkan Tab Navigasi *Pengaturan Peran & Pembagian Tugas (RBAC Matrix)* pada menu **User Manager** (`/dashboard/users`).
+  - Fitur pengeditan deskripsi dan daftar tugas utama per peran khusus Super Admin dengan pencatatan audit log otomatis.
+- **Audit Trail Real-Time Murni**:
+  - Penghapusan total data dummy/sample `INITIAL_AUDIT_LOGS`.
+  - Perekaman histori log asli real-time mencakup user aktif, role, nama entitas, nilai lama ➔ nilai baru, dan timestamp dengan penyimpanan persistent.
+- **Paginasi Server-Side 100 Sekolah & Pengurutan A-Z**:
+  - Mengimplementasikan paginasi 100 sekolah per halaman langsung dari PostgreSQL DB menggunakan header `Prefer: count=exact`.
+  - Pengurutan presisi 3 tingkat: Provinsi A-Z ➔ Kab/Kota A-Z ➔ Nama Institusi A-Z.
+
+### Diubah
+- **Pembaruan Role Viewer ➔ Public Researcher**:
+  - Mengubah kode peran `VIEWER` menjadi **`PUBLIC_RESEARCHER`** (*Public Researcher*) pada tipe TypeScript, UI badge warna emerald, dan database PostgreSQL.
+- Memperbarui versi aplikasi di `package.json` dan footer header menjadi **`Dashboard Kementerian v1.5.0`**.
+
 ---
 
 ## [1.4.1] - 24-06-2026
