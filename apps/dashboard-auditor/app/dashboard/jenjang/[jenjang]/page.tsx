@@ -123,7 +123,14 @@ export default function JenjangPage() {
     if (search) {
       result = result.filter(inst => inst.nama_institusi.toLowerCase().includes(search.toLowerCase()));
     }
-    return result;
+
+    return [...result].sort((a, b) => {
+      const provCompare = (a.provinsi_nama || '').localeCompare(b.provinsi_nama || '', 'id');
+      if (provCompare !== 0) return provCompare;
+      const kabCompare = (a.kabupaten_kota_nama || '').localeCompare(b.kabupaten_kota_nama || '', 'id');
+      if (kabCompare !== 0) return kabCompare;
+      return (a.nama_institusi || '').localeCompare(b.nama_institusi || '', 'id');
+    });
   }, [data, search, selectedProvinsiId, selectedKabKotaName, selectedStatus]);
 
   const totals = useMemo(() => {
@@ -198,7 +205,7 @@ export default function JenjangPage() {
               className="select-dropdown"
             >
               <option value="">Semua Provinsi</option>
-              {alokasiProvinsiData.map(p => (
+              {[...alokasiProvinsiData].sort((a, b) => a.provinsi.nama_provinsi.localeCompare(b.provinsi.nama_provinsi, 'id')).map(p => (
                 <option key={p.provinsi_id} value={p.provinsi_id}>{p.provinsi.nama_provinsi}</option>
               ))}
             </select>

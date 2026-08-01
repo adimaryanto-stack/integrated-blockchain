@@ -57,18 +57,20 @@ export default function ProvincesPage() {
             const { data: regs } = await supabase.from('regencies').select('id, province_id');
             const { data: statsData } = await supabase.from('mv_province_school_stats').select('*');
 
-            const provsWithCount = (provs || []).map((p) => {
+            const sortedProvs = (provs || []).sort((a, b) => a.name.localeCompare(b.name, 'id'));
+            const provsWithCount = sortedProvs.map((p) => {
                 const regIds = (regs || []).filter(r => r.province_id === p.id).map(r => r.id);
                 
                 // Get counts from statsData
                 const provStats = { PAUD: 0, SD: 0, SMP: 0, SMA: 0, Universitas: 0 };
                 (statsData || []).forEach(s => {
                     if (s.province_id === p.id) {
-                        if (s.jenjang === 'PAUD') provStats.PAUD = Number(s.school_count || 0);
-                        if (s.jenjang === 'SD') provStats.SD = Number(s.school_count || 0);
-                        if (s.jenjang === 'SMP') provStats.SMP = Number(s.school_count || 0);
-                        if (s.jenjang === 'SMA') provStats.SMA = Number(s.school_count || 0);
-                        if (s.jenjang === 'Universitas') provStats.Universitas = Number(s.school_count || 0);
+                        const j = (s.jenjang || '').toUpperCase();
+                        if (j === 'PAUD') provStats.PAUD = Number(s.school_count || 0);
+                        if (j === 'SD') provStats.SD = Number(s.school_count || 0);
+                        if (j === 'SMP') provStats.SMP = Number(s.school_count || 0);
+                        if (j === 'SMA') provStats.SMA = Number(s.school_count || 0);
+                        if (j === 'UNIVERSITAS') provStats.Universitas = Number(s.school_count || 0);
                     }
                 });
 

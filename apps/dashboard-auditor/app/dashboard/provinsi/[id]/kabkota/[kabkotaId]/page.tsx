@@ -9,7 +9,7 @@ import { useAppStore } from '@/lib/store';
 import { alokasiProvinsiData, getKabkotaByProvinsi, getJenjangBreakdownByKabkota, getInstitusiByKabkota, tahunAnggaranData } from '@/lib/data';
 import { fmtRupiah } from '@/lib/utils/formatters';
 import { AlokasiProvinsi, AlokasiKabupatenKota, InstitusiPendidikan, JenjangBreakdownProvinsi } from '@/types';
-import { ArrowLeft, Banknote, Download, School, Sparkles } from 'lucide-react';
+import { ArrowLeft, Banknote, ChevronLeft, ChevronRight, Download, Filter, School, Search, Sparkles } from 'lucide-react';
 
 import { supabase } from '@/lib/supabase';
 import EditableCell from '@/components/spreadsheet/EditableCell';
@@ -124,14 +124,60 @@ export default function KabkotaDetailPage() {
     setSchoolList(scaledSchoolList);
   }, [scaledSchoolList]);
 
-  // Calculate dynamic totals based on individual school edits
+  const [search, setSearch] = useState('');
+  const [selectedJenjang, setSelectedJenjang] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 100;
+
+  // Extract unique jenjang values for filter
+  const jenjangOptions = useMemo(() => {
+    const jenjangSet = new Set(schoolList.map(s => s.jenjang));
+    return Array.from(jenjangSet).sort();
+  }, [schoolList]);
+
+  // Filtered data
+  const filtered = useMemo(() => {
+    let result = schoolList;
+    if (selectedJenjang) {
+      result = result.filter(s => s.jenjang === selectedJenjang);
+    }
+    if (search) {
+      result = result.filter(s => s.nama_institusi.toLowerCase().includes(search.toLowerCase()));
+    }
+    return result;
+  }, [schoolList, selectedJenjang, search]);
+
+  // Calculate dynamic totals based on filtered data
   const totals = useMemo(() => {
-    const nominal = schoolList.reduce((sum, item) => sum + item.nominal_alokasi, 0);
-    const realisasi = schoolList.reduce((sum, item) => sum + item.realisasi_total, 0);
+    const nominal = filtered.reduce((sum, item) => sum + item.nominal_alokasi, 0);
+    const realisasi = filtered.reduce((sum, item) => sum + item.realisasi_total, 0);
     const selisih = nominal - realisasi;
     const persentase = nominal > 0 ? (realisasi / nominal) * 100 : 0;
     return { nominal, realisasi, selisih, persentase };
-  }, [schoolList]);
+  }, [filtered]);
+
+  // Pagination
+  const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filtered.slice(start, start + itemsPerPage);
+  }, [filtered, currentPage]);
+
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (currentPage > 3) pages.push('...');
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (currentPage < totalPages - 2) pages.push('...');
+      pages.push(totalPages);
+    }
+    return pages;
+  };
 
   // Jenjang Breakdown calculation — loaded async from schools table (same source as port 2020)
   const [jenjangBreakdown, setJenjangBreakdown] = useState<JenjangBreakdownProvinsi[]>([]);
@@ -378,6 +424,37 @@ export default function KabkotaDetailPage() {
             <span className="text-xs text-text-muted font-medium font-mono">[Sheet: Alokasi Sekolah]</span>
           </div>
 
+          {/* Filter & Search Toolbar */}
+          <div className="px-5 py-3 border-b border-slate-100 flex flex-wrap items-center gap-3 bg-white">
+            <div className="flex items-center gap-2">
+              <Filter size={14} className="text-text-muted" />
+              <span className="text-xs text-text-muted font-medium">Jenjang:</span>
+              <select
+                value={selectedJenjang}
+                onChange={(e) => { setSelectedJenjang(e.target.value); setCurrentPage(1); }}
+                className="select-dropdown"
+              >
+                <option value="">Semua Jenjang</option>
+                {jenjangOptions.map(k => (
+                  <option key={k} value={k}>{k}</option>
+                ))}
+              </select>
+            </div>
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+              <input
+                type="text"
+                placeholder="Cari nama sekolah..."
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+                className="search-input"
+              />
+            </div>
+            <span className="text-xs text-text-muted flex-1">
+              {filtered.length} institusi{filtered.length !== schoolList.length ? ` (dari ${schoolList.length} total)` : ''}
+            </span>
+          </div>
+
           <div className="overflow-x-auto">
             <table className="sheet-table w-full">
               <thead>
@@ -392,9 +469,9 @@ export default function KabkotaDetailPage() {
                 </tr>
               </thead>
               <tbody>
-                {schoolList.map((row, idx) => (
+                {paginatedData.map((row, idx) => (
                   <tr key={row.id} className="hover:bg-indigo-50/50 transition">
-                    <td className="sheet-cell text-center text-text-muted text-xs">{idx + 1}</td>
+                    <td className="sheet-cell text-center text-text-muted text-xs">{(currentPage - 1) * itemsPerPage + idx + 1}</td>
                     <td className="sheet-cell text-left font-semibold text-slate-700">
                       <Link href={`/dashboard/profil-institusi/${row.id}`} className="hover:text-accent hover:underline transition-colors text-indigo-700">
                         {row.nama_institusi}
@@ -443,6 +520,65 @@ export default function KabkotaDetailPage() {
             </table>
           </div>
         </div>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between bg-white px-4 py-3 border border-slate-200 rounded-lg shadow-sm">
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs text-slate-700">
+                  Menampilkan <span className="font-semibold">{filtered.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> sampai{' '}
+                  <span className="font-semibold">{Math.min(currentPage * itemsPerPage, filtered.length)}</span> dari{' '}
+                  <span className="font-semibold">{filtered.length}</span> data sekolah
+                </p>
+              </div>
+              <div>
+                <nav className="isolate inline-flex -space-x-px rounded-md shadow-xs" aria-label="Pagination">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center rounded-l-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  {getPageNumbers().map((pageNum, idx) => {
+                    if (pageNum === '...') {
+                      return (
+                        <span key={`ellipsis-${idx}`} className="relative inline-flex items-center px-4 py-2 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-300">
+                          ...
+                        </span>
+                      );
+                    }
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum as number)}
+                        className={`relative inline-flex items-center px-4 py-2 text-xs font-semibold focus:z-20 ${
+                          currentPage === pageNum
+                            ? 'z-10 bg-indigo-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
+                            : 'text-slate-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:outline-offset-0'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="relative inline-flex items-center rounded-r-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <p className="text-xs text-text-muted flex items-center gap-1">
+          <span>✏️</span>
+          <span>Klik langsung pada kolom <strong>Nominal Anggaran</strong> atau <strong>Realisasi</strong> untuk mengubah data • Tekan <strong>Enter</strong> untuk menyimpan • Limit {itemsPerPage} data per halaman</span>
+        </p>
       </div>
     </div>
   );
