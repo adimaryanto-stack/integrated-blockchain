@@ -10,41 +10,29 @@ export const DEFAULT_USER: User = {
   created_at: '2026-01-01',
 };
 
-const INITIAL_AUDIT_LOGS: AuditLogItem[] = [
-  {
-    id: 'log-101',
-    user_nama: 'Budi Santoso (Super Admin)',
-    user_role: 'SUPER_ADMIN',
-    entitas: 'Alokasi Provinsi (DKI Jakarta)',
-    entitas_id: 'p-31',
-    field: 'nominal_alokasi',
-    nilai_lama: 'Rp 45.000.000.000.000',
-    nilai_baru: 'Rp 48.500.000.000.000',
-    timestamp: '26/07/2026 18:30:00',
-  },
-  {
-    id: 'log-102',
-    user_nama: 'Ahmad Dahlan',
-    user_role: 'ADMIN_PROVINSI',
-    entitas: 'Alokasi Kabupaten/Kota (Kota Jakarta Pusat)',
-    entitas_id: 'k-p-31-0',
-    field: 'realisasi_total',
-    nilai_lama: 'Rp 10.200.000.000.000',
-    nilai_baru: 'Rp 11.500.000.000.000',
-    timestamp: '26/07/2026 17:45:12',
-  },
-  {
-    id: 'log-103',
-    user_nama: 'Siti Rahmawati',
-    user_role: 'AUDITOR',
-    entitas: 'Rincian Pengeluaran Institusi (Universitas Indonesia)',
-    entitas_id: 'inst-universitas-0',
-    field: 'pajak_persen',
-    nilai_lama: '10%',
-    nilai_baru: '11%',
-    timestamp: '26/07/2026 16:15:30',
-  },
-];
+// Helper to load persisted real audit logs from browser storage
+function getStoredAuditLogs(): AuditLogItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const stored = localStorage.getItem('kementerian_audit_logs');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (err) {
+    console.error('Failed to read audit logs from storage:', err);
+  }
+  return [];
+}
+
+function saveAuditLogsToStorage(logs: AuditLogItem[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem('kementerian_audit_logs', JSON.stringify(logs));
+  } catch (err) {
+    console.error('Failed to save audit logs to storage:', err);
+  }
+}
 
 interface AppState {
   activeTahun: number;
@@ -83,8 +71,8 @@ export const useAppStore = create<AppState>((set) => ({
   currentUser: DEFAULT_USER,
   setCurrentUser: (user) => set({ currentUser: user }),
 
-  // Audit Logs
-  auditLogs: INITIAL_AUDIT_LOGS,
+  // Audit Logs (Pure Real-Time Logs — No Sample / Dummy Data)
+  auditLogs: getStoredAuditLogs(),
   addAuditLog: (log) =>
     set((state) => {
       const now = new Date();
@@ -95,9 +83,14 @@ export const useAppStore = create<AppState>((set) => ({
         id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
         timestamp: `${dateStr} ${timeStr}`,
       };
-      return { auditLogs: [newLogItem, ...state.auditLogs] };
+      const updatedLogs = [newLogItem, ...state.auditLogs];
+      saveAuditLogsToStorage(updatedLogs);
+      return { auditLogs: updatedLogs };
     }),
-  clearAuditLogs: () => set({ auditLogs: [] }),
+  clearAuditLogs: () => {
+    saveAuditLogsToStorage([]);
+    set({ auditLogs: [] });
+  },
 
   auditDrawerOpen: false,
   toggleAuditDrawer: () => set((s) => ({ auditDrawerOpen: !s.auditDrawerOpen })),

@@ -140,9 +140,9 @@ export default function Header({ title, subtitle }: HeaderProps) {
     },
     {
       id: 'usr-viewer',
-      username: 'Dewi Lestari (Public Viewer)',
+      username: 'Dewi Lestari (Public Researcher)',
       email: 'dewi.lestari@gmail.com',
-      role: 'VIEWER' as UserRole,
+      role: 'PUBLIC_RESEARCHER' as UserRole,
       is_active: true,
       created_at: '2026-01-04',
     },

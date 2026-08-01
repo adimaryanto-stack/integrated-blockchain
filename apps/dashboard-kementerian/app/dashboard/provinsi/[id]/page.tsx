@@ -78,7 +78,7 @@ export default function ProvinsiDetailPage() {
           .select('id')
           .eq('province_id', id);
 
-        const regencyIds = (regencies || []).map((r: any) => r.id);
+        const regencyIds = (regencies || []).map((r: { id: string }) => r.id);
 
         if (regencyIds.length > 0) {
           const countPromises = jenjangs.map(async (j) => {
@@ -92,7 +92,7 @@ export default function ProvinsiDetailPage() {
                 .select('id')
                 .in('regency_id', chunk)
                 .or(orFilter);
-              (data || []).forEach((s: any) => allIds.add(s.id));
+              (data || []).forEach((s: { id: string }) => allIds.add(s.id));
             }
             return allIds.size;
           });

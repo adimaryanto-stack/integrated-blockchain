@@ -12,7 +12,7 @@ import { Search, Download, Plus } from 'lucide-react';
 
 
 export default function KabupatenKotaPage() {
-  const { activeTahun } = useAppStore();
+  const { activeTahun, currentUser } = useAppStore();
 
   const sortedProvinsiData = useMemo(() => {
     return [...alokasiProvinsiData].sort((a, b) =>
@@ -53,7 +53,10 @@ export default function KabupatenKotaPage() {
     return { nominal: nom, realisasi: real, selisih: nom - real, pct: nom > 0 ? (real / nom) * 100 : 0 };
   }, [filtered]);
 
+  const canEdit = currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN' || currentUser.role === 'ADMIN_PROVINSI' || currentUser.role === 'ADMIN_KABKOTA';
+
   const startEdit = (id: string, field: 'nominal' | 'realisasi', value: number) => {
+    if (!canEdit) return;
     setEditingCell({ id, field });
     setEditValue(String(value));
   };

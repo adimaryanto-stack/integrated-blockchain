@@ -200,6 +200,55 @@ export async function updateAlokasiProvinsi(id: string, field: string, value: nu
       nilai_baru: fmtRupiah(value),
     });
 
+    // Cascade down to all child kabupaten/kota for this province
+    const kabsRes = await fetch(`${url}/rest/v1/alokasi_kabupaten_kota?alokasi_provinsi_id=eq.${id}&order=id.asc`, { headers });
+    if (kabsRes.ok) {
+      const kabs = await kabsRes.json();
+      if (Array.isArray(kabs) && kabs.length > 0) {
+        const kabCount = kabs.length;
+        const baseNominal = Math.floor(newNominal / kabCount);
+        const remainder = newNominal % kabCount;
+
+        await Promise.all(
+          kabs.map(async (k: any, idx: number) => {
+            const kNominal = idx === kabCount - 1 ? baseNominal + remainder : baseNominal;
+            const kRealisasi = k.realisasi_total;
+            const kSelisih = kNominal - kRealisasi;
+            const kPct = kNominal > 0 ? Math.round((kRealisasi / kNominal) * 1000) / 10 : 0;
+
+            await fetch(`${url}/rest/v1/alokasi_kabupaten_kota?id=eq.${k.id}`, {
+              method: 'PATCH',
+              headers,
+              body: JSON.stringify({
+                nominal_alokasi: kNominal,
+                selisih: kSelisih,
+                persentase_penyerapan: kPct,
+                updated_at: new Date().toISOString().split('T')[0]
+              })
+            });
+          })
+        );
+      }
+    }
+
+    // Cascade update to parent tahun_anggaran
+    const taId = prov.tahun_anggaran_id;
+    if (taId) {
+      const allProvsRes = await fetch(`${url}/rest/v1/alokasi_provinsi?tahun_anggaran_id=eq.${taId}`, { headers });
+      if (allProvsRes.ok) {
+        const allProvs = await allProvsRes.json();
+        const totalNominalTA = allProvs.reduce((s: number, p: any) => 
+          s + (p.id === id ? newNominal : p.nominal_alokasi), 0);
+
+        await fetch(`${url}/rest/v1/tahun_anggaran?id=eq.${taId}`, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({
+            total_anggaran: totalNominalTA
+          })
+        });
+      }
+    }
 
     await initDbConnection(true); // force reload cache
   } catch (err) {
@@ -469,6 +518,158 @@ export function getAllInstitusi(): InstitusiPendidikan[] {
   return institusiPendidikanData;
 }
 
+export async function fetchDbSchoolCounts(): Promise<Record<Jenjang, number>> {
+  const { url, anonKey } = getSupabaseConfig();
+  const headers = {
+    'apikey': anonKey,
+    'Authorization': `Bearer ${anonKey}`,
+    'Prefer': 'count=exact',
+  };
+
+  const jenjangs: Jenjang[] = ['UNIVERSITAS', 'SMA', 'SMP', 'SD', 'PAUD'];
+  const counts: Record<Jenjang, number> = {
+    UNIVERSITAS: 4498,
+    SMA: 22407,
+    SMP: 41511,
+    SD: 136761,
+    PAUD: 162688,
+  };
+
+  try {
+    await Promise.all(
+      jenjangs.map(async (j) => {
+        const res = await fetch(`${url}/rest/v1/institusi_pendidikan?jenjang=eq.${j}&select=id&limit=1`, { headers });
+        const cr = res.headers.get('content-range');
+        if (cr) {
+          const total = parseInt(cr.split('/')[1], 10);
+          if (!isNaN(total) && total > 0) {
+            counts[j] = total;
+          }
+        }
+      })
+    );
+  } catch (err) {
+    console.error('Failed to fetch db school counts:', err);
+  }
+
+  return counts;
+}
+
+export interface FetchInstitusiParams {
+  jenjang?: string;
+  provinsiId?: string;
+  kabkotaId?: string;
+  kecamatan?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface FetchInstitusiResult {
+  data: InstitusiPendidikan[];
+  totalCount: number;
+}
+
+export async function fetchInstitusiPaginated(params: FetchInstitusiParams): Promise<FetchInstitusiResult> {
+  const { url, anonKey } = getSupabaseConfig();
+  const headers = {
+    'apikey': anonKey,
+    'Authorization': `Bearer ${anonKey}`,
+    'Prefer': 'count=exact',
+  };
+
+  const page = params.page || 1;
+  const pageSize = params.pageSize || 100;
+  const offset = (page - 1) * pageSize;
+
+  let endpoint = `${url}/rest/v1/institusi_pendidikan?select=*`;
+
+  if (params.jenjang) {
+    endpoint += `&jenjang=eq.${encodeURIComponent(params.jenjang)}`;
+  }
+  if (params.provinsiId) {
+    const prov = alokasiProvinsiData.find(p => p.provinsi_id === params.provinsiId);
+    if (prov) {
+      endpoint += `&provinsi_nama=eq.${encodeURIComponent(prov.provinsi.nama_provinsi)}`;
+    }
+  }
+  if (params.kabkotaId) {
+    endpoint += `&kabupaten_kota_id=eq.${encodeURIComponent(params.kabkotaId)}`;
+  }
+  if (params.search) {
+    const s = encodeURIComponent(`*${params.search}*`);
+    endpoint += `&or=(nama_institusi.ilike.${s},npsn.ilike.${s},alamat.ilike.${s})`;
+  }
+
+  endpoint += `&order=provinsi_nama.asc,kabupaten_kota_nama.asc,nama_institusi.asc&limit=${pageSize}&offset=${offset}`;
+
+  try {
+    const res = await fetch(endpoint, { headers });
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+
+    const cr = res.headers.get('content-range');
+    let totalCount = 0;
+    if (cr) {
+      const parts = cr.split('/');
+      if (parts[1]) totalCount = parseInt(parts[1], 10) || 0;
+    }
+
+    const rawData = await res.json();
+    let data: InstitusiPendidikan[] = Array.isArray(rawData) ? rawData.map(cleanRecord) : [];
+
+    if (params.kecamatan) {
+      const kec = params.kecamatan.toLowerCase();
+      data = data.filter(i => i.alamat && i.alamat.toLowerCase().includes(kec));
+    }
+
+    return { data, totalCount };
+  } catch (err) {
+    console.error('Failed to fetch paginated institusi:', err);
+    return { data: [], totalCount: 0 };
+  }
+}
+
+export async function fetchAllInstitusi(): Promise<InstitusiPendidikan[]> {
+  if (institusiPendidikanData.length > 0) {
+    return institusiPendidikanData;
+  }
+  const { url, anonKey } = getSupabaseConfig();
+  const headers = {
+    'apikey': anonKey,
+    'Authorization': `Bearer ${anonKey}`,
+  };
+  try {
+    const data = await fetchPaginated(`${url}/rest/v1/institusi_pendidikan?select=*&order=provinsi_nama.asc,kabupaten_kota_nama.asc,nama_institusi.asc`, headers);
+    const cleaned = data.map(cleanRecord);
+    institusiPendidikanData.length = 0;
+    institusiPendidikanData.push(...cleaned);
+    return cleaned;
+  } catch (err) {
+    console.error('Failed to fetch all institusi from Supabase:', err);
+    return institusiPendidikanData;
+  }
+}
+
+export async function fetchInstitusiByKabkota(kabkotaId: string): Promise<InstitusiPendidikan[]> {
+  const existing = institusiPendidikanData.filter(i => i.kabupaten_kota_id === kabkotaId);
+  if (existing.length > 0) return existing;
+
+  const { url, anonKey } = getSupabaseConfig();
+  const headers = {
+    'apikey': anonKey,
+    'Authorization': `Bearer ${anonKey}`,
+  };
+  try {
+    const data = await fetchPaginated(`${url}/rest/v1/institusi_pendidikan?select=*&kabupaten_kota_id=eq.${kabkotaId}&order=npsn.asc,id.asc`, headers);
+    if (Array.isArray(data) && data.length > 0) {
+      return data.map(cleanRecord);
+    }
+  } catch (err) {
+    console.error('Failed to fetch institusi by kabkota:', err);
+  }
+  return getInstitusiByKabkota(kabkotaId);
+}
+
 // Fetch rincian items from Supabase PostgREST API on-demand
 export async function fetchRincianPengeluaranBulanan(
   institusiId: string,
@@ -610,11 +811,11 @@ export function getInstitusiByKabkota(
   const seed = provIdx * 31 + kabIdx + charSeed;
 
   let pUniv = 10;
-  let pSMA = 20;
-  let pSMK = 15;
-  let pSMP = 20;
+  const pSMA = 20;
+  const pSMK = 15;
+  const pSMP = 20;
   let pSD = 30;
-  let pPAUD = 5;
+  const pPAUD = 5;
 
   const cUniv = (seed * 3) % 4;
   if (cUniv === 0) {
@@ -798,6 +999,19 @@ export async function updateTahunAnggaran(id: string, updates: Partial<TahunAngg
       body: JSON.stringify(updates),
     });
     if (res.ok) {
+      const currentUser = useAppStore.getState().currentUser;
+      const keyName = Object.keys(updates)[0] || 'data';
+      const newVal = updates[keyName as keyof TahunAnggaran];
+      useAppStore.getState().addAuditLog({
+        user_nama: currentUser.username,
+        user_role: currentUser.role,
+        entitas: `Tahun Anggaran (${id})`,
+        entitas_id: id,
+        field: keyName,
+        nilai_lama: '-',
+        nilai_baru: typeof newVal === 'number' ? fmtRupiah(newVal) : String(newVal),
+      });
+
       await initDbConnection(true); // reload local cache
       return true;
     }
@@ -826,6 +1040,17 @@ export async function createTahunAnggaran(tahun: number, total_anggaran: number)
       }),
     });
     if (res.ok) {
+      const currentUser = useAppStore.getState().currentUser;
+      useAppStore.getState().addAuditLog({
+        user_nama: currentUser.username,
+        user_role: currentUser.role,
+        entitas: `Tambah Tahun Anggaran (${tahun})`,
+        entitas_id: String(tahun),
+        field: 'total_anggaran',
+        nilai_lama: '0',
+        nilai_baru: fmtRupiah(total_anggaran),
+      });
+
       await initDbConnection(true);
       return true;
     }
@@ -847,6 +1072,17 @@ export async function deleteTahunAnggaran(id: string) {
       },
     });
     if (res.ok) {
+      const currentUser = useAppStore.getState().currentUser;
+      useAppStore.getState().addAuditLog({
+        user_nama: currentUser.username,
+        user_role: currentUser.role,
+        entitas: `Hapus Tahun Anggaran (${id})`,
+        entitas_id: id,
+        field: 'status',
+        nilai_lama: 'DRAFT',
+        nilai_baru: 'DELETED',
+      });
+
       await initDbConnection(true);
       return true;
     }

@@ -1,17 +1,19 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import PctBadge from '@/components/ui/PctBadge';
 import { 
   getAllInstitusi, 
+  fetchDbSchoolCounts,
+  fetchInstitusiPaginated,
   alokasiProvinsiData, 
   alokasiKabupatenKotaData, 
   fetchKecamatanForKabkota 
 } from '@/lib/data';
 import { fmtRupiah } from '@/lib/utils/formatters';
-import { Jenjang } from '@/types';
+import { Jenjang, InstitusiPendidikan } from '@/types';
 import { Search, ExternalLink, ChevronLeft, ChevronRight, School, GraduationCap, Building } from 'lucide-react';
 
 const jenjangOptions: { value: '' | Jenjang; label: string }[] = [
@@ -24,8 +26,17 @@ const jenjangOptions: { value: '' | Jenjang; label: string }[] = [
 ];
 
 export default function ProfilInstitusiPage() {
-  const allInstitusi = useMemo(() => getAllInstitusi(), []);
-  
+  const [institusiList, setInstitusiList] = useState<InstitusiPendidikan[]>(getAllInstitusi());
+  const [totalItems, setTotalItems] = useState<number>(0);
+  const [loadingInstitusi, setLoadingInstitusi] = useState(true);
+  const [dbSchoolCounts, setDbSchoolCounts] = useState<Record<Jenjang, number>>({
+    UNIVERSITAS: 4498,
+    SMA: 22407,
+    SMP: 41511,
+    SD: 136761,
+    PAUD: 162688,
+  });
+
   // States
   const [search, setSearch] = useState('');
   const [selectedJenjang, setSelectedJenjang] = useState<'' | Jenjang>('');
@@ -35,6 +46,46 @@ export default function ProfilInstitusiPage() {
   const [kecamatanList, setKecamatanList] = useState<{ id: string; name: string }[]>([]);
   const [loadingKecamatan, setLoadingKecamatan] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Fetch db school counts once on mount
+  useEffect(() => {
+    let isMounted = true;
+    fetchDbSchoolCounts()
+      .then((counts) => {
+        if (isMounted) setDbSchoolCounts(counts);
+      })
+      .catch(console.error);
+    return () => { isMounted = false; };
+  }, []);
+
+  // Main Paginated Fetch Effect (100 items per page across 38 provinces)
+  useEffect(() => {
+    let isMounted = true;
+    fetchInstitusiPaginated({
+      page: currentPage,
+      pageSize: 100,
+      jenjang: selectedJenjang,
+      provinsiId: selectedProvinsiId,
+      kabkotaId: selectedKabkotaId,
+      kecamatan: selectedKecamatan,
+      search: search,
+    })
+      .then((res) => {
+        if (isMounted) {
+          setInstitusiList(res.data);
+          setTotalItems(res.totalCount);
+          setLoadingInstitusi(false);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load paginated institusi data:', err);
+        if (isMounted) setLoadingInstitusi(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentPage, selectedJenjang, selectedProvinsiId, selectedKabkotaId, selectedKecamatan, search]);
 
   // Cascading Filter Handlers
   const handleProvinsiChange = (provId: string) => {
@@ -99,40 +150,6 @@ export default function ProfilInstitusiPage() {
     return list.sort((a, b) => a.nama_kabupaten_kota.localeCompare(b.nama_kabupaten_kota));
   }, [selectedProvinsiId]);
 
-  // Main Filtering Logic
-  const filtered = useMemo(() => {
-    let result = allInstitusi;
-
-    if (selectedJenjang) {
-      result = result.filter(inst => inst.jenjang === selectedJenjang);
-    }
-    if (selectedProvinsiId) {
-      const prov = alokasiProvinsiData.find(p => p.provinsi_id === selectedProvinsiId);
-      if (prov) {
-        result = result.filter(inst => inst.provinsi_nama === prov.provinsi.nama_provinsi);
-      }
-    }
-    if (selectedKabkotaId) {
-      result = result.filter(inst => inst.kabupaten_kota_id === selectedKabkotaId);
-    }
-    if (selectedKecamatan) {
-      result = result.filter(inst => {
-        if (!inst.alamat) return false;
-        return inst.alamat.toLowerCase().includes(selectedKecamatan.toLowerCase());
-      });
-    }
-    if (search) {
-      const query = search.toLowerCase();
-      result = result.filter(inst =>
-        inst.nama_institusi.toLowerCase().includes(query) ||
-        (inst.npsn && inst.npsn.includes(query)) ||
-        (inst.alamat && inst.alamat.toLowerCase().includes(query))
-      );
-    }
-
-    return result;
-  }, [allInstitusi, search, selectedJenjang, selectedProvinsiId, selectedKabkotaId, selectedKecamatan]);
-
   // Jenjang Counts Stats calculation
   const stats = useMemo(() => {
     const categories = [
@@ -143,25 +160,26 @@ export default function ProfilInstitusiPage() {
       { type: 'PAUD' as Jenjang, label: 'PAUD', bg: 'bg-pink-50 border-pink-100', text: 'text-pink-700', icon: Building },
     ];
 
+    const hasFilter = Boolean(search || selectedJenjang || selectedProvinsiId || selectedKabkotaId || selectedKecamatan);
+
     return categories.map(cat => {
-      const totalCount = allInstitusi.filter(inst => inst.jenjang === cat.type).length;
-      const filteredCount = filtered.filter(inst => inst.jenjang === cat.type).length;
+      const totalCount = dbSchoolCounts[cat.type] || 0;
+      const filteredCount = hasFilter
+        ? (selectedJenjang ? (selectedJenjang === cat.type ? totalItems : 0) : Math.round(totalItems * (totalCount / 367865)))
+        : totalCount;
+
       return {
         ...cat,
         totalCount,
         filteredCount
       };
     });
-  }, [allInstitusi, filtered]);
+  }, [dbSchoolCounts, totalItems, search, selectedJenjang, selectedProvinsiId, selectedKabkotaId, selectedKecamatan]);
 
   // Pagination Logic
   const pageSize = 100;
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  
-  const paginated = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filtered.slice(start, start + pageSize);
-  }, [filtered, currentPage]);
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const paginated = institusiList;
 
   return (
     <div className="min-h-screen">
@@ -288,7 +306,16 @@ export default function ProfilInstitusiPage() {
               </tr>
             </thead>
             <tbody>
-              {paginated.length === 0 ? (
+              {loadingInstitusi ? (
+                <tr>
+                  <td colSpan={10} className="sheet-cell text-center py-12 text-text-muted text-sm">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <div className="animate-spin rounded-full h-7 w-7 border-2 border-indigo-600 border-t-transparent" />
+                      <p className="font-medium text-slate-600">Memuat data institusi pendidikan dari database...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginated.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="sheet-cell text-center py-8 text-text-muted text-sm">
                     Tidak ada institusi pendidikan yang cocok dengan kriteria filter.
@@ -359,7 +386,7 @@ export default function ProfilInstitusiPage() {
         {/* ===== PAGINATION FOOTER ===== */}
         <div className="mt-4 flex items-center justify-between border-t border-slate-200/60 pt-4 px-2 flex-wrap gap-3">
           <span className="text-xs text-text-muted font-medium">
-            Menampilkan <span className="font-semibold font-mono">{filtered.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}</span> - <span className="font-semibold font-mono">{Math.min(filtered.length, currentPage * pageSize)}</span> dari <span className="font-semibold font-mono">{filtered.length}</span> institusi
+            Menampilkan <span className="font-semibold font-mono">{totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1}</span> - <span className="font-semibold font-mono">{Math.min(totalItems, currentPage * pageSize)}</span> dari <span className="font-semibold font-mono">{totalItems}</span> institusi
           </span>
           
           {totalPages > 1 && (

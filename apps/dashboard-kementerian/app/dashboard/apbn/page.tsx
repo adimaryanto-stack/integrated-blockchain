@@ -16,7 +16,9 @@ import { TahunAnggaran, BudgetStatus } from '@/types';
 import { Plus, Eye, Power, Lock, Trash2 } from 'lucide-react';
 
 export default function APBNPage() {
-  const { setActiveTahun } = useAppStore();
+  const { setActiveTahun, currentUser } = useAppStore();
+  const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
+
   const [data, setData] = useState<TahunAnggaran[]>(tahunAnggaranData);
   const [showModal, setShowModal] = useState(false);
   const [newTahun, setNewTahun] = useState('');
@@ -82,6 +84,7 @@ export default function APBNPage() {
   };
 
   const startInlineEdit = (id: string, currentVal: number) => {
+    if (!isSuperAdmin) return;
     const item = data.find(t => t.id === id);
     if (item?.status === 'CLOSED') return;
     setEditingId(id);

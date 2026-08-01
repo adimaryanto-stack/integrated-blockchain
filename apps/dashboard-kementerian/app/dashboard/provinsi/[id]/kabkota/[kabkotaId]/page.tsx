@@ -117,7 +117,7 @@ export default function KabkotaDetailPage() {
 
         const counts: Record<string, number> = { UNIVERSITAS: 0, SMA: 0, SMP: 0, SD: 0, PAUD: 0 };
 
-        (schools || []).forEach((s: any) => {
+        (schools || []).forEach((s: { name?: string }) => {
           const n = (s.name || '').toUpperCase();
           if (n.match(/\b(UNIVERSITAS|INSTITUT|POLITEKNIK|AKADEMI|SEKOLAH TINGGI)\b/)) counts.UNIVERSITAS++;
           else if (n.match(/\b(SMA|SMAN|SMAS|SMK|SMKN|SMKS|MA|MAN|MAS)\b/)) counts.SMA++;

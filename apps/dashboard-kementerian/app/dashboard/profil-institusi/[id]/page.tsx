@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
@@ -42,7 +42,6 @@ export default function ProfilInstitusiDetailPage() {
 
   useEffect(() => {
     let isMounted = true;
-    setLoading(true);
     getProfilInstitusi(id, activeTahun).then(res => {
       if (isMounted) {
         setProfilData(res);
@@ -53,7 +52,10 @@ export default function ProfilInstitusiDetailPage() {
         }
         setLoading(false);
       }
-    }).catch(console.error);
+    }).catch((err) => {
+      console.error(err);
+      if (isMounted) setLoading(false);
+    });
     return () => { isMounted = false; };
   }, [id, activeTahun]);
 
@@ -100,8 +102,8 @@ export default function ProfilInstitusiDetailPage() {
   const commitEditSDName = async (id: string) => {
     const trimmed = editSDNameValue.trim();
     if (trimmed) {
-      setSumberDana(prev => prev.map(item => item.id === id ? { ...item, sumber_dana: trimmed, nama_sumber: trimmed } : item));
-      await updateSumberDana(id, { sumber_dana: trimmed });
+      setSumberDana(prev => prev.map(item => item.id === id ? { ...item, nama_sumber: trimmed } : item));
+      await updateSumberDana(id, { nama_sumber: trimmed });
     }
     setEditingSDNameId(null);
   };
@@ -335,7 +337,7 @@ export default function ProfilInstitusiDetailPage() {
                     <td className="sheet-cell text-center text-text-muted text-xs">{idx + 1}</td>
                     <td className="sheet-cell text-left font-medium text-text-primary">
                       {(() => {
-                        const displayName = row.sumber_dana || row.nama_sumber || `APBN Pendidikan ${activeTahun}`;
+                        const displayName = row.nama_sumber || `APBN Pendidikan ${activeTahun}`;
                         return editingSDNameId === row.id ? (
                           <input
                             type="text"

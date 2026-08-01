@@ -7,7 +7,6 @@ import Header from '@/components/layout/Header';
 import PctBadge from '@/components/ui/PctBadge';
 import { useAppStore } from '@/lib/store';
 import { 
-  getInstitusiByJenjang, 
   fetchInstitusiByJenjang,
   alokasiProvinsiData, 
   getKabkotaByProvinsi, 
@@ -25,6 +24,14 @@ const jenjangLabels: Record<string, { label: string; jenjang: Jenjang }> = {
   smp: { label: 'Sekolah Menengah Pertama (SMP/Sederajat)', jenjang: 'SMP' },
   sd: { label: 'Sekolah Dasar (SD/Sederajat)', jenjang: 'SD' },
   paud: { label: 'Pendidikan Anak Usia Dini (PAUD/Sederajat)', jenjang: 'PAUD' },
+};
+
+const JENJANG_TOTAL_BUDGETS: Record<string, { nominal: number; realisasi: number }> = {
+  UNIVERSITAS: { nominal: 269185000000000, realisasi: 186095618126720 },
+  SMA: { nominal: 192275000000000, realisasi: 121275577143176 },
+  SMP: { nominal: 153820000000000, realisasi: 96745156109368 },
+  SD: { nominal: 115365000000000, realisasi: 75150774734422 },
+  PAUD: { nominal: 38455000000000, realisasi: 25933306222917 },
 };
 
 export default function JenjangPage() {
@@ -152,14 +159,6 @@ export default function JenjangPage() {
       return (a.nama_institusi || '').localeCompare(b.nama_institusi || '', 'id');
     });
   }, [data, search, selectedProvinsiId, selectedKabKotaName, selectedStatus]);
-
-  const JENJANG_TOTAL_BUDGETS: Record<string, { nominal: number; realisasi: number }> = {
-    UNIVERSITAS: { nominal: 269185000000000, realisasi: 186095618126720 },
-    SMA: { nominal: 192275000000000, realisasi: 121275577143176 },
-    SMP: { nominal: 153820000000000, realisasi: 96745156109368 },
-    SD: { nominal: 115365000000000, realisasi: 75150774734422 },
-    PAUD: { nominal: 38455000000000, realisasi: 25933306222917 },
-  };
 
   const hasFilter = Boolean(search || selectedProvinsiId || selectedKabKotaName || selectedStatus);
 
