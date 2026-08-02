@@ -988,14 +988,16 @@ export function getJenjangBreakdownByProvinsi(
 
 export async function updateTahunAnggaran(id: string, updates: Partial<TahunAnggaran>) {
   const { url, anonKey } = getSupabaseConfig();
+  const headers = {
+    'apikey': anonKey,
+    'Authorization': `Bearer ${anonKey}`,
+    'Content-Type': 'application/json',
+  };
+
   try {
     const res = await fetch(`${url}/rest/v1/tahun_anggaran?id=eq.${id}`, {
       method: 'PATCH',
-      headers: {
-        'apikey': anonKey,
-        'Authorization': `Bearer ${anonKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(updates),
     });
     if (res.ok) {
@@ -1011,6 +1013,99 @@ export async function updateTahunAnggaran(id: string, updates: Partial<TahunAngg
         nilai_lama: '-',
         nilai_baru: typeof newVal === 'number' ? fmtRupiah(newVal) : String(newVal),
       });
+
+      // === CASCADE: APBN → 38 Provinsi → 514 Kab/Kota ===
+      if (updates.total_anggaran !== undefined) {
+        const newTotalAPBN = updates.total_anggaran;
+
+        // Fetch all provinces under this tahun_anggaran
+        const provsRes = await fetch(`${url}/rest/v1/alokasi_provinsi?tahun_anggaran_id=eq.${id}&order=id.asc`, { headers });
+        if (provsRes.ok) {
+          const provs = await provsRes.json();
+          if (Array.isArray(provs) && provs.length > 0) {
+            const oldTotalProv = provs.reduce((s: number, p: any) => s + (p.nominal_alokasi || 0), 0);
+
+            // Distribute proportionally to all provinces
+            const provCount = provs.length;
+            let distributed = 0;
+
+            for (let i = 0; i < provCount; i++) {
+              const p = provs[i];
+              let newProvNominal: number;
+
+              if (i === provCount - 1) {
+                // Last province gets the remainder to ensure exact sum
+                newProvNominal = newTotalAPBN - distributed;
+              } else if (oldTotalProv > 0) {
+                // Proportional distribution based on old ratio
+                const ratio = (p.nominal_alokasi || 0) / oldTotalProv;
+                newProvNominal = Math.floor(newTotalAPBN * ratio);
+              } else {
+                // Equal distribution if old total was 0
+                newProvNominal = Math.floor(newTotalAPBN / provCount);
+              }
+              distributed += newProvNominal;
+
+              const provRealisasi = p.realisasi_total || 0;
+              const provSelisih = newProvNominal - provRealisasi;
+              const provPct = newProvNominal > 0 ? (provRealisasi / newProvNominal) * 100 : 0;
+
+              // Update province in DB
+              await fetch(`${url}/rest/v1/alokasi_provinsi?id=eq.${p.id}`, {
+                method: 'PATCH',
+                headers,
+                body: JSON.stringify({
+                  nominal_alokasi: newProvNominal,
+                  selisih: provSelisih,
+                  persentase_penyerapan: provPct,
+                  updated_at: new Date().toISOString().split('T')[0],
+                }),
+              });
+
+              // Cascade down to kabupaten/kota under this province
+              const kabsRes = await fetch(`${url}/rest/v1/alokasi_kabupaten_kota?alokasi_provinsi_id=eq.${p.id}&order=id.asc`, { headers });
+              if (kabsRes.ok) {
+                const kabs = await kabsRes.json();
+                if (Array.isArray(kabs) && kabs.length > 0) {
+                  const kabCount = kabs.length;
+                  const oldKabTotal = kabs.reduce((s: number, k: any) => s + (k.nominal_alokasi || 0), 0);
+                  let kabDistributed = 0;
+
+                  for (let j = 0; j < kabCount; j++) {
+                    const k = kabs[j];
+                    let kNominal: number;
+
+                    if (j === kabCount - 1) {
+                      kNominal = newProvNominal - kabDistributed;
+                    } else if (oldKabTotal > 0) {
+                      const kRatio = (k.nominal_alokasi || 0) / oldKabTotal;
+                      kNominal = Math.floor(newProvNominal * kRatio);
+                    } else {
+                      kNominal = Math.floor(newProvNominal / kabCount);
+                    }
+                    kabDistributed += kNominal;
+
+                    const kRealisasi = k.realisasi_total || 0;
+                    const kSelisih = kNominal - kRealisasi;
+                    const kPct = kNominal > 0 ? Math.round((kRealisasi / kNominal) * 1000) / 10 : 0;
+
+                    await fetch(`${url}/rest/v1/alokasi_kabupaten_kota?id=eq.${k.id}`, {
+                      method: 'PATCH',
+                      headers,
+                      body: JSON.stringify({
+                        nominal_alokasi: kNominal,
+                        selisih: kSelisih,
+                        persentase_penyerapan: kPct,
+                        updated_at: new Date().toISOString().split('T')[0],
+                      }),
+                    });
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
 
       await initDbConnection(true); // reload local cache
       return true;
