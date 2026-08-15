@@ -4,10 +4,11 @@ import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import PctBadge from '@/components/ui/PctBadge';
-import { getAllInstitusi, getAlokasiProvinsi } from '@/lib/data';
+import { getAlokasiProvinsi } from '@/lib/data';
+import { supabase } from '@/lib/supabase';
 import { fmtRupiah } from '@/lib/utils/formatters';
 import { Jenjang, AlokasiProvinsi, InstitusiPendidikan } from '@/types';
-import { Search, ExternalLink } from 'lucide-react';
+import { Search, ExternalLink, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 
 const jenjangOptions: { value: '' | Jenjang; label: string }[] = [
@@ -27,44 +28,92 @@ export default function ProfilInstitusiPage() {
   const [search, setSearch] = useState('');
   const [selectedJenjang, setSelectedJenjang] = useState<'' | Jenjang>('');
   const [selectedProvinsiId, setSelectedProvinsiId] = useState('');
+  // Derived province name so schools-fetch does NOT depend on the full provinsiList array
+  const [selectedProvinsiNama, setSelectedProvinsiNama] = useState('');
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 100;
+
+  // Reset page on filter change
+  useEffect(() => { setCurrentPage(1); }, [search, selectedJenjang, selectedProvinsiId]);
+
+  // ── 1. Fetch province list (one-shot) ────────────────────
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [schools, provs] = await Promise.all([
-          getAllInstitusi(),
-          getAlokasiProvinsi(activeTahun),
-        ]);
-        setAllInstitusi(schools);
-        setProvinsiList(provs);
-        setLoading(false);
-      } catch (err) {
-        console.error(err);
-        setLoading(false);
-      }
-    };
-    fetchData();
+    let isMounted = true;
+    getAlokasiProvinsi(activeTahun)
+      .then(provs => { if (isMounted) setProvinsiList(provs); })
+      .catch(console.error);
+    return () => { isMounted = false; };
   }, [activeTahun]);
 
-  const filtered = useMemo(() => {
-    let result = allInstitusi;
-    if (selectedJenjang) {
-      result = result.filter(inst => inst.jenjang === selectedJenjang);
+  // ── 2. Resolve province name from selected ID ─────────────
+  //    (decoupled so schools-fetch never re-runs just because provinsiList loaded)
+  useEffect(() => {
+    if (!selectedProvinsiId) {
+      setSelectedProvinsiNama('');
+      return;
     }
-    if (selectedProvinsiId) {
-      const prov = provinsiList.find(p => p.provinsi_id === selectedProvinsiId);
-      if (prov) {
-        result = result.filter(inst => inst.provinsi_nama === prov.provinsi.nama_provinsi);
+    const prov = provinsiList.find((p: any) => p.provinsi_id === selectedProvinsiId);
+    if (prov) setSelectedProvinsiNama(prov.provinsi.nama_provinsi);
+  }, [selectedProvinsiId, provinsiList]);
+
+  // ── 3. Fetch schools — depends only on filter primitives, NOT provinsiList ──
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+
+    const fetchSchools = async () => {
+      try {
+        let query = supabase.from('institusi_pendidikan').select('*');
+
+        if (selectedJenjang) query = query.eq('jenjang', selectedJenjang);
+        if (selectedProvinsiNama) query = query.eq('provinsi_nama', selectedProvinsiNama);
+        if (search) query = query.ilike('nama_institusi', `%${search}%`);
+
+        query = query
+          .order('provinsi_nama', { ascending: true })
+          .order('kabupaten_kota_nama', { ascending: true })
+          .order('nama_institusi', { ascending: true })
+          .limit(5000);
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        const mapped = (data || []).map((item: any) => ({
+          ...item,
+          nominal_alokasi: Number(item.nominal_alokasi || 0),
+          realisasi_total: Number(item.realisasi_total || 0),
+          selisih: Number(item.nominal_alokasi || 0) - Number(item.realisasi_total || 0),
+          persentase_penyerapan:
+            Number(item.nominal_alokasi) > 0
+              ? Math.round((Number(item.realisasi_total) / Number(item.nominal_alokasi)) * 1000) / 10
+              : 0,
+        }));
+
+        if (isMounted) {
+          setAllInstitusi(mapped);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error(err);
+        if (isMounted) setLoading(false);
       }
-    }
-    if (search) {
-      result = result.filter(inst =>
-        inst.nama_institusi.toLowerCase().includes(search.toLowerCase())
-      );
-    }
-    return result;
-  }, [allInstitusi, search, selectedJenjang, selectedProvinsiId, provinsiList]);
+    };
+
+    fetchSchools();
+    return () => { isMounted = false; };
+  // Only re-run when actual filter values change — NOT when provinsiList updates
+  }, [selectedJenjang, selectedProvinsiNama, search]);
+
+  const filtered = useMemo(() => allInstitusi, [allInstitusi]);
+
+  // Pagination derived values
+  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
+  const paginatedRows = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filtered.slice(start, start + itemsPerPage);
+  }, [filtered, currentPage, itemsPerPage]);
 
   if (loading) {
     return (
@@ -125,7 +174,7 @@ export default function ProfilInstitusiPage() {
               className="search-input"
             />
           </div>
-          <span className="text-xs text-text-muted flex-1">{filtered.length} sekolah</span>
+          <span className="text-xs text-text-muted flex-1">{filtered.length.toLocaleString('id-ID')} sekolah</span>
         </div>
 
         {/* Table */}
@@ -146,14 +195,15 @@ export default function ProfilInstitusiPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((row, idx) => {
+              {paginatedRows.map((row, idx) => {
+                const globalIdx = (currentPage - 1) * itemsPerPage + idx + 1;
                 let segmentLabel: string = row.jenjang;
                 if (row.jenjang === 'UNIVERSITAS') segmentLabel = 'Universitas';
                 else if (row.jenjang === 'SMA') segmentLabel = 'SMA / SMK';
 
                 return (
                   <tr key={row.id} className="hover:bg-indigo-50/50 transition">
-                    <td className="sheet-cell text-center text-text-muted text-xs">{idx + 1}</td>
+                    <td className="sheet-cell text-center text-text-muted text-xs">{globalIdx}</td>
                     <td className="sheet-cell text-left font-medium text-text-primary">
                       <Link
                         href={`/dashboard/profil-institusi/${row.id}`}
@@ -201,6 +251,104 @@ export default function ProfilInstitusiPage() {
               })}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="mt-4 flex items-center justify-between bg-white px-4 py-3 border border-slate-200 rounded-lg shadow-sm">
+          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs text-slate-700">
+                Menampilkan{' '}
+                <span className="font-semibold">
+                  {filtered.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}
+                </span>{' '}
+                sampai{' '}
+                <span className="font-semibold">
+                  {Math.min(currentPage * itemsPerPage, filtered.length)}
+                </span>{' '}
+                dari{' '}
+                <span className="font-semibold">
+                  {filtered.length.toLocaleString('id-ID')}
+                </span>{' '}
+                data institusi
+              </p>
+            </div>
+            <div>
+              <nav className="isolate inline-flex -space-x-px rounded-md shadow-xs items-center gap-1" aria-label="Pagination">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  title="Halaman Pertama"
+                  className="relative inline-flex items-center rounded-md p-1.5 text-slate-400 border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronsLeft size={16} />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  title="Halaman Sebelumnya"
+                  className="relative inline-flex items-center rounded-md p-1.5 text-slate-400 border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                {Array.from({ length: totalPages }).map((_, idx) => {
+                  const pageNum = idx + 1;
+                  const isSelected = pageNum === currentPage;
+
+                  if (
+                    pageNum === 1 ||
+                    pageNum === totalPages ||
+                    (pageNum >= currentPage - 2 && pageNum <= currentPage + 2)
+                  ) {
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`relative inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-md border transition-all ${
+                          isSelected
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                            : 'text-slate-700 border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  }
+
+                  if (
+                    (pageNum === 2 && currentPage > 4) ||
+                    (pageNum === totalPages - 1 && currentPage < totalPages - 3)
+                  ) {
+                    return (
+                      <span key={pageNum} className="px-2 py-1 text-xs font-bold text-slate-400">
+                        ...
+                      </span>
+                    );
+                  }
+
+                  return null;
+                })}
+
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  title="Halaman Selanjutnya"
+                  className="relative inline-flex items-center rounded-md p-1.5 text-slate-400 border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight size={16} />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  title="Halaman Terakhir"
+                  className="relative inline-flex items-center rounded-md p-1.5 text-slate-400 border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronsRight size={16} />
+                </button>
+              </nav>
+            </div>
+          </div>
         </div>
 
         <p className="mt-3 text-xs text-text-muted">

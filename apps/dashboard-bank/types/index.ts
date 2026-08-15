@@ -4,7 +4,7 @@
 
 export type BudgetStatus = 'DRAFT' | 'ACTIVE' | 'CLOSED';
 export type Jenjang = 'UNIVERSITAS' | 'SMA' | 'SMP' | 'SD' | 'PAUD';
-export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'ADMIN_PROVINSI' | 'ADMIN_KABKOTA' | 'VIEWER' | 'AUDITOR';
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'ADMIN_PROVINSI' | 'ADMIN_KABKOTA' | 'VIEWER' | 'AUDITOR' | 'PUBLIC_RESEARCHER';
 
 export type PencairanStatus = 'SUDAH_MASUK' | 'SEBAGIAN' | 'BELUM_MASUK';
 

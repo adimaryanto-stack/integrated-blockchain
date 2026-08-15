@@ -58,56 +58,55 @@ export default function ProvinsiDetailPage() {
   useEffect(() => {
     const loadJenjangBreakdown = async () => {
       const numNominal = totals.nominal;
-      const jenjangs = [
-        { label: 'Universitas (Strata 1)', weight: 0.35, porsi: 35.0,
-          patterns: ['%universitas%', '%institut%', '%politeknik%', '%akademi%', '%sekolah tinggi%'] },
-        { label: 'Sekolah Menengah Atas (SMA/SMK)', weight: 0.25, porsi: 25.0,
-          patterns: ['%sma%', '%sman%', '%smas%', '%smk%', '%smkn%', '%smks%', '%ma%', '%man%', '%mas%'] },
-        { label: 'Sekolah Menengah Pertama (SMP/Sederajat)', weight: 0.20, porsi: 20.0,
-          patterns: ['%smp%', '%smpn%', '%smps%', '%mts%', '%mtsn%', '%mtss%'] },
-        { label: 'Sekolah Dasar (SD/Sederajat)', weight: 0.15, porsi: 15.0,
-          patterns: ['%sd%', '%sdn%', '%sds%', '%mi%', '%min%', '%mis%'] },
-        { label: 'Pendidikan Anak Usia Dini (PAUD/TK/KB)', weight: 0.05, porsi: 5.0,
-          patterns: ['%paud%', '%tk%', '%kb%', '%tpa%', '%sps%'] },
-      ];
-
       try {
-        const { data: regencies } = await supabase
-          .from('regencies')
-          .select('id')
-          .eq('province_id', id);
+        const { data, error } = await supabase
+          .from('province_school_stats')
+          .select('*')
+          .eq('province_id', id)
+          .single();
 
-        const regencyIds = (regencies || []).map((r: any) => r.id);
-
-        if (regencyIds.length > 0) {
-          const countPromises = jenjangs.map(async (j) => {
-            const orFilter = j.patterns.map(p => `name.ilike.${p}`).join(',');
-            const allIds = new Set<string>();
-            const chunkSize = 50;
-            for (let i = 0; i < regencyIds.length; i += chunkSize) {
-              const chunk = regencyIds.slice(i, i + chunkSize);
-              const { data } = await supabase
-                .from('schools')
-                .select('id')
-                .in('regency_id', chunk)
-                .or(orFilter);
-              (data || []).forEach((s: any) => allIds.add(s.id));
-            }
-            return allIds.size;
-          });
-
-          const counts = await Promise.all(countPromises);
-          setJenjangBreakdown(jenjangs.map((j, i) => ({
-            nomor: i + 1,
-            jenjang: j.label,
-            jumlah_sekolah: counts[i],
-            nominal_keseluruhan: Math.round(numNominal * j.weight),
-            porsi_anggaran: j.porsi,
-          })));
+        if (data && !error) {
+          setJenjangBreakdown([
+            {
+              nomor: 1,
+              jenjang: 'Universitas (Strata 1)',
+              jumlah_sekolah: Number(data.univ) || 0,
+              nominal_keseluruhan: Math.round(numNominal * 0.35),
+              porsi_anggaran: 35.0,
+            },
+            {
+              nomor: 2,
+              jenjang: 'Sekolah Menengah Atas (SMA/SMK)',
+              jumlah_sekolah: Number(data.sma) || 0,
+              nominal_keseluruhan: Math.round(numNominal * 0.25),
+              porsi_anggaran: 25.0,
+            },
+            {
+              nomor: 3,
+              jenjang: 'Sekolah Menengah Pertama (SMP/Sederajat)',
+              jumlah_sekolah: Number(data.smp) || 0,
+              nominal_keseluruhan: Math.round(numNominal * 0.20),
+              porsi_anggaran: 20.0,
+            },
+            {
+              nomor: 4,
+              jenjang: 'Sekolah Dasar (SD/Sederajat)',
+              jumlah_sekolah: Number(data.sd) || 0,
+              nominal_keseluruhan: Math.round(numNominal * 0.15),
+              porsi_anggaran: 15.0,
+            },
+            {
+              nomor: 5,
+              jenjang: 'Pendidikan Anak Usia Dini (PAUD/TK/KB)',
+              jumlah_sekolah: Number(data.paud) || 0,
+              nominal_keseluruhan: Math.round(numNominal * 0.05),
+              porsi_anggaran: 5.0,
+            },
+          ]);
           return;
         }
       } catch (err) {
-        console.error('[Auditor] jenjang breakdown from schools failed:', err);
+        console.error('[Auditor] jenjang breakdown from province_school_stats failed:', err);
       }
 
       // Fallback to sync function

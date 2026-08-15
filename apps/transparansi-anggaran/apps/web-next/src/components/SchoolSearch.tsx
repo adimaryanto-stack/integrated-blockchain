@@ -24,15 +24,35 @@ export default function SchoolSearch() {
 
             setIsLoading(true);
             try {
-                const { data, error } = await supabase
+                const { data: schoolData } = await supabase
                     .from("schools")
                     .select("id, name, npsn, location")
                     .or(`npsn.ilike.%${trimmedQuery}%,name.ilike.%${trimmedQuery}%`)
                     .limit(5);
 
-                if (!error && data) {
-                    setSuggestions(data);
+                if (schoolData && schoolData.length > 0) {
+                    setSuggestions(schoolData);
                     setShowDropdown(true);
+                } else {
+                    const { data: instData } = await supabase
+                        .from("institusi_pendidikan")
+                        .select("id, nama_institusi, npsn, alamat, kabupaten_kota_nama")
+                        .or(`npsn.ilike.%${trimmedQuery}%,nama_institusi.ilike.%${trimmedQuery}%`)
+                        .limit(5);
+
+                    if (instData && instData.length > 0) {
+                        const mapped = instData.map(i => ({
+                            id: i.id,
+                            name: i.nama_institusi,
+                            npsn: i.npsn,
+                            location: i.alamat || i.kabupaten_kota_nama
+                        }));
+                        setSuggestions(mapped);
+                        setShowDropdown(true);
+                    } else {
+                        setSuggestions([]);
+                        setShowDropdown(true);
+                    }
                 }
             } catch (err) {
                 console.error(err);

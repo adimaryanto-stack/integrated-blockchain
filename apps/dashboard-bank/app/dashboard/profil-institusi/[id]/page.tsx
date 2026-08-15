@@ -378,7 +378,7 @@ export default function ProfilInstitusiDetailPage() {
                     <td className="sheet-cell text-center text-text-muted text-xs">{idx + 1}</td>
                     <td className="sheet-cell text-left font-medium text-text-primary">
                       {(() => {
-                        const displayName = row.sumber_dana || row.nama_sumber || `APBN Pendidikan ${activeTahun}`;
+                        const displayName = (row as any).sumber_dana || row.nama_sumber || `APBN Pendidikan ${activeTahun}`;
                         return editingSDNameId === row.id ? (
                           <input
                             type="text"

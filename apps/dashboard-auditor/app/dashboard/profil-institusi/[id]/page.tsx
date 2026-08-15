@@ -17,7 +17,7 @@ export default function ProfilInstitusiDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
-  const { activeTahun } = useAppStore();
+  const { activeTahun, isSupabaseMode, dbData, setDbData } = useAppStore();
 
   const [profilData, setProfilData] = useState<ProfilInstitusi | null>(null);
   const [loading, setLoading] = useState(true);
@@ -336,7 +336,7 @@ export default function ProfilInstitusiDetailPage() {
                       <td className="sheet-cell text-center text-text-muted text-xs">{idx + 1}</td>
                       <td className="sheet-cell text-left font-medium text-text-primary">
                         {(() => {
-                          const displayName = row.sumber_dana || row.nama_sumber || `APBN Pendidikan ${activeTahun}`;
+                          const displayName = row.nama_sumber || `APBN Pendidikan ${activeTahun}`;
                           return editingSDNameId === row.id ? (
                             <input
                               type="text"

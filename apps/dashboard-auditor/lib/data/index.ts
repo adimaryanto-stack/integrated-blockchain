@@ -45,16 +45,9 @@ function seededValues(count: number, min: number, max: number, seed: number): nu
   return result;
 }
 
-// === TAHUN ANGGARAN ===
+// === TAHUN ANGGARAN (2026 ONLY) ===
 export let tahunAnggaranData: TahunAnggaran[] = [
-  { id: '1', tahun: 2020, total_anggaran: 473_700_000_000_000, status: 'CLOSED', created_at: '2020-01-01' },
-  { id: '2', tahun: 2021, total_anggaran: 472_600_000_000_000, status: 'CLOSED', created_at: '2021-01-01' },
-  { id: '3', tahun: 2022, total_anggaran: 472_600_000_000_000, status: 'CLOSED', created_at: '2022-01-01' },
-  { id: '4', tahun: 2023, total_anggaran: 612_200_000_000_000, status: 'CLOSED', created_at: '2023-01-01' },
-  { id: '5', tahun: 2024, total_anggaran: 665_000_000_000_000, status: 'CLOSED', created_at: '2024-01-01' },
-  { id: '6', tahun: 2025, total_anggaran: 722_600_000_000_000, status: 'CLOSED', created_at: '2025-01-01' },
   { id: '7', tahun: 2026, total_anggaran: 769_100_000_000_000, status: 'ACTIVE', created_at: '2026-01-01' },
-  { id: '8', tahun: 2027, total_anggaran: 0, status: 'DRAFT', created_at: '2026-06-01' },
 ];
 
 export function updateTahunAnggaranData(newData: TahunAnggaran[]) {
@@ -64,8 +57,8 @@ export function updateTahunAnggaranData(newData: TahunAnggaran[]) {
 // === 38 PROVINSI ===
 const provinsiNames = [
   'Aceh', 'Sumatera Utara', 'Sumatera Barat', 'Riau', 'Jambi',
-  'Sumatera Selatan', 'Bengkulu', 'Lampung', 'Kep. Bangka Belitung',
-  'Kep. Riau', 'DKI Jakarta', 'Jawa Barat', 'Jawa Tengah', 'DI Yogyakarta',
+  'Sumatera Selatan', 'Bengkulu', 'Lampung', 'Kepulauan Bangka Belitung',
+  'Kepulauan Riau', 'DKI Jakarta', 'Jawa Barat', 'Jawa Tengah', 'Daerah Istimewa Yogyakarta',
   'Jawa Timur', 'Banten', 'Bali', 'Nusa Tenggara Barat', 'Nusa Tenggara Timur',
   'Kalimantan Barat', 'Kalimantan Tengah', 'Kalimantan Selatan', 'Kalimantan Timur',
   'Kalimantan Utara', 'Sulawesi Utara', 'Sulawesi Tengah', 'Sulawesi Selatan',
@@ -524,9 +517,9 @@ export function getDashboardSummary(tahun: number = 2026): DashboardSummary {
     };
   }
 
-  const targetTahun = tahunAnggaranData.find(t => t.tahun === tahun) || tahunAnggaranData[6]; // default to 2026
-  const baseTahun = tahunAnggaranData[6]; // 2026 (769.1 T)
-  const scale = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
+  const targetTahun = tahunAnggaranData.find(t => t.tahun === tahun) || tahunAnggaranData[0] || { id: '7', tahun: 2026, total_anggaran: 769_100_000_000_000, status: 'ACTIVE' };
+  const baseTahun = tahunAnggaranData[0] || targetTahun;
+  const scale = targetTahun.total_anggaran > 0 && baseTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
 
   // Let's vary the realisasi percentage slightly based on the year for realism
   const seed = (tahun % 7) || 1;
@@ -536,7 +529,7 @@ export function getDashboardSummary(tahun: number = 2026): DashboardSummary {
   const baseRealisasi = alokasiProvinsiData.reduce((s, p) => s + p.realisasi_total, 0);
 
   const totalNominal = targetTahun.total_anggaran;
-  const totalRealisasi = Math.min(totalNominal, Math.round(baseRealisasi * scale * realisasiShift));
+  const totalRealisasi = baseRealisasi > 0 ? baseRealisasi : Math.min(totalNominal, Math.round(513_200_000_000_000 * scale));
 
   // Precise Jenjang math rollup (remainder to PAUD)
   const uniNom = Math.round(150_000_000_000_000 * scale);
@@ -830,8 +823,8 @@ export function getRincianPengeluaranBulanan(
 
   let found: InstitusiPendidikan | null = null;
 
-  const targetTahun = tahunAnggaranData.find(t => t.tahun === tahun) || tahunAnggaranData[6];
-  const baseTahun = tahunAnggaranData[6];
+  const targetTahun = tahunAnggaranData.find(t => t.tahun === tahun) || tahunAnggaranData[0] || { id: '7', tahun: 2026, total_anggaran: 769_100_000_000_000, status: 'ACTIVE' };
+  const baseTahun = tahunAnggaranData[0] || targetTahun;
   const scale = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
   const seedForInst = (tahun % 7) || 1;
   const shift = 0.95 + (seedForInst * 0.012);

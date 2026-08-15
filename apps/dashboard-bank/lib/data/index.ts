@@ -30,8 +30,8 @@ function seededValues(count: number, min: number, max: number, seed: number): nu
 
 const provinsiNames = [
   'Aceh', 'Sumatera Utara', 'Sumatera Barat', 'Riau', 'Jambi',
-  'Sumatera Selatan', 'Bengkulu', 'Lampung', 'Kep. Bangka Belitung',
-  'Kep. Riau', 'DKI Jakarta', 'Jawa Barat', 'Jawa Tengah', 'DI Yogyakarta',
+  'Sumatera Selatan', 'Bengkulu', 'Lampung', 'Kepulauan Bangka Belitung',
+  'Kepulauan Riau', 'DKI Jakarta', 'Jawa Barat', 'Jawa Tengah', 'Daerah Istimewa Yogyakarta',
   'Jawa Timur', 'Banten', 'Bali', 'Nusa Tenggara Barat', 'Nusa Tenggara Timur',
   'Kalimantan Barat', 'Kalimantan Tengah', 'Kalimantan Selatan', 'Kalimantan Timur',
   'Kalimantan Utara', 'Sulawesi Utara', 'Sulawesi Tengah', 'Sulawesi Selatan',

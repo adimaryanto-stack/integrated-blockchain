@@ -14,7 +14,7 @@ export default function EditableCell({
   value, 
   onSave, 
   formatter = fmtRupiah,
-  editable = true 
+  editable = false 
 }: EditableCellProps) {
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState('');

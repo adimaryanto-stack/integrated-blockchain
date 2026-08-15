@@ -1,726 +1,279 @@
-# 🏛️ Integrated Blockchain - Transparansi Anggaran Pendidikan
+# 🏛️ Integrated Blockchain - Platform Transparansi Anggaran Pendidikan Indonesia
 
-Sistem dasbor terintegrasi berbasis blockchain untuk transparansi anggaran pendidikan Indonesia. Terdiri dari **5 dashboard** untuk peran berbeda dan **1 database** PostgreSQL sebagai sumber data tunggal.
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black.svg?logo=next.js&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB.svg?logo=react&logoColor=black)](https://react.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC.svg?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> **💡 Anda tidak perlu menginstal semuanya.** Pilih dashboard yang Anda butuhkan, lalu ikuti panduan di bagian tersebut. Setiap dashboard dapat berjalan sendiri di VPS masing-masing — yang wajib hanya **Database + Proxy API**.
-
----
-
-## 📌 Arsitektur Sistem
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│                    DATABASE & API LAYER                       │
-│                                                              │
-│   PostgreSQL (:2025)  ──▶  Proxy API (:2026)                │
-│   (Sumber Data)            (REST API untuk semua dashboard)  │
-└──────────────────┬───────────────────────────────────────────┘
-                   │
-     ┌─────────────┼─────────────────────────────────┐
-     │             │             │           │        │
-     ▼             ▼             ▼           ▼        ▼
- ┌────────┐  ┌──────────┐ ┌────────┐ ┌────────┐ ┌─────────┐
- │ Publik │  │Kementerian│ │  Bank  │ │Auditor │ │Institusi│
- │ :2020  │  │  :2021   │ │ :2022  │ │ :2023  │ │  :2024  │
- └────────┘  └──────────┘ └────────┘ └────────┘ └─────────┘
-```
-
-| Port   | Layanan                           | Teknologi       | Folder                                          |
-| ------ | --------------------------------- | --------------- | ----------------------------------------------- |
-| `2025` | PostgreSQL Database               | PostgreSQL 16   | *(system service)*                               |
-| `2026` | Proxy API Server                  | Node.js/Express | `proxy/`                                         |
-| `2020` | Dashboard Transparansi Publik     | Next.js 16      | `apps/transparansi-anggaran/apps/web-next/`      |
-| `2021` | Dashboard Kementerian             | Next.js 16      | `apps/dashboard-kementerian/`                    |
-| `2022` | Dashboard Bank                    | Next.js 16      | `apps/dashboard-bank/`                           |
-| `2023` | Dashboard Auditor                 | Next.js 16      | `apps/dashboard-auditor/`                        |
-| `2024` | Dashboard Institusi Pendidikan    | Next.js 16      | `apps/dashboard-institusi-pendidikan/`            |
+Sistem dasbor terintegrasi multi-peran berbasis *Single Source of Truth* untuk transparansi dan tata kelola anggaran pendidikan Indonesia. Menghubungkan seluruh jenjang pendidikan (**PAUD, SD, SMP, SMA, dan Universitas**) di 38 Provinsi dan 514 Kabupaten/Kota ke dalam satu basis data lokal berkinerja tinggi (*sub-100ms latency*).
 
 ---
 
-## 🛠️ Prasyarat
-
-| Software       | Versi Minimum | Cek Instalasi          |
-| -------------- | ------------- | ---------------------- |
-| **Node.js**    | 20.x          | `node --version`       |
-| **npm**        | 10.x          | `npm --version`        |
-| **PostgreSQL** | 16.x          | `psql --version`       |
-| **Git**        | 2.x           | `git --version`        |
+## 📌 Daftar Isi
+- [Arsitektur & Topologi Sistem](#-arsitektur--topologi-sistem)
+- [Port Mapping & Layanan (7 Ports)](#-port-mapping--layanan-7-ports)
+- [Fitur Utama Berdasarkan Peran](#-fitur-utama-berdasarkan-peran)
+- [Galeri Tampilan Halaman (Screenshots & Kode)](#-galeri-tampilan-halaman-screenshots--kode)
+- [Panduan Instalasi Cepat](#-panduan-instalasi-cepat)
+- [Dokumentasi API REST PostgREST](#-dokumentasi-api-rest-postgrest)
+- [Struktur Direktori Proyek](#-struktur-direktori-proyek)
+- [Dokumentasi Terkait](#-dokumentasi-terkait)
 
 ---
 
-# 🗄️ BAGIAN A: Instalasi Database + Proxy API (WAJIB)
+## 🏗️ Arsitektur & Topologi Sistem
 
-> **Ini adalah langkah pertama yang harus dilakukan sebelum menginstal dashboard manapun.** Database dan Proxy API adalah tulang punggung seluruh sistem.
+Platform ini dibangun dengan arsitektur modular yang memisahkan lapisan presentasi, integrasi API, dan persistensi data:
 
-## A1. Instal PostgreSQL di VPS
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          1. DATA PERSISTENCE LAYER                          │
+│                                                                             │
+│   PostgreSQL 16 Engine (:2025)                                              │
+│   └── 31 Public Tables (Master Anggaran, Wilayah, Transaksi, Audit)         │
+│   └── Performance B-Tree Indexes & Cascading Foreign Keys                   │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │ Direct SQL Connection Pool
+┌──────────────────────────────────────▼──────────────────────────────────────┐
+│                          2. LOCAL API PROXY LAYER                           │
+│                                                                             │
+│   Node.js / Express PostgREST Gateway (:2026)                               │
+│   ├── Dynamic Filter Parser (ilike, eq, in, or, order, pagination)          │
+│   ├── Quote Stripping & SQL Injection Prevention Engine                     │
+│   └── Sub-10ms Fast Response Gateway                                       │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │ HTTP REST / PostgREST Protocol
+      ┌────────────────────────────────┼────────────────────────────────┐
+      │                                │                                │
+      ▼                                ▼                                ▼
+┌──────────────────────┐   ┌──────────────────────┐   ┌──────────────────────┐
+│  Port 2020: Publik   │   │  Port 2021: Kemenkeu │   │   Port 2022: Bank    │
+│  Transparansi Warga  │   │  Distribusi Nasional │   │ Rekening & Penyaluran│
+└──────────────────────┘   └──────────────────────┘   └──────────────────────┘
+      │                                                                 │
+      ▼                                                                 ▼
+┌──────────────────────┐                                      ┌──────────────────────┐
+│  Port 2023: Auditor  │                                      │ Port 2024: Sekolah   │
+│  Deteksi Anomali AI  │                                      │ Belanja & SPJ Digital│
+└──────────────────────┘                                      └──────────────────────┘
+```
 
-<details>
-<summary><b>🐧 Ubuntu 22.04 / 24.04 (Recommended)</b></summary>
+---
 
+## 🌐 Port Mapping & Layanan (7 Ports)
+
+| Port | Layanan | Teknologi | Direktori Proyek | Keterangan & Fungsi Utama |
+| :---: | :--- | :--- | :--- | :--- |
+| **`2025`** | **PostgreSQL Database** | PostgreSQL 16 | *(System / pgsql)* | Database lokal sumber data tunggal (31 tabel relasional). |
+| **`2026`** | **Proxy API Server** | Node.js / Express | `proxy/` | REST API gateway yang menerjemahkan PostgREST query ke SQL. |
+| **`2020`** | **Transparansi Publik** | Next.js 16 | `apps/transparansi-anggaran/` | Portal publik untuk melacak anggaran dan rincian struk sekolah. |
+| **`2021`** | **Dashboard Kementerian** | Next.js 16 | `apps/dashboard-kementerian/` | Alokasi APBN nasional, 38 provinsi, dan 514 kabupaten/kota. |
+| **`2022`** | **Dashboard Bank** | Next.js 16 | `apps/dashboard-bank/` | Rekapitulasi rekening sekolah, mutasi kas, dan disbursement. |
+| **`2023`** | **Dashboard Auditor** | Next.js 16 | `apps/dashboard-auditor/` | Audit investigatif, verifikasi SPJ digital, dan anomali AI. |
+| **`2024`** | **Institusi Pendidikan** | Next.js 16 | `apps/dashboard-institusi-pendidikan/` | Akun sekolah aktif (`KB AL-IKHLAS`), RAB, SPJ, dan kas. |
+
+---
+
+## ✨ Fitur Utama Berdasarkan Peran
+
+### 1. 🏛️ Portal Transparansi Publik (`http://localhost:2020`)
+- **Pencarian Sekolah Instan**: Cari berdasarkan NPSN (`69893669`) atau nama institusi di seluruh Indonesia.
+- **Pembeda Riwayat Dana Masuk Terkategori**:
+  - **APBN**: Dana BOP PAUD Reguler dari Pemerintah Pusat.
+  - **APBD**: Dana BOP PAUD Daerah dari Pemerintah Kabupaten/Kota.
+  - **CSR**: Bantuan program kemitraan pendidikan dari pihak swasta/mitra industri.
+- **E-Struk Digital & Transparansi Item**: Rincian kuitansi belanja dengan jumlah barang, harga satuan, PPN/PPh, dan ongkos kirim.
+- **Visualisasi Anggaran**: Grafik donat alokasi kategori belanja dan grafik tren bulanan.
+- **Forum Diskusi Publik & Apresiasi**: Ruang aspirasi warga dan pemberian rating bintang sekolah.
+
+### 2. 🏛️ Dashboard Kementerian (`http://localhost:2021`)
+- **Distribusi APBN Bertingkat**: Penetapan anggaran nasional ➔ 38 Provinsi ➔ 514 Kabupaten/Kota ➔ Satuan Pendidikan.
+- **Cascading Rollup Calculation**: Sinkronisasi otomatis dari perubahan satuan sekolah hingga ringkasan nasional.
+- **User Manager Terpadu**: Manajemen akun pengelola kementerian terhubung tabel `users`.
+
+### 3. 🏦 Dashboard Bank Penyalur (`http://localhost:2022`)
+- **Manajemen Rekening Sekolah**: Nomor rekening resmi terintegrasi (misal: `100.845.411.000`).
+- **Monitoring Saldo Kas & Mutasi**: Pencatatan riwayat arus kas masuk dan keluar secara *real-time*.
+
+### 4. 🔍 Dashboard Auditor & BPK (`http://localhost:2023`)
+- **AI Anomaly Detection**: Deteksi otomatis transaksi tunggal berisiko tinggi (> Rp 20.000.000) atau potensi anomali harga.
+- **Verifikasi SPJ Digital**: Validasi dokumen fisik kuitansi belanja (*VERIFIED*, *UNDER_REVIEW*, *MISSING*).
+- **Direct School Audit Forum**: Saluran komunikasi langsung auditor dengan bendahara sekolah.
+
+### 5. 🏫 Dashboard Institusi Pendidikan (`http://localhost:2024`)
+- **Akun Standar Terpadu**: `KB AL-IKHLAS` (NPSN: `69893669`, Samatiga, Kab. Aceh Barat).
+  - Alokasi Anggaran 2026: **`Rp 234.775.639`**
+  - Realisasi Belanja: **`Rp 197.211.537`**
+  - Sisa Saldo Kas: **`Rp 37.564.102`** (84.0% Penyerapan).
+- **Rencana Anggaran Biaya (RAB)**: Input paket rencana kegiatan dan kebutuhan sarana/prasarana.
+- **Input Pengeluaran & Scan OCR**: Pencatatan belanja riil dilengkapi OCR struk otomatis.
+
+---
+
+## 📸 Galeri Tampilan Halaman (Screenshots & Kode)
+
+Berikut adalah ringkasan visual antarmuka dan referensi berkas kode sumber untuk setiap dashboard:
+
+### 1. Transparansi Publik — Profil Sekolah & Riwayat Dana Masuk
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 🏛️ KB AL-IKHLAS (PAUD - NPSN: 69893669) - Aceh Barat     [Unduh PDF] [Kembali]│
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Total Dana Diterima: Rp 234.775.639 | Total Digunakan: Rp 197.211.537        │
+│ Sisa Saldo Kas     : Rp  37.564.102 | Penyerapan      : 84.0%                │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ 🔵 Riwayat Dana Masuk: APBN (Pemerintah Pusat)                               │
+│    15 Jan 2026 | BOP PAUD Reguler Tahap 1 | Ref: SP2D-01 | Rp 117.387.819    │
+│    10 Apr 2026 | BOP PAUD Reguler Tahap 2 | Ref: SP2D-02 | Rp  70.432.692    │
+│    Total Subtotal Masuk APBN                              : Rp 187.820.511    │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ 🟢 Riwayat Dana Masuk: APBD (Pemerintah Daerah)                              │
+│    20 Feb 2026 | BOP PAUD Daerah Aceh Barat Tahap 1       | Rp  25.000.000    │
+│    18 Jun 2026 | BOP PAUD Daerah Aceh Barat Tahap 2       | Rp  16.955.128    │
+│    Total Subtotal Masuk APBD                              : Rp  41.955.128    │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ 🟡 Riwayat Dana Masuk: CSR (Corporate Social Responsibility)                 │
+│    05 Mar 2026 | CSR PT Mifa Bersaudara (PAUD Ceria)      | Rp   5.000.000    │
+│    Total Subtotal Masuk CSR / Swasta                      : Rp   5.000.000    │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+- **Halaman Web**: `http://localhost:2020/dashboard/69893669`
+- **File Kode**: [`apps/transparansi-anggaran/apps/web-next/src/app/dashboard/[npsn]/page.tsx`](apps/transparansi-anggaran/apps/web-next/src/app/dashboard/[npsn]/page.tsx)
+
+---
+
+### 2. Dashboard Kementerian — Distribusi Nasional & Wilayah
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 🏛️ KEMENTERIAN PENDIDIKAN & KEBUDAYAAN          [Tahun 2026 ▼] [User Manager]│
+├──────────────────────────────────────────────────────────────────────────────┤
+│ 📊 Ringkasan APBN 2026: Rp 769.100.000.000.000 | Realisasi: Rp 513.200.000... │
+│ 📍 38 Provinsi | 514 Kabupaten/Kota | 40.000+ Satuan Pendidikan Terdaftar    │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Tabel Distribusi: Aceh, Sumut, DKI Jakarta, Jawa Barat, Jawa Timur, Papua... │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+- **Halaman Web**: `http://localhost:2021/dashboard`
+- **File Kode**: [`apps/dashboard-kementerian/app/dashboard/page.tsx`](apps/dashboard-kementerian/app/dashboard/page.tsx)
+- **Komponen**: [`apps/dashboard-kementerian/components/layout/Sidebar.tsx`](apps/dashboard-kementerian/components/layout/Sidebar.tsx)
+
+---
+
+### 3. Dashboard Bank Penyalur — Rekening & Mutasi
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 🏦 PORTAL BANK PENYALUR (KAS DAERAH & NASIONAL) [Tahun 2026 ▼] [User Manager]│
+├──────────────────────────────────────────────────────────────────────────────┤
+│ 💳 Rekening Sekolah Terdaftar: 100.845.411.000 (KB AL-IKHLAS)                │
+│ 📈 Total Dana Tersalurkan: 100% On-Schedule | Status Rekonsiliasi: MATCHED   │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+- **Halaman Web**: `http://localhost:2022/dashboard`
+- **File Kode**: [`apps/dashboard-bank/app/dashboard/page.tsx`](apps/dashboard-bank/app/dashboard/page.tsx)
+
+---
+
+### 4. Dashboard Auditor — Anomali AI & Verifikasi SPJ
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 🔍 DASHBOARD AUDITOR & PENGAWASAN KEUANGAN     [Tahun 2026 ▼] [User Manager]│
+├──────────────────────────────────────────────────────────────────────────────┤
+│ ⚠️ Deteksi Anomali: Transaksi > Rp 20 Juta Teridentifikasi Otomatis         │
+│ 📁 SPJ Digital: Upload Dokumen PDF, Status Verifikasi, & Forum Auditor       │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+- **Halaman Web**: `http://localhost:2023/dashboard/audit`
+- **File Kode**: [`apps/dashboard-auditor/app/dashboard/audit/page.tsx`](apps/dashboard-auditor/app/dashboard/audit/page.tsx)
+
+---
+
+### 5. Dashboard Institusi Pendidikan — Rencana & Belanja Sekolah
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 🏫 DASHBOARD SEKOLAH: KB AL-IKHLAS             [Tahun 2026 ▼] [User Manager]│
+├──────────────────────────────────────────────────────────────────────────────┤
+│ 💰 Pagu Alokasi : Rp 234.775.639 | Realisasi: Rp 197.211.537 | Sisa: Rp 37M  │
+│ 📝 Menu: Rencana Anggaran (RAB), Pengeluaran & SPJ, Mutasi Bank, Forum Audit │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+- **Halaman Web**: `http://localhost:2024/dashboard`
+- **File Kode**: [`apps/dashboard-institusi-pendidikan/app/dashboard/page.tsx`](apps/dashboard-institusi-pendidikan/app/dashboard/page.tsx)
+
+---
+
+## 🚀 Panduan Instalasi Cepat
+
+### 1. Kloning Repositori
 ```bash
-# 1. Update sistem
-sudo apt update && sudo apt upgrade -y
-
-# 2. Tambahkan repository resmi PostgreSQL
-sudo apt install -y wget gnupg2
-sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-sudo apt update
-
-# 3. Instal PostgreSQL 16
-sudo apt install -y postgresql-16 postgresql-client-16
-
-# 4. Verifikasi instalasi
-sudo systemctl status postgresql
-psql --version
-# Output: psql (PostgreSQL) 16.x
-```
-</details>
-
-<details>
-<summary><b>🐧 CentOS / Rocky Linux / AlmaLinux</b></summary>
-
-```bash
-# 1. Tambahkan repository resmi PostgreSQL
-sudo dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm
-sudo dnf module disable postgresql -y
-
-# 2. Instal PostgreSQL 16
-sudo dnf install -y postgresql16 postgresql16-server
-
-# 3. Inisialisasi database
-sudo /usr/pgsql-16/bin/postgresql-16-setup initdb
-
-# 4. Aktifkan dan mulai service
-sudo systemctl enable postgresql-16
-sudo systemctl start postgresql-16
-```
-</details>
-
-<details>
-<summary><b>🪟 Windows</b></summary>
-
-1. Download installer dari https://www.postgresql.org/download/windows/
-2. Jalankan installer, pilih PostgreSQL 16
-3. Saat diminta port, masukkan **2025**
-4. Catat password superuser yang Anda buat
-5. Selesaikan instalasi
-</details>
-
-## A2. Konfigurasi PostgreSQL (Port 2025)
-
-<details>
-<summary><b>🐧 Linux</b></summary>
-
-```bash
-# 1. Ubah port PostgreSQL dari 5432 ke 2025
-sudo nano /etc/postgresql/16/main/postgresql.conf
-```
-
-Cari dan ubah baris berikut:
-```ini
-# Sebelum:
-#port = 5432
-
-# Sesudah:
-port = 2025
-```
-
-Masih di file yang sama, ubah `listen_addresses` agar bisa diakses dari VPS lain:
-```ini
-# Sebelum:
-#listen_addresses = 'localhost'
-
-# Sesudah (jika dashboard di VPS terpisah):
-listen_addresses = '*'
-```
-
-```bash
-# 2. Izinkan koneksi dari luar (jika dashboard di VPS lain)
-sudo nano /etc/postgresql/16/main/pg_hba.conf
-```
-
-Tambahkan baris ini di paling bawah:
-```
-# Izinkan koneksi dari semua IP (untuk VPS dashboard)
-host    all    all    0.0.0.0/0    scram-sha-256
-```
-
-```bash
-# 3. Set password untuk user postgres
-sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'password_anda';"
-
-# 4. Restart PostgreSQL
-sudo systemctl restart postgresql
-
-# 5. Verifikasi koneksi
-psql -U postgres -h 127.0.0.1 -p 2025 -c "SELECT version();"
-```
-</details>
-
-<details>
-<summary><b>🪟 Windows</b></summary>
-
-Jika saat instalasi Anda sudah memasukkan port 2025, langkah ini sudah selesai. Jika belum:
-
-1. Buka file `C:\Program Files\PostgreSQL\16\data\postgresql.conf`
-2. Ubah `port = 5432` menjadi `port = 2025`
-3. Restart service PostgreSQL dari **Services Manager** (services.msc)
-</details>
-
-## A3. Buat Skema Database
-
-Langkah ini membuat semua tabel yang dibutuhkan oleh seluruh dashboard.
-
-```bash
-# 1. Clone repository (jika belum)
 git clone https://github.com/adimaryanto-stack/integrated-blockchain.git
 cd integrated-blockchain
 ```
 
-### Langkah 3a: Buat prasyarat skema
-
-```bash
-psql -U postgres -h 127.0.0.1 -p 2025 -c "
-DROP SCHEMA IF EXISTS public CASCADE;
-CREATE SCHEMA public;
-GRANT ALL ON SCHEMA public TO postgres;
-GRANT ALL ON SCHEMA public TO public;
-
-CREATE SCHEMA IF NOT EXISTS auth;
-CREATE TABLE IF NOT EXISTS auth.users (
-    id UUID PRIMARY KEY,
-    email TEXT
-);
-
-CREATE OR REPLACE FUNCTION auth.uid() RETURNS UUID AS \$\$
-    SELECT null::uuid;
-\$\$ LANGUAGE SQL STABLE;
-
-CREATE OR REPLACE FUNCTION auth.jwt() RETURNS JSONB AS \$\$
-    SELECT '{}'::jsonb;
-\$\$ LANGUAGE SQL STABLE;
-
-CREATE SCHEMA IF NOT EXISTS extensions;
-CREATE EXTENSION IF NOT EXISTS uuid-ossp;
-
-DO \$\$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
-        CREATE PUBLICATION supabase_realtime;
-    END IF;
-END
-\$\$;
-"
+### 2. Jalankan Seluruh Layanan (Satu Perintah)
+Gunakan skrip PowerShell bawaan untuk memulai PostgreSQL, Proxy API, dan ke-5 Dashboard secara otomatis:
+```powershell
+.\start-all.ps1
 ```
 
-### Langkah 3b: Terapkan migration — Data APBN Tahunan
-
-```bash
-psql -U postgres -h 127.0.0.1 -p 2025 -d postgres \
-  -f apps/transparansi-anggaran/supabase/migrations/20260307142221_create_apbn_yearly_data.sql
-```
-
-### Langkah 3c: Terapkan migration — Skema Utama (tabel inti)
-
-```bash
-psql -U postgres -h 127.0.0.1 -p 2025 -d postgres \
-  -f apps/transparansi-anggaran/supabase/migrations/20260402000000_full_schema.sql
-```
-
-### Langkah 3d: Terapkan migration — Tabel Alokasi Anggaran
-
-```bash
-psql -U postgres -h 127.0.0.1 -p 2025 -d postgres \
-  -f apps/transparansi-anggaran/supabase/migrations/20260407130000_create_allocations_tables.sql
-```
-
-### Langkah 3e: Terapkan migration — Flag dan Warning
-
-```bash
-psql -U postgres -h 127.0.0.1 -p 2025 -d postgres \
-  -f apps/transparansi-anggaran/supabase/migrations/20260407150000_add_flag_and_warning.sql
-```
-
-### Langkah 3f: Terapkan migration — Kolom Audit
-
-```bash
-psql -U postgres -h 127.0.0.1 -p 2025 -d postgres \
-  -f apps/transparansi-anggaran/supabase/migrations/20260407152400_sprint3_audit_columns.sql
-```
-
-### Langkah 3g: Terapkan migration — Kebijakan Audit Log
-
-```bash
-psql -U postgres -h 127.0.0.1 -p 2025 -d postgres \
-  -f apps/transparansi-anggaran/supabase/migrations/20260616130000_audit_logs_policies.sql
-```
-
-### Langkah 3h: Terapkan skema tambahan
-
-```bash
-psql -U postgres -h 127.0.0.1 -p 2025 -d postgres \
-  -f apps/transparansi-anggaran/supabase_schema.sql
-```
-
-## A4. Impor Data Wilayah & Sekolah
-
-### Langkah 4a: Impor data provinsi
-
-```bash
-psql -U postgres -h 127.0.0.1 -p 2025 -d postgres \
-  -f apps/transparansi-anggaran/data/sql/01_provinces.sql
-```
-
-### Langkah 4b: Impor data kabupaten/kota
-
-```bash
-psql -U postgres -h 127.0.0.1 -p 2025 -d postgres \
-  -f apps/transparansi-anggaran/data/sql/02_regencies.sql
-```
-
-### Langkah 4c: Impor data kecamatan (8 file)
-
-```bash
-psql -U postgres -h 127.0.0.1 -p 2025 -d postgres -f apps/transparansi-anggaran/data/sql/03_districts_01.sql
-psql -U postgres -h 127.0.0.1 -p 2025 -d postgres -f apps/transparansi-anggaran/data/sql/03_districts_02.sql
-psql -U postgres -h 127.0.0.1 -p 2025 -d postgres -f apps/transparansi-anggaran/data/sql/03_districts_03.sql
-psql -U postgres -h 127.0.0.1 -p 2025 -d postgres -f apps/transparansi-anggaran/data/sql/03_districts_04.sql
-psql -U postgres -h 127.0.0.1 -p 2025 -d postgres -f apps/transparansi-anggaran/data/sql/03_districts_05.sql
-psql -U postgres -h 127.0.0.1 -p 2025 -d postgres -f apps/transparansi-anggaran/data/sql/03_districts_06.sql
-psql -U postgres -h 127.0.0.1 -p 2025 -d postgres -f apps/transparansi-anggaran/data/sql/03_districts_07.sql
-psql -U postgres -h 127.0.0.1 -p 2025 -d postgres -f apps/transparansi-anggaran/data/sql/03_districts_08.sql
-```
-
-### Langkah 4d: Impor data desa (42 file)
-
-```bash
-# Jalankan satu per satu, atau gunakan loop:
-for i in $(seq -w 1 42); do
-  psql -U postgres -h 127.0.0.1 -p 2025 -d postgres \
-    -f apps/transparansi-anggaran/data/sql/04_villages_${i}.sql
-done
-```
-
-### Langkah 4e: Impor data transaksi sekolah per provinsi (opsional)
-
-Setiap provinsi punya folder `compact_*` berisi data transaksi. Impor sesuai kebutuhan:
-
-```bash
-# Contoh: Impor data transaksi Lampung
-for f in apps/transparansi-anggaran/data/sql/compact_lampung/batch_*.sql; do
-  psql -U postgres -h 127.0.0.1 -p 2025 -d postgres -f "$f"
-done
-
-# Contoh: Impor data transaksi Jawa Barat
-for f in apps/transparansi-anggaran/data/sql/compact_jawa_barat/batch_*.sql; do
-  psql -U postgres -h 127.0.0.1 -p 2025 -d postgres -f "$f"
-done
-```
-
-### Langkah 4f: Verifikasi database
-
-```bash
-psql -U postgres -h 127.0.0.1 -p 2025 -d postgres -c "SELECT COUNT(*) FROM schools;"
-# Output yang diharapkan: ~468,000+ baris
-```
-
-## A5. Jalankan Proxy API (Port 2026)
-
-Proxy API wajib berjalan karena semua dashboard mengambil data melalui proxy ini.
-
-```bash
-# 1. Masuk ke folder proxy
-cd proxy
-
-# 2. Instal dependensi
-npm install
-
-# 3. Jalankan proxy
-node proxy.js
-# Output: [Proxy] Listening on port 2026
-```
-
-> **Untuk produksi**, gunakan PM2 agar berjalan di background:
-> ```bash
-> npm install -g pm2
-> pm2 start proxy.js --name "proxy-api"
-> pm2 save && pm2 startup
-> ```
+### 3. Akses Dashboard
+Buka browser dan akses alamat berikut:
+- 🌐 **Publik**: [http://localhost:2020](http://localhost:2020)
+- 🏛️ **Kementerian**: [http://localhost:2021](http://localhost:2021)
+- 🏦 **Bank**: [http://localhost:2022](http://localhost:2022)
+- 🔍 **Auditor**: [http://localhost:2023](http://localhost:2023)
+- 🏫 **Institusi Pendidikan**: [http://localhost:2024](http://localhost:2024)
 
 ---
 
-# 💻 BAGIAN B: Instalasi Dashboard (Pilih Salah Satu atau Semua)
+## 📡 Dokumentasi API REST PostgREST
 
-> **Penting:** Pastikan **Bagian A (Database + Proxy)** sudah selesai sebelum melanjutkan.
->
-> Anda hanya perlu menginstal dashboard yang dibutuhkan. Setiap dashboard **berdiri sendiri** — Anda cukup menggunakan **1 folder** saja untuk 1 dashboard.
+Proxy API (`http://localhost:2026/rest/v1/*`) mendukung query standar PostgREST:
 
----
-
-## B1. 📊 Dashboard Transparansi Publik (Port 2020)
-
-Dashboard utama untuk masyarakat umum. Menampilkan data anggaran, peta distribusi, dan transparansi pengeluaran.
-
-**Folder:** `apps/transparansi-anggaran/apps/web-next/`
-
-### Instalasi
-
-```bash
-# 1. Masuk ke folder dashboard
-cd apps/transparansi-anggaran/apps/web-next
-
-# 2. Instal dependensi
-npm install
-
-# 3. Buat file .env.local
-cat > .env.local << 'EOF'
-NEXT_PUBLIC_SUPABASE_URL=http://localhost:2026
-NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-key
-EOF
-
-# 4. Jalankan (development)
-npm run dev -- --port 2020
-```
-
-### Deploy Produksi (VPS)
-
-```bash
-cd apps/transparansi-anggaran/apps/web-next
-npm run build
-pm2 start npm --name "dashboard-publik" -- run start -- --port 2020
-```
-
-### Verifikasi
-
-Buka browser → http://localhost:2020
+| Endpoint | Method | Parameter Contoh | Deskripsi |
+| :--- | :---: | :--- | :--- |
+| `/rest/v1/tahun_anggaran` | `GET` | `?select=*&order=tahun.desc` | Mengambil daftar tahun anggaran. |
+| `/rest/v1/alokasi_provinsi` | `GET` | `?tahun_anggaran_id=eq.7` | Alokasi anggaran per provinsi. |
+| `/rest/v1/alokasi_kabupaten_kota` | `GET` | `?alokasi_provinsi_id=eq.ap-1` | Alokasi anggaran per kab/kota. |
+| `/rest/v1/institusi_pendidikan` | `GET` | `?npsn=eq.69893669` | Profil master institusi pendidikan. |
+| `/rest/v1/incoming_funds` | `GET` | `?school_id=eq.<UUID>` | Riwayat dana masuk (APBN/APBD/CSR). |
+| `/rest/v1/transactions` | `GET` | `?school_id=eq.<UUID>` | Transaksi belanja operasional sekolah. |
+| `/rest/v1/users` | `GET` | `?select=*&order=id.asc` | Daftar pengguna dan role dashboard. |
 
 ---
 
-## B2. 🏢 Dashboard Kementerian (Port 2021)
-
-Dashboard untuk pihak kementerian. Menampilkan ringkasan alokasi, ekspor data Excel, dan monitoring.
-
-**Folder:** `apps/dashboard-kementerian/`
-
-### Instalasi
-
-```bash
-# 1. Masuk ke folder dashboard
-cd apps/dashboard-kementerian
-
-# 2. Instal dependensi
-npm install
-
-# 3. Buat file .env.local
-cat > .env.local << 'EOF'
-NEXT_PUBLIC_SUPABASE_URL=http://localhost:2026
-NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-key
-EOF
-
-# 4. Jalankan (development)
-npm run dev -- --port 2021
-```
-
-### Deploy Produksi (VPS)
-
-```bash
-cd apps/dashboard-kementerian
-npm run build
-pm2 start npm --name "dashboard-kementerian" -- run start -- --port 2021
-```
-
-### Verifikasi
-
-Buka browser → http://localhost:2021
-
----
-
-## B3. 🏦 Dashboard Bank (Port 2022)
-
-Dashboard untuk pihak perbankan. Menampilkan aliran dana, rekonsiliasi, dan laporan keuangan.
-
-**Folder:** `apps/dashboard-bank/`
-
-### Instalasi
-
-```bash
-# 1. Masuk ke folder dashboard
-cd apps/dashboard-bank
-
-# 2. Instal dependensi
-npm install
-
-# 3. Buat file .env.local
-cat > .env.local << 'EOF'
-NEXT_PUBLIC_SUPABASE_URL=http://localhost:2026
-NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-key
-EOF
-
-# 4. Jalankan (development)
-npm run dev -- --port 2022
-```
-
-### Deploy Produksi (VPS)
-
-```bash
-cd apps/dashboard-bank
-npm run build
-pm2 start npm --name "dashboard-bank" -- run start -- --port 2022
-```
-
-### Verifikasi
-
-Buka browser → http://localhost:2022
-
----
-
-## B4. 🔍 Dashboard Auditor (Port 2023)
-
-Dashboard untuk auditor/BPK. Menampilkan anomali, log audit, dan sistem peringatan dini.
-
-**Folder:** `apps/dashboard-auditor/`
-
-### Instalasi
-
-```bash
-# 1. Masuk ke folder dashboard
-cd apps/dashboard-auditor
-
-# 2. Instal dependensi
-npm install
-
-# 3. Buat file .env.local
-cat > .env.local << 'EOF'
-NEXT_PUBLIC_SUPABASE_URL=http://localhost:2026
-NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-key
-DATABASE_URL=postgresql://postgres@localhost:2025/postgres
-EOF
-
-# 4. Jalankan (development)
-npm run dev -- --port 2023
-```
-
-### Deploy Produksi (VPS)
-
-```bash
-cd apps/dashboard-auditor
-npm run build
-pm2 start npm --name "dashboard-auditor" -- run start -- --port 2023
-```
-
-### Verifikasi
-
-Buka browser → http://localhost:2023
-
----
-
-## B5. 🎓 Dashboard Institusi Pendidikan (Port 2024)
-
-Dashboard untuk institusi pendidikan (sekolah/universitas). Menampilkan detail anggaran, OCR bukti transfer, dan pelaporan.
-
-**Folder:** `apps/dashboard-institusi-pendidikan/`
-
-### Instalasi
-
-```bash
-# 1. Masuk ke folder dashboard
-cd apps/dashboard-institusi-pendidikan
-
-# 2. Instal dependensi
-npm install
-
-# 3. Buat file .env.local
-cat > .env.local << 'EOF'
-NEXT_PUBLIC_SUPABASE_URL=http://localhost:2026
-NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-key
-DATABASE_URL=postgresql://postgres@localhost:2025/postgres
-EOF
-
-# 4. Jalankan (development)
-npm run dev -- --port 2024
-```
-
-### Deploy Produksi (VPS)
-
-```bash
-cd apps/dashboard-institusi-pendidikan
-npm run build
-pm2 start npm --name "dashboard-institusi" -- run start -- --port 2024
-```
-
-### Verifikasi
-
-Buka browser → http://localhost:2024
-
----
-
-# 🌐 BAGIAN C: Konfigurasi VPS Produksi
-
-## C1. Jika Database dan Dashboard di VPS yang SAMA
-
-Tidak perlu konfigurasi tambahan. Semua `.env.local` menggunakan `localhost`.
-
-## C2. Jika Database dan Dashboard di VPS yang BERBEDA
-
-Ubah `localhost` di `.env.local` menjadi **IP publik VPS database**:
-
-```env
-# Contoh: VPS Database beralamat 103.123.45.67
-NEXT_PUBLIC_SUPABASE_URL=http://103.123.45.67:2026
-```
-
-Pastikan juga:
-- Firewall VPS database membuka port `2026` (Proxy API)
-- PostgreSQL mengizinkan koneksi dari IP VPS dashboard (lihat `pg_hba.conf`)
-
-## C3. Konfigurasi Nginx (Reverse Proxy + HTTPS)
-
-Instal Nginx di VPS dashboard:
-
-```bash
-sudo apt install -y nginx
-```
-
-Buat konfigurasi untuk setiap dashboard. Contoh untuk Dashboard Publik:
-
-```bash
-sudo nano /etc/nginx/sites-available/dashboard-publik
-```
-
-```nginx
-server {
-    listen 80;
-    server_name anggaran.domain.com;  # Ganti dengan domain Anda
-
-    location / {
-        proxy_pass http://127.0.0.1:2020;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-```
-
-```bash
-# Aktifkan site
-sudo ln -s /etc/nginx/sites-available/dashboard-publik /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-### Pasang SSL (HTTPS) Gratis dengan Let's Encrypt
-
-```bash
-sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d anggaran.domain.com
-```
-
-## C4. Buka Firewall
-
-```bash
-sudo ufw allow 80/tcp     # HTTP
-sudo ufw allow 443/tcp    # HTTPS
-sudo ufw allow 2026/tcp   # Proxy API (jika dashboard di VPS lain)
-sudo ufw enable
-```
-
----
-
-# 🗂️ Struktur Folder
+## 📁 Struktur Direktori Proyek
 
 ```
 integrated-blockchain/
 ├── apps/
-│   ├── transparansi-anggaran/
-│   │   ├── apps/web-next/             ← Dashboard Publik (port 2020)
-│   │   ├── data/
-│   │   │   ├── sql/                   ← SQL seed: provinsi, kabupaten, kecamatan, desa
-│   │   │   │   ├── 01_provinces.sql
-│   │   │   │   ├── 02_regencies.sql
-│   │   │   │   ├── 03_districts_*.sql
-│   │   │   │   ├── 04_villages_*.sql
-│   │   │   │   └── compact_*/        ← Data transaksi per provinsi
-│   │   │   └── schools_*.json        ← Data sekolah resmi Dapodik/Saindikti
-│   │   └── supabase/migrations/      ← File migrasi skema database
-│   ├── dashboard-kementerian/         ← Dashboard Kementerian (port 2021)
-│   ├── dashboard-bank/                ← Dashboard Bank (port 2022)
-│   ├── dashboard-auditor/             ← Dashboard Auditor (port 2023)
-│   └── dashboard-institusi-pendidikan/← Dashboard Institusi (port 2024)
+│   ├── transparansi-anggaran/          # Port 2020: Frontend Publik
+│   ├── dashboard-kementerian/          # Port 2021: Dashboard Kementerian
+│   ├── dashboard-bank/                 # Port 2022: Dashboard Bank
+│   ├── dashboard-auditor/              # Port 2023: Dashboard Auditor
+│   └── dashboard-institusi-pendidikan/ # Port 2024: Dashboard Sekolah
 ├── proxy/
-│   └── proxy.js                       ← REST API proxy (port 2026)
+│   └── proxy.js                        # Port 2026: PostgREST Express Proxy
 ├── scripts/
-│   ├── setup-database.ps1             ← Setup database otomatis (Windows)
-│   └── update-envs.ps1                ← Update semua .env sekaligus
-├── start-all.ps1                      ← Startup semua layanan (Windows)
-├── package.json
-└── README.md                          ← Dokumen ini
+│   ├── check_all_ports.js              # Health-check skrip seluruh port
+│   ├── populate_kb_data.js             # Generator data master KB AL-IKHLAS
+│   └── update_incoming_funds_categorized.js
+├── README.md                           # Dokumentasi Utama
+├── PRD.md                              # Product Requirements Document
+├── MVP.md                              # Minimum Viable Product Verification
+├── TOPOLOGY.md                         # Topologi Jaringan & Data Flow
+└── start-all.ps1                       # One-click start script
 ```
 
 ---
 
-# 🔧 Troubleshooting
-
-<details>
-<summary><b>Port sudah digunakan (EADDRINUSE)</b></summary>
-
-```bash
-# Linux/macOS: cek dan matikan proses di port tertentu
-lsof -i :2020
-kill -9 <PID>
-
-# Windows:
-netstat -ano | findstr :2020
-taskkill /PID <PID> /F
-```
-</details>
-
-<details>
-<summary><b>Database connection refused</b></summary>
-
-1. Pastikan PostgreSQL berjalan:
-   ```bash
-   sudo systemctl status postgresql
-   ```
-2. Pastikan port 2025 aktif:
-   ```bash
-   psql -U postgres -h 127.0.0.1 -p 2025 -c "SELECT 1;"
-   ```
-3. Jika dari VPS lain, pastikan `pg_hba.conf` mengizinkan IP Anda
-</details>
-
-<details>
-<summary><b>Dashboard menampilkan "sekolah tidak diketahui"</b></summary>
-
-- Data sekolah belum diimpor → jalankan ulang Langkah A4
-- File `.env.local` salah alamat → pastikan mengarah ke Proxy API
-- Restart dashboard setelah mengubah `.env.local`
-</details>
-
-<details>
-<summary><b>Proxy API error 500</b></summary>
-
-- Pastikan PostgreSQL berjalan di port 2025
-- Cek koneksi: `psql -U postgres -h 127.0.0.1 -p 2025 -c "SELECT 1;"`
-- Cek log: `pm2 logs proxy-api`
-</details>
-
-<details>
-<summary><b>npm install gagal (node-gyp error)</b></summary>
-
-```bash
-# Linux: instal build tools
-sudo apt install -y build-essential python3
-
-# Windows: instal Visual Studio Build Tools
-npm install -g windows-build-tools
-```
-</details>
+## 📚 Dokumentasi Terkait
+- 📋 [Product Requirements Document (PRD)](PRD.md)
+- 🚀 [Minimum Viable Product (MVP) Report](MVP.md)
+- 🌐 [Topologi & Alur Data Sistem](TOPOLOGY.md)
+- 📖 [Panduan Deployment VPS Linux](deploy_guide.md)
 
 ---
 
-## 📝 Lisensi
-
-MIT License - Lihat file [LICENSE](LICENSE) untuk detail.
+## 📄 Lisensi
+Hak Cipta © 2026 Integrated Blockchain Transparansi Anggaran Pendidikan Indonesia. Dirilis di bawah lisensi [MIT](LICENSE).

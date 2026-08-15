@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Header from '@/components/layout/Header';
-import { mockAnomalies } from '@/lib/data';
 import { AuditAnomaly } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { useAppStore } from '@/lib/store';
@@ -77,13 +76,40 @@ interface ChatMessage {
 }
 
 export default function AuditPage() {
-  const { dbData, isSupabaseMode, activeTahun } = useAppStore();
+  const { activeTahun } = useAppStore();
   const [anomalies, setAnomalies] = useState<AuditAnomaly[]>([]);
-  const [selectedInst, setSelectedInst] = useState('inst-sd-0');
+  const [loadingAnomalies, setLoadingAnomalies] = useState(true);
+  const [selectedInst, setSelectedInst] = useState('');
+  const [institusiOptions, setInstitusiOptions] = useState<{ id: string; nama: string }[]>([]);
 
+  // Fetch all anomalies from DB
   useEffect(() => {
-    setAnomalies(mockAnomalies.filter(a => a.institusi_id === selectedInst));
-  }, [selectedInst, dbData, isSupabaseMode]);
+    setLoadingAnomalies(true);
+    supabase
+      .from('audit_anomaly')
+      .select('*')
+      .order('tanggal_ditemukan', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Error fetching anomalies:', error);
+        } else {
+          const rows = (data || []).map((r: any) => ({
+            ...r,
+            nominal_selisih: Number(r.nominal_selisih || 0),
+          }));
+          setAnomalies(rows);
+          // Build unique institusi options for AI scan selector
+          const unique = new Map<string, string>();
+          rows.forEach((r: any) => {
+            if (r.institusi_id && r.nama_institusi) unique.set(r.institusi_id, r.nama_institusi);
+          });
+          const opts = Array.from(unique.entries()).map(([id, nama]) => ({ id, nama }));
+          setInstitusiOptions(opts);
+          if (opts.length > 0 && !selectedInst) setSelectedInst(opts[0].id);
+        }
+        setLoadingAnomalies(false);
+      });
+  }, [activeTahun]);
 
   const [scanStatus, setScanStatus] = useState<'IDLE' | 'SCANNING' | 'DONE'>('IDLE');
   const [scanProgress, setScanProgress] = useState(0);
@@ -207,18 +233,13 @@ export default function AuditPage() {
             audit_how: 'Lakukan audit verifikasi fisik kuitansi dan sesuaikan dengan regulasi harga pasar.',
           };
           setAnomalies(prev => [newAnomaly, ...prev]);
-          
-          // Sync with Zustand and Supabase
-          const { isSupabaseMode, dbData, setDbData } = useAppStore.getState();
-          if (isSupabaseMode && dbData) {
-            setDbData({ ...dbData, audit_anomaly: [newAnomaly, ...dbData.audit_anomaly] });
-            supabase
-              .from('audit_anomaly')
-              .insert([newAnomaly])
-              .then(({ error }) => {
-                if (error) console.error('Failed to insert anomaly to Supabase:', error.message);
-              });
-          }
+          // Persist to local DB
+          supabase
+            .from('audit_anomaly')
+            .insert([newAnomaly])
+            .then(({ error }) => {
+              if (error) console.error('Failed to insert anomaly:', error.message);
+            });
         }
       }
     }, 800);
@@ -230,19 +251,14 @@ export default function AuditPage() {
       setSelectedAnomaly(prev => prev ? { ...prev, status: newStatus } : null);
     }
 
-    // Sync with Zustand and Supabase
-    const { isSupabaseMode, dbData, setDbData } = useAppStore.getState();
-    if (isSupabaseMode && dbData) {
-      const updatedAnoms = dbData.audit_anomaly.map((a: any) => a.id === id ? { ...a, status: newStatus } : a);
-      setDbData({ ...dbData, audit_anomaly: updatedAnoms });
-      supabase
-        .from('audit_anomaly')
-        .update({ status: newStatus })
-        .eq('id', id)
-        .then(({ error }) => {
-          if (error) console.error('Failed to update status in Supabase:', error.message);
-        });
-    }
+    // Persist status update to local DB
+    supabase
+      .from('audit_anomaly')
+      .update({ status: newStatus })
+      .eq('id', id)
+      .then(({ error }) => {
+        if (error) console.error('Failed to update anomaly status:', error.message);
+      });
   };
 
   // Chat Q&A response generation logic
@@ -413,7 +429,7 @@ export default function AuditPage() {
                   <ShieldAlert size={18} className="text-rose-500" />
                   <h3 className="text-sm font-semibold text-text-primary">Daftar Temuan Anomali Anggaran</h3>
                 </div>
-                <span className="badge bg-rose-50 text-rose-700 border-rose-200 text-xs">Simulasi Live</span>
+                <span className="badge bg-emerald-50 text-emerald-700 border-emerald-200 text-xs">Database Lokal</span>
               </div>
               
               <div className="overflow-x-auto">
@@ -499,7 +515,13 @@ export default function AuditPage() {
                     className="select-dropdown w-full"
                     disabled={scanStatus === 'SCANNING'}
                   >
-                    <option value="inst-sd-0">SDN 01 Menteng (Medium Risk - Fiktif)</option>
+                    {institusiOptions.length > 0 ? (
+                      institusiOptions.map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.nama}</option>
+                      ))
+                    ) : (
+                      <option value="">-- Tidak ada data anomali di database --</option>
+                    )}
                   </select>
                 </div>
 

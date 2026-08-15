@@ -5,41 +5,71 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import PctBadge from '@/components/ui/PctBadge';
 import { useAppStore } from '@/lib/store';
-import { alokasiProvinsiData, tahunAnggaranData } from '@/lib/data';
+import { supabase } from '@/lib/supabase';
 import { fmtRupiah, fmtTriliun } from '@/lib/utils/formatters';
 import { AlokasiProvinsi } from '@/types';
 import { Search, Download, RefreshCw } from 'lucide-react';
 
 export default function ProvinsiPage() {
-  const { activeTahun, dbData, isSupabaseMode } = useAppStore();
+  const { activeTahun } = useAppStore();
+  const [data, setData] = useState<AlokasiProvinsi[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
-  const scaledProvinsiData = useMemo(() => {
-    const targetTahun = tahunAnggaranData.find(t => t.tahun === activeTahun) || tahunAnggaranData[6];
-    const baseTahun = tahunAnggaranData[6];
-    const scale = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
-    const seed = (activeTahun % 7) || 1;
-    const shift = 0.95 + (seed * 0.012);
+  const fetchProvinsi = async () => {
+    setLoading(true);
+    try {
+      const [resAlokasi, resProv] = await Promise.all([
+        supabase
+          .from('alokasi_provinsi')
+          .select('*')
+          .eq('tahun_anggaran_id', String(activeTahun)),
+        supabase
+          .from('provinsi')
+          .select('*')
+          .order('nama_provinsi', { ascending: true })
+      ]);
 
-    return alokasiProvinsiData.map(p => {
-      const nominal = Math.round(p.nominal_alokasi * scale);
-      const realisasi = Math.min(nominal, Math.round(p.realisasi_total * scale * shift));
-      return {
-        ...p,
-        nominal_alokasi: nominal,
-        realisasi_total: realisasi,
-        selisih: nominal - realisasi,
-        persentase_penyerapan: nominal > 0 ? (realisasi / nominal) * 100 : 0,
-      };
-    });
-  }, [activeTahun, dbData, isSupabaseMode]);
+      const provs = resProv.data || [];
+      const alokasis = resAlokasi.data || [];
 
-  const [data, setData] = useState<AlokasiProvinsi[]>(scaledProvinsiData);
+      const mapped: AlokasiProvinsi[] = provs.map((prov: any) => {
+        const alokasi = alokasis.find((a: any) => a.provinsi_id === prov.id);
+        const nominal = Number(alokasi?.nominal_alokasi || 0);
+        const realisasi = Number(alokasi?.realisasi_total || 0);
+        const selisih = nominal - realisasi;
+        const persentase = nominal > 0 ? (realisasi / nominal) * 100 : 0;
+
+        return {
+          id: alokasi?.id || `prov-${prov.id}`,
+          tahun_anggaran_id: String(activeTahun),
+          provinsi_id: prov.id,
+          provinsi: {
+            id: prov.id,
+            kode_provinsi: prov.kode_provinsi,
+            nama_provinsi: prov.nama_provinsi
+          },
+          nominal_alokasi: nominal,
+          realisasi_total: realisasi,
+          selisih,
+          persentase_penyerapan: persentase,
+          updated_at: alokasi?.updated_at || new Date().toISOString()
+        };
+      });
+
+      // Sort Alphabet A-Z by nama_provinsi
+      mapped.sort((a, b) => a.provinsi.nama_provinsi.localeCompare(b.provinsi.nama_provinsi));
+
+      setData(mapped);
+    } catch (err) {
+      console.error('Error fetching provinsi:', err);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    setData(scaledProvinsiData);
-  }, [scaledProvinsiData]);
-
-  const [search, setSearch] = useState('');
+    fetchProvinsi();
+  }, [activeTahun]);
 
   const filtered = useMemo(() => {
     if (!search) return data;
@@ -60,6 +90,17 @@ export default function ProvinsiPage() {
       </td>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        <Header title="Provinsi" subtitle={`Memuat data provinsi tahun ${activeTahun} dari database lokal...`} />
+        <div className="p-6 flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -82,7 +123,7 @@ export default function ProvinsiPage() {
             />
           </div>
           <span className="text-xs text-text-muted flex-1">{filtered.length} provinsi</span>
-          <button className="btn btn-ghost">
+          <button onClick={fetchProvinsi} className="btn btn-ghost">
             <RefreshCw size={14} />
             Refresh
           </button>

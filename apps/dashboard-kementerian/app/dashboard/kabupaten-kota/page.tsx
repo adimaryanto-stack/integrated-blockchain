@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import Header from '@/components/layout/Header';
 import PctBadge from '@/components/ui/PctBadge';
 import { useAppStore } from '@/lib/store';
-import { alokasiProvinsiData, getKabkotaByProvinsi } from '@/lib/data';
+import { alokasiProvinsiData, getKabkotaByProvinsi, tahunAnggaranData } from '@/lib/data';
 import { fmtRupiah, fmtTriliun } from '@/lib/utils/formatters';
 import { exportToExcel, getPctColorHex } from '@/lib/utils/excelExport';
 import { AlokasiKabupatenKota } from '@/types';
@@ -12,13 +12,21 @@ import { Search, Download, Plus } from 'lucide-react';
 
 
 export default function KabupatenKotaPage() {
-  const { activeTahun, currentUser } = useAppStore();
+  // dataVersion & activeTahun subscribed here
+  const { activeTahun, currentUser, dataVersion } = useAppStore();
+
+  const activeTahunObj = useMemo(() => {
+    return tahunAnggaranData.find(t => Number(t.tahun) === Number(activeTahun));
+  }, [activeTahun, dataVersion]);
 
   const sortedProvinsiData = useMemo(() => {
-    return [...alokasiProvinsiData].sort((a, b) =>
+    const provs = activeTahunObj 
+      ? alokasiProvinsiData.filter(p => String(p.tahun_anggaran_id) === String(activeTahunObj.id))
+      : alokasiProvinsiData;
+    return [...provs].sort((a, b) =>
       a.provinsi.nama_provinsi.localeCompare(b.provinsi.nama_provinsi, 'id')
     );
-  }, []);
+  }, [activeTahunObj, dataVersion]);
 
   const [selectedProvinsi, setSelectedProvinsi] = useState(() => sortedProvinsiData[0]?.provinsi_id || 'p-1');
   const [search, setSearch] = useState('');
@@ -26,8 +34,8 @@ export default function KabupatenKotaPage() {
   const [editValue, setEditValue] = useState('');
 
   const rawData = useMemo(() => {
-    return getKabkotaByProvinsi(selectedProvinsi);
-  }, [selectedProvinsi]);
+    return getKabkotaByProvinsi(selectedProvinsi, activeTahunObj?.id);
+  }, [selectedProvinsi, activeTahunObj, dataVersion]);
 
   const [prevRawData, setPrevRawData] = useState(rawData);
   const [localData, setLocalData] = useState<AlokasiKabupatenKota[]>(rawData);
@@ -48,9 +56,22 @@ export default function KabupatenKotaPage() {
   }, [localData, search]);
 
   const totals = useMemo(() => {
-    const nom = filtered.reduce((s, k) => s + k.nominal_alokasi, 0);
-    const real = filtered.reduce((s, k) => s + k.realisasi_total, 0);
-    return { nominal: nom, realisasi: real, selisih: nom - real, pct: nom > 0 ? (real / nom) * 100 : 0 };
+    const toBigInt = (val: unknown): bigint => {
+      if (val === null || val === undefined) return 0n;
+      const s = String(val).split('.')[0].replace(/[^0-9-]/g, '');
+      if (!s || s === '-') return 0n;
+      try { return BigInt(s); } catch { return 0n; }
+    };
+    const nomBig = filtered.reduce((s, k) => s + toBigInt(k.nominal_alokasi), 0n);
+    const realBig = filtered.reduce((s, k) => s + toBigInt(k.realisasi_total), 0n);
+    const selisihBig = nomBig - realBig;
+    const pct = nomBig > 0n ? Number((realBig * 1000n) / nomBig) / 10 : 0;
+    return {
+      nominal: nomBig.toString(),
+      realisasi: realBig.toString(),
+      selisih: selisihBig.toString(),
+      pct,
+    };
   }, [filtered]);
 
   const canEdit = currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN' || currentUser.role === 'ADMIN_PROVINSI' || currentUser.role === 'ADMIN_KABKOTA';

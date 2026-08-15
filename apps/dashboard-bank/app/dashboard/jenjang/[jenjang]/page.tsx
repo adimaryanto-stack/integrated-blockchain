@@ -32,13 +32,35 @@ export default function JenjangPage() {
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState<number | null>(null);
 
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [selectedProvinsiId, setSelectedProvinsiId] = useState('');
+  const [selectedKabKotaName, setSelectedKabKotaName] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [editingCell, setEditingCell] = useState<{ id: string; field: 'nominal' | 'realisasi' } | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setCurrentPage(1);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const fetchData = async () => {
     try {
       setLoading(true);
       // Fetch total count lightweight
       const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2026';
       const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'anon-key-davinci-2026';
-      fetch(`${url}/rest/v1/institusi_pendidikan?jenjang=eq.${config.jenjang}&select=id`, {
+      let countUrl = `${url}/rest/v1/institusi_pendidikan?jenjang=eq.${config.jenjang}&select=id`;
+      if (selectedStatus) countUrl += `&status_sekolah=eq.${selectedStatus}`;
+      if (debouncedSearch) countUrl += `&or=(nama_institusi.ilike.*${encodeURIComponent(debouncedSearch)}*,npsn.ilike.*${encodeURIComponent(debouncedSearch)}*)`;
+
+      fetch(countUrl, {
         headers: { apikey: key, Authorization: `Bearer ${key}`, Prefer: 'count=exact' }
       }).then(r => {
         const cr = r.headers.get('content-range');
@@ -47,12 +69,61 @@ export default function JenjangPage() {
           if (!isNaN(total)) setTotalCount(total);
         }
       }).catch(() => {});
-      const [list, provs] = await Promise.all([
-        getInstitusiByJenjang(config.jenjang),
-        getAlokasiProvinsi(activeTahun),
-      ]);
-      setData(list);
-      setProvinsiList(provs);
+
+      let provs = provinsiList;
+      if (provs.length === 0) {
+        provs = await getAlokasiProvinsi(activeTahun);
+        setProvinsiList(provs);
+      }
+
+      let query = supabase
+        .from('institusi_pendidikan')
+        .select('*')
+        .eq('jenjang', config.jenjang);
+
+      if (selectedProvinsiId) {
+        const prov = provs.find(p => p.provinsi_id === selectedProvinsiId);
+        if (prov) {
+          query = query.eq('provinsi_nama', prov.provinsi.nama_provinsi);
+        }
+      }
+
+      if (selectedKabKotaName) {
+        query = query.eq('kabupaten_kota_nama', selectedKabKotaName);
+      }
+
+      if (selectedStatus) {
+        query = query.eq('status_sekolah', selectedStatus);
+      }
+
+      if (debouncedSearch) {
+        query = query.or(`nama_institusi.ilike.%${debouncedSearch}%,npsn.ilike.%${debouncedSearch}%`);
+      }
+
+      query = query
+        .order('provinsi_nama', { ascending: true })
+        .order('kabupaten_kota_nama', { ascending: true })
+        .order('nama_institusi', { ascending: true })
+        .limit(5000);
+
+      const { data: list, error } = await query;
+      if (error) throw error;
+
+      const mapped = (list || []).map((item: any) => ({
+        ...item,
+        nominal_alokasi: Number(item.nominal_alokasi || 0),
+        realisasi_total: Number(item.realisasi_total || 0),
+        selisih: Number(item.nominal_alokasi || 0) - Number(item.realisasi_total || 0),
+        persentase_penyerapan:
+          Number(item.nominal_alokasi) > 0
+            ? Math.round((Number(item.realisasi_total) / Number(item.nominal_alokasi)) * 1000) / 10
+            : 0,
+      }));
+
+      setData(mapped);
+      if (debouncedSearch || selectedProvinsiId || selectedKabKotaName || selectedStatus) {
+        setTotalCount(mapped.length);
+      }
       setLoading(false);
     } catch (err) {
       console.error(err);
@@ -62,15 +133,7 @@ export default function JenjangPage() {
 
   useEffect(() => {
     fetchData();
-  }, [config.jenjang, activeTahun]);
-
-  const [search, setSearch] = useState('');
-  const [selectedProvinsiId, setSelectedProvinsiId] = useState('');
-  const [selectedKabKotaName, setSelectedKabKotaName] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
-  const [editingCell, setEditingCell] = useState<{ id: string; field: 'nominal' | 'realisasi' } | null>(null);
-  const [editValue, setEditValue] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  }, [config.jenjang, activeTahun, selectedProvinsiId, selectedKabKotaName, selectedStatus, debouncedSearch]);
 
   useEffect(() => {
     if (!selectedProvinsiId) {
@@ -128,58 +191,69 @@ export default function JenjangPage() {
   };
 
   const filtered = useMemo(() => {
-    let result = data;
-    
-    if (selectedProvinsiId) {
-      const prov = provinsiList.find(p => p.provinsi_id === selectedProvinsiId);
-      if (prov) {
-        result = result.filter(inst => inst.provinsi_nama === prov.provinsi.nama_provinsi);
-      }
-    }
-    
-    if (selectedKabKotaName) {
-      result = result.filter(inst => inst.kabupaten_kota_nama === selectedKabKotaName);
-    }
-    
-    if (selectedStatus) {
-      result = result.filter(inst => inst.status_sekolah === selectedStatus);
-    }
-    
-    if (search) {
-      result = result.filter(inst => inst.nama_institusi.toLowerCase().includes(search.toLowerCase()));
-    }
-    
-    return [...result].sort((a, b) => {
-      const provCompare = (a.provinsi_nama || '').localeCompare(b.provinsi_nama || '', 'id');
-      if (provCompare !== 0) return provCompare;
-      const kabCompare = (a.kabupaten_kota_nama || '').localeCompare(b.kabupaten_kota_nama || '', 'id');
-      if (kabCompare !== 0) return kabCompare;
-      return (a.nama_institusi || '').localeCompare(b.nama_institusi || '', 'id');
+    return [...data].sort((a, b) => {
+      const provA = a.provinsi_nama || '';
+      const provB = b.provinsi_nama || '';
+      const provComp = provA.localeCompare(provB, 'id');
+      if (provComp !== 0) return provComp;
+
+      const kabA = a.kabupaten_kota_nama || '';
+      const kabB = b.kabupaten_kota_nama || '';
+      const kabComp = kabA.localeCompare(kabB, 'id');
+      if (kabComp !== 0) return kabComp;
+
+      const nameA = a.nama_institusi || '';
+      const nameB = b.nama_institusi || '';
+      return nameA.localeCompare(nameB, 'id');
     });
-  }, [data, search, selectedProvinsiId, selectedKabKotaName, selectedStatus, provinsiList]);
+  }, [data]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 100;
 
-  const JENJANG_TOTAL_BUDGETS: Record<string, { nominal: number; realisasi: number }> = {
-    UNIVERSITAS: { nominal: 269185000000000, realisasi: 186095618126720 },
-    SMA: { nominal: 192275000000000, realisasi: 121275577143176 },
-    SMP: { nominal: 153820000000000, realisasi: 96745156109368 },
-    SD: { nominal: 115365000000000, realisasi: 75150774734422 },
-    PAUD: { nominal: 38455000000000, realisasi: 25933306222917 },
-  };
+  const [nationalTotal, setNationalTotal] = useState<{ nominal: number; realisasi: number } | null>(null);
+
+  useEffect(() => {
+    const fetchNationalTotal = async () => {
+      try {
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2026';
+        const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'anon-key-davinci-2026';
+        const res = await fetch(`${url}/rest/v1/rpc/get_jenjang_summary`, {
+          method: 'POST',
+          headers: {
+            'apikey': key,
+            'Authorization': `Bearer ${key}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ p_jenjang: config.jenjang })
+        });
+        if (res.ok) {
+          const rows = await res.json();
+          if (rows && rows[0]) {
+            setNationalTotal({
+              nominal: Number(rows[0].total_nominal || 0),
+              realisasi: Number(rows[0].total_realisasi || 0)
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching national total:', err);
+      }
+    };
+    fetchNationalTotal();
+  }, [config.jenjang]);
 
   const hasFilter = Boolean(search || selectedProvinsiId || selectedKabKotaName || selectedStatus);
 
   const totals = useMemo(() => {
-    if (!hasFilter && JENJANG_TOTAL_BUDGETS[config.jenjang]) {
-      const b = JENJANG_TOTAL_BUDGETS[config.jenjang];
-      return { nominal: b.nominal, realisasi: b.realisasi, selisih: b.nominal - b.realisasi, pct: (b.realisasi / b.nominal) * 100 };
+    if (!hasFilter && nationalTotal) {
+      const b = nationalTotal;
+      return { nominal: b.nominal, realisasi: b.realisasi, selisih: b.nominal - b.realisasi, pct: b.nominal > 0 ? (b.realisasi / b.nominal) * 100 : 0 };
     }
     const nom = filtered.reduce((s, i) => s + Number(i.nominal_alokasi || 0), 0);
     const real = filtered.reduce((s, i) => s + Number(i.realisasi_total || 0), 0);
     return { nominal: nom, realisasi: real, selisih: nom - real, pct: nom > 0 ? (real / nom) * 100 : 0 };
-  }, [filtered, hasFilter, config.jenjang]);
+  }, [filtered, hasFilter, nationalTotal]);
 
   const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
   const paginatedData = useMemo(() => {
@@ -450,20 +524,20 @@ export default function JenjangPage() {
         </div>
 
         {/* Spreadsheet */}
-        <div className="sheet-container">
-          <table className="w-full">
+        <div className="sheet-container overflow-x-auto">
+          <table className="w-full text-xs">
             <thead>
               <tr>
-                <th className="sheet-header-cell text-center" style={{ width: 50 }}>No</th>
-                <th className="sheet-header-cell text-left" style={{ minWidth: 220 }}>Nama Sekolah / Rekening Penerima</th>
-                <th className="sheet-header-cell text-center" style={{ width: 120 }}>Layanan</th>
-                <th className="sheet-header-cell text-left" style={{ minWidth: 160 }}>Kabupaten/Kota</th>
-                <th className="sheet-header-cell text-left" style={{ minWidth: 130 }}>Provinsi</th>
-                <th className="sheet-header-cell text-right" style={{ minWidth: 160 }}>Alokasi Pagu (Rp)</th>
-                <th className="sheet-header-cell text-right" style={{ minWidth: 160 }}>Dana Cair (Rp)</th>
-                <th className="sheet-header-cell text-right" style={{ minWidth: 120 }}>Dana Pending</th>
-                <th className="sheet-header-cell text-center" style={{ width: 140 }}>Status Pencairan</th>
-                <th className="sheet-header-cell text-center" style={{ width: 80 }}>Kode NPSN</th>
+                <th className="sheet-header-cell text-center" style={{ width: 40 }}>No</th>
+                <th className="sheet-header-cell text-left" style={{ minWidth: 180 }}>Nama Sekolah / Rekening Penerima</th>
+                <th className="sheet-header-cell text-center" style={{ width: 90 }}>Layanan</th>
+                <th className="sheet-header-cell text-left" style={{ minWidth: 120 }}>Kabupaten/Kota</th>
+                <th className="sheet-header-cell text-left" style={{ minWidth: 110 }}>Provinsi</th>
+                <th className="sheet-header-cell text-right" style={{ minWidth: 130 }}>Alokasi Pagu (Rp)</th>
+                <th className="sheet-header-cell text-right" style={{ minWidth: 130 }}>Dana Cair (Rp)</th>
+                <th className="sheet-header-cell text-right" style={{ minWidth: 110 }}>Dana Pending</th>
+                <th className="sheet-header-cell text-center" style={{ width: 110 }}>Status Pencairan</th>
+                <th className="sheet-header-cell text-center" style={{ width: 75 }}>Kode NPSN</th>
               </tr>
             </thead>
             <tbody>

@@ -41,7 +41,7 @@ if ($pgStatus -like "*server is running*") {
 
 # --- 2. Start Proxy API Server on port 2026 ---
 Write-Host "`n[2/4] Memulai Proxy API Server pada port 2026..." -ForegroundColor Yellow
-$proxyJob = Start-Process -FilePath "node" -ArgumentList "proxy\proxy.js" -WorkingDirectory $ROOT -WindowStyle Minimized -PassThru
+$proxyJob = Start-Process -FilePath "node" -ArgumentList "proxy.js" -WorkingDirectory "$ROOT\proxy" -WindowStyle Minimized -PassThru
 Write-Host "      Proxy server dimulai (PID: $($proxyJob.Id))" -ForegroundColor Green
 
 Start-Sleep 2

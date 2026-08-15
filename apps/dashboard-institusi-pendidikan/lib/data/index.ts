@@ -46,16 +46,9 @@ function seededValues(count: number, min: number, max: number, seed: number): nu
   return result;
 }
 
-// === TAHUN ANGGARAN ===
+// === TAHUN ANGGARAN (2026 ONLY) ===
 export let tahunAnggaranData: TahunAnggaran[] = [
-  { id: '1', tahun: 2020, total_anggaran: 473_700_000_000_000, status: 'CLOSED', created_at: '2020-01-01' },
-  { id: '2', tahun: 2021, total_anggaran: 472_600_000_000_000, status: 'CLOSED', created_at: '2021-01-01' },
-  { id: '3', tahun: 2022, total_anggaran: 472_600_000_000_000, status: 'CLOSED', created_at: '2022-01-01' },
-  { id: '4', tahun: 2023, total_anggaran: 612_200_000_000_000, status: 'CLOSED', created_at: '2023-01-01' },
-  { id: '5', tahun: 2024, total_anggaran: 665_000_000_000_000, status: 'CLOSED', created_at: '2024-01-01' },
-  { id: '6', tahun: 2025, total_anggaran: 722_600_000_000_000, status: 'CLOSED', created_at: '2025-01-01' },
   { id: '7', tahun: 2026, total_anggaran: 769_100_000_000_000, status: 'ACTIVE', created_at: '2026-01-01' },
-  { id: '8', tahun: 2027, total_anggaran: 0, status: 'DRAFT', created_at: '2026-06-01' },
 ];
 
 export function updateTahunAnggaranData(newData: TahunAnggaran[]) {
@@ -65,8 +58,8 @@ export function updateTahunAnggaranData(newData: TahunAnggaran[]) {
 // === 38 PROVINSI ===
 const provinsiNames = [
   'Aceh', 'Sumatera Utara', 'Sumatera Barat', 'Riau', 'Jambi',
-  'Sumatera Selatan', 'Bengkulu', 'Lampung', 'Kep. Bangka Belitung',
-  'Kep. Riau', 'DKI Jakarta', 'Jawa Barat', 'Jawa Tengah', 'DI Yogyakarta',
+  'Sumatera Selatan', 'Bengkulu', 'Lampung', 'Kepulauan Bangka Belitung',
+  'Kepulauan Riau', 'DKI Jakarta', 'Jawa Barat', 'Jawa Tengah', 'Daerah Istimewa Yogyakarta',
   'Jawa Timur', 'Banten', 'Bali', 'Nusa Tenggara Barat', 'Nusa Tenggara Timur',
   'Kalimantan Barat', 'Kalimantan Tengah', 'Kalimantan Selatan', 'Kalimantan Timur',
   'Kalimantan Utara', 'Sulawesi Utara', 'Sulawesi Tengah', 'Sulawesi Selatan',
@@ -495,9 +488,9 @@ export function getDashboardSummary(tahun: number = 2026): DashboardSummary {
     };
   }
 
-  const targetTahun = tahunAnggaranData.find(t => t.tahun === tahun) || tahunAnggaranData[6]; // default to 2026
-  const baseTahun = tahunAnggaranData[6]; // 2026 (769.1 T)
-  const scale = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
+  const targetTahun = tahunAnggaranData.find(t => t.tahun === tahun) || tahunAnggaranData[0] || { id: '7', tahun: 2026, total_anggaran: 769_100_000_000_000, status: 'ACTIVE' };
+  const baseTahun = tahunAnggaranData[0] || targetTahun;
+  const scale = targetTahun.total_anggaran > 0 && baseTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
 
   // Let's vary the realisasi percentage slightly based on the year for realism
   const seed = (tahun % 7) || 1;
@@ -507,7 +500,7 @@ export function getDashboardSummary(tahun: number = 2026): DashboardSummary {
   const baseRealisasi = alokasiProvinsiData.reduce((s, p) => s + p.realisasi_total, 0);
 
   const totalNominal = targetTahun.total_anggaran;
-  const totalRealisasi = Math.min(totalNominal, Math.round(baseRealisasi * scale * realisasiShift));
+  const totalRealisasi = baseRealisasi > 0 ? baseRealisasi : Math.min(totalNominal, Math.round(513_200_000_000_000 * scale));
 
   // Precise Jenjang math rollup (remainder to PAUD)
   const uniNom = Math.round(150_000_000_000_000 * scale);
@@ -630,6 +623,78 @@ function generatePengeluaranBulanan(institusi: InstitusiPendidikan): Pengeluaran
 }
 
 export function getProfilInstitusi(id: string, tahun: number = 2026): ProfilInstitusi | null {
+  if (id === 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7' || id === 'inst-paud-69893669') {
+    const instKb: InstitusiPendidikan = {
+      id: 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7',
+      npsn: '69893669',
+      nama_institusi: 'KB AL-IKHLAS',
+      jenjang: 'PAUD',
+      kabupaten_kota_id: 'r-060600',
+      kabupaten_kota_nama: 'Kab. Aceh Barat',
+      provinsi_nama: 'Aceh',
+      status_sekolah: 'SWASTA',
+      nomor_rekening: '100.845.411.000',
+      nominal_alokasi: 234775639,
+      realisasi_total: 197211537,
+      selisih: 37564102,
+      persentase_penyerapan: 84.0,
+      updated_at: '2026-08-15'
+    };
+
+    const sumberDanaKb: SumberDanaInstitusi[] = [
+      {
+        id: 'sd-kb-01',
+        institusi_id: instKb.id,
+        nama_sumber: `APBN BOP PAUD Reguler ${tahun}`,
+        tahun_anggaran: String(tahun),
+        nominal: 187820511,
+        realisasi: 157769230,
+        saldo_di_bank: 30051281
+      },
+      {
+        id: 'sd-kb-02',
+        institusi_id: instKb.id,
+        nama_sumber: `APBD BOP Daerah Aceh Barat ${tahun}`,
+        tahun_anggaran: String(tahun),
+        nominal: 41955128,
+        realisasi: 34442307,
+        saldo_di_bank: 7512821
+      },
+      {
+        id: 'sd-kb-03',
+        institusi_id: instKb.id,
+        nama_sumber: `CSR Pendidikan PT Mifa Bersaudara ${tahun}`,
+        tahun_anggaran: String(tahun),
+        nominal: 5000000,
+        realisasi: 5000000,
+        saldo_di_bank: 0
+      }
+    ];
+
+    const pcts = [0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.08, 0.08, 0.08, 0.06, 0.05, 0.05];
+    let sumD = 0;
+    const pengeluaranKb: PengeluaranBulananInstitusi[] = bulanNames.map((bulan, i) => {
+      const nom = (i === 11) ? (197211537 - sumD) : Math.round(197211537 * pcts[i]);
+      sumD += nom;
+      return {
+        id: `pb-kb-${i + 1}`,
+        institusi_id: instKb.id,
+        nomor: i + 1,
+        bulan,
+        nominal_pengeluaran: nom,
+        qty: 1,
+        sub_total: nom
+      };
+    });
+
+    return {
+      institusi: instKb,
+      sumber_dana: sumberDanaKb,
+      pengeluaran_bulanan: pengeluaranKb,
+      saldo_surplus_defisit: 37564102
+    };
+  }
+
   const db = getDb();
   if (db) {
     const inst = db.institusi_pendidikan.find((i: any) => i.id === id);
@@ -649,8 +714,8 @@ export function getProfilInstitusi(id: string, tahun: number = 2026): ProfilInst
         scaleRealisasi = realisasi / 1129655153;
       }
     } else {
-      const targetTahun = tahunAnggaranData.find(t => t.tahun === tahun) || tahunAnggaranData[6];
-      const baseTahun = tahunAnggaranData[6];
+      const targetTahun = tahunAnggaranData.find(t => t.tahun === tahun) || tahunAnggaranData[0] || { id: '7', tahun: 2026, total_anggaran: 769_100_000_000_000, status: 'ACTIVE' };
+      const baseTahun = tahunAnggaranData[0] || targetTahun;
       const scale = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
       nominal = Math.round(nominal * scale);
       realisasi = Math.round(realisasi * scale);
@@ -722,8 +787,8 @@ export function getProfilInstitusi(id: string, tahun: number = 2026): ProfilInst
 
   let found: InstitusiPendidikan | null = null;
 
-  const targetTahun = tahunAnggaranData.find(t => t.tahun === tahun) || tahunAnggaranData[6];
-  const baseTahun = tahunAnggaranData[6];
+  const targetTahun = tahunAnggaranData.find(t => t.tahun === tahun) || tahunAnggaranData[0] || { id: '7', tahun: 2026, total_anggaran: 769_100_000_000_000, status: 'ACTIVE' };
+  const baseTahun = tahunAnggaranData[0] || targetTahun;
   const scale = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
   const seed = (tahun % 7) || 1;
   const shift = 0.95 + (seed * 0.012);
@@ -949,8 +1014,8 @@ export function getRincianPengeluaranBulanan(
         scaleRealisasi = mentengData.realisasi / 1129655153;
       }
     } else {
-      const targetTahun = tahunAnggaranData.find(t => t.tahun === tahun) || tahunAnggaranData[6];
-      const baseTahun = tahunAnggaranData[6];
+      const targetTahun = tahunAnggaranData.find(t => t.tahun === tahun) || tahunAnggaranData[0] || { id: '7', tahun: 2026, total_anggaran: 769_100_000_000_000, status: 'ACTIVE' };
+      const baseTahun = tahunAnggaranData[0] || targetTahun;
       scaleRealisasi = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
     }
 
@@ -1001,8 +1066,8 @@ export function getRincianPengeluaranBulanan(
 
   let found: InstitusiPendidikan | null = null;
 
-  const targetTahun = tahunAnggaranData.find(t => t.tahun === tahun) || tahunAnggaranData[6];
-  const baseTahun = tahunAnggaranData[6];
+  const targetTahun = tahunAnggaranData.find(t => t.tahun === tahun) || tahunAnggaranData[0] || { id: '7', tahun: 2026, total_anggaran: 769_100_000_000_000, status: 'ACTIVE' };
+  const baseTahun = tahunAnggaranData[0] || targetTahun;
   const scale = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
   const seedForInst = (tahun % 7) || 1;
   const shift = 0.95 + (seedForInst * 0.012);
@@ -1511,8 +1576,8 @@ function getSchoolTransactionsFromStore(institusiId: string, tahun: number): Tra
     const mentengData = MENTENG_YEAR_DATA[tahun] || MENTENG_YEAR_DATA[2026];
     targetRealisasi = mentengData.realisasi;
   } else {
-    const targetTahun = tahunAnggaranData.find(t => t.tahun === tahun) || tahunAnggaranData[6];
-    const baseTahun = tahunAnggaranData[6];
+    const targetTahun = tahunAnggaranData.find(t => t.tahun === tahun) || tahunAnggaranData[0] || { id: '7', tahun: 2026, total_anggaran: 769_100_000_000_000, status: 'ACTIVE' };
+    const baseTahun = tahunAnggaranData[0] || targetTahun;
     const scale = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
     targetRealisasi = Math.round(1129655153 * scale);
   }

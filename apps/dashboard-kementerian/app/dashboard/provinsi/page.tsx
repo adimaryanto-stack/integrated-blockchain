@@ -12,15 +12,15 @@ import { AlokasiProvinsi } from '@/types';
 import { Search, Download, RefreshCw, Plus } from 'lucide-react';
 
 export default function ProvinsiPage() {
-  const { activeTahun, currentUser } = useAppStore();
+  const { activeTahun, currentUser, dataVersion } = useAppStore();
 
   // Use real Supabase data directly — filter by active tahun_anggaran_id
-  const activeTahunObj = useMemo(() => tahunAnggaranData.find(t => Number(t.tahun) === Number(activeTahun)), [activeTahun]);
+  const activeTahunObj = useMemo(() => tahunAnggaranData.find(t => Number(t.tahun) === Number(activeTahun)), [activeTahun, dataVersion]);
 
   const realProvinsiData = useMemo(() => {
-    if (!activeTahunObj) return alokasiProvinsiData;
+    if (!activeTahunObj) return [];
     return alokasiProvinsiData.filter(p => String(p.tahun_anggaran_id) === String(activeTahunObj.id));
-  }, [activeTahunObj]);
+  }, [activeTahunObj, dataVersion]);
 
   const [prevRealData, setPrevRealData] = useState(realProvinsiData);
   const [data, setData] = useState<AlokasiProvinsi[]>(realProvinsiData);
@@ -43,9 +43,22 @@ export default function ProvinsiPage() {
   }, [data, search]);
 
   const totals = useMemo(() => {
-    const nom = filtered.reduce((s, p) => s + p.nominal_alokasi, 0);
-    const real = filtered.reduce((s, p) => s + p.realisasi_total, 0);
-    return { nominal: nom, realisasi: real, selisih: nom - real, pct: nom > 0 ? (real / nom) * 100 : 0 };
+    const toBigInt = (val: unknown): bigint => {
+      if (val === null || val === undefined) return 0n;
+      const s = String(val).split('.')[0].replace(/[^0-9-]/g, '');
+      if (!s || s === '-') return 0n;
+      try { return BigInt(s); } catch { return 0n; }
+    };
+    const nomBig = filtered.reduce((s, p) => s + toBigInt(p.nominal_alokasi), 0n);
+    const realBig = filtered.reduce((s, p) => s + toBigInt(p.realisasi_total), 0n);
+    const selisihBig = nomBig - realBig;
+    const pct = nomBig > 0n ? Number((realBig * 1000n) / nomBig) / 10 : 0;
+    return {
+      nominal: nomBig.toString(),
+      realisasi: realBig.toString(),
+      selisih: selisihBig.toString(),
+      pct,
+    };
   }, [filtered]);
 
   const canEdit = currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN' || currentUser.role === 'ADMIN_PROVINSI';

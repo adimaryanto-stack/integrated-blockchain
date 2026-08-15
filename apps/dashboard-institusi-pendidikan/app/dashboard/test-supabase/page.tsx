@@ -32,7 +32,7 @@ interface TableStats {
 export default function TestSupabasePage() {
   const [testResult, setTestResult] = useState<ConnectionStatus>({
     status: 'connecting',
-    message: 'Mencoba menghubungkan ke Supabase...',
+    message: 'Mencoba menghubungkan ke database lokal...',
     url: process.env.NEXT_PUBLIC_SUPABASE_URL || 'Tidak dikonfigurasi',
   });
   const [loading, setLoading] = useState(false);
@@ -66,7 +66,7 @@ export default function TestSupabasePage() {
 
   const testConnection = async () => {
     setLoading(true);
-    setTestResult(prev => ({ ...prev, status: 'connecting', message: 'Mengirimkan request uji coba ke Supabase...' }));
+    setTestResult(prev => ({ ...prev, status: 'connecting', message: 'Mengirimkan request uji coba ke database lokal...' }));
 
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -94,14 +94,14 @@ export default function TestSupabasePage() {
           setTestResult({
             status: 'warning',
             message: 'Koneksi API Sukses, Tetapi Tabel Belum Terbuat!',
-            details: `API Supabase merespons dengan sukses. Namun, tabel-tabel database belum dibuat di skema database Supabase Anda. Ikuti "Langkah 1" di bawah untuk setup tabel.`,
+            details: `API database lokal merespons dengan sukses. Namun, tabel-tabel database belum dibuat di skema database Anda. Ikuti "Langkah 1" di bawah untuk setup tabel.`,
             url,
           });
         } else if (status === 401 || status === 403) {
           setTestResult({
             status: 'error',
             message: 'Koneksi Ditolak (Autentikasi Gagal)',
-            details: `Supabase mengembalikan status ${status}. Periksa apakah NEXT_PUBLIC_SUPABASE_ANON_KEY Anda valid.`,
+            details: `Server mengembalikan status ${status}. Periksa apakah NEXT_PUBLIC_SUPABASE_ANON_KEY Anda valid.`,
             url,
           });
         } else {
@@ -116,7 +116,7 @@ export default function TestSupabasePage() {
         setTestResult({
           status: 'success',
           message: 'Koneksi Sukses & Tabel Siap!',
-          details: `Koneksi berhasil terjalin dan tabel 'tahun_anggaran' berhasil diakses. Database Supabase Anda siap digunakan.`,
+          details: `Koneksi berhasil terjalin dan tabel 'tahun_anggaran' berhasil diakses. Database lokal Anda siap digunakan.`,
           url,
         });
       }
@@ -124,7 +124,7 @@ export default function TestSupabasePage() {
       setTestResult({
         status: 'error',
         message: 'Koneksi Gagal (Network Error)',
-        details: err?.message || 'Tidak dapat menghubungi server Supabase. Periksa koneksi internet Anda.',
+        details: err?.message || 'Tidak dapat menghubungi server database lokal. Periksa apakah server berjalan.',
         url,
       });
     } finally {
@@ -173,7 +173,7 @@ export default function TestSupabasePage() {
 
   return (
     <div className="min-h-screen pb-12">
-      <Header title="Integrasi Supabase & Migrasi" subtitle="Setup skema database dan sinkronisasi data awal dasbor" />
+      <Header title="Integrasi Database Lokal & Migrasi" subtitle="Setup skema database dan sinkronisasi data awal dasbor" />
 
       <div className="p-6 max-w-4xl mx-auto space-y-6">
         
@@ -184,7 +184,7 @@ export default function TestSupabasePage() {
               <Database size={24} />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-text-primary">Status Koneksi Supabase</h2>
+              <h2 className="text-lg font-bold text-text-primary">Status Koneksi Database Lokal</h2>
               <p className="text-xs text-text-muted">Memeriksa ketersediaan API dari environment variables</p>
             </div>
           </div>
@@ -233,7 +233,7 @@ export default function TestSupabasePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono bg-slate-50/50 p-4 rounded-lg border border-slate-100 text-text-secondary mb-4">
             <div>
-              <span className="font-semibold text-slate-500 block mb-1">SUPABASE URL:</span>
+              <span className="font-semibold text-slate-500 block mb-1">DATABASE URL:</span>
               <span className="text-text-primary break-all">{testResult.url}</span>
             </div>
             <div>
@@ -278,7 +278,7 @@ export default function TestSupabasePage() {
               </div>
 
               <p className="text-xs text-text-secondary leading-relaxed">
-                Skema tabel database diperlukan agar Supabase mengenali struktur data dasbor. Copy DDL SQL di bawah dan paste ke editor SQL Supabase Anda.
+                Skema tabel database diperlukan agar database mengenali struktur data dasbor. Copy DDL SQL di bawah dan paste ke SQL editor database Anda.
               </p>
 
               <div className="relative border border-slate-200 rounded-lg bg-slate-900 overflow-hidden font-mono text-[10px] text-slate-300">
@@ -294,7 +294,7 @@ export default function TestSupabasePage() {
               <div className="bg-indigo-50/50 p-3 rounded-lg border border-indigo-100 text-[11px] text-indigo-900 space-y-1">
                 <span className="font-bold flex items-center gap-1"><HelpCircle size={12} className="text-indigo-600" /> Cara Menjalankan:</span>
                 <ol className="list-decimal pl-4 space-y-1">
-                  <li>Buka <a href="https://supabase.com/dashboard" target="_blank" rel="noreferrer" className="underline hover:text-indigo-700">Supabase Console</a> proyek Anda</li>
+                  <li>Buka SQL Editor pada database management tool (pgAdmin, DBeaver, atau Supabase Studio lokal di <code>http://localhost:2026</code>)</li>
                   <li>Pilih menu <strong>SQL Editor</strong> di sidebar kiri</li>
                   <li>Klik <strong>New Query</strong>, paste kode SQL di atas</li>
                   <li>Klik tombol <strong>Run</strong> di bagian kanan bawah</li>
@@ -312,7 +312,7 @@ export default function TestSupabasePage() {
               </div>
 
               <p className="text-xs text-text-secondary leading-relaxed">
-                Setelah tabel berhasil dibuat di Supabase melalui SQL Editor, Anda dapat mengklik tombol di bawah untuk mengimpor seluruh data transaksional anggaran pendidikan (Provinsi, Kabupaten, Sekolah, Pengeluaran Bulanan, Item Detail, dsb) dari mock engine ke Supabase Cloud.
+                Setelah tabel berhasil dibuat di database melalui SQL Editor, Anda dapat mengklik tombol di bawah untuk mengimpor seluruh data transaksional anggaran pendidikan (Provinsi, Kabupaten, Sekolah, Pengeluaran Bulanan, Item Detail, dsb) dari mock engine ke database lokal.
               </p>
 
               {/* Status Warning if tables not created */}
@@ -393,7 +393,7 @@ export default function TestSupabasePage() {
                 ) : (
                   <>
                     <Play size={14} />
-                    Impor Data ke Supabase
+                    Impor Data ke Database Lokal
                   </>
                 )}
               </button>
@@ -406,7 +406,7 @@ export default function TestSupabasePage() {
         <div className="text-xs text-text-muted flex gap-2 items-start bg-slate-50 p-4 rounded-lg border border-slate-100">
           <ShieldCheck size={16} className="text-indigo-500 shrink-0 mt-0.5" />
           <p>
-            Dengan tersambungnya database ke Supabase, dasbor secara otomatis beralih menggunakan data dari Supabase secara real-time. Jika Anda mengosongkan tabel Supabase, dasbor akan secara otomatis kembali menggunakan data simulasi lokal (Mock Data) secara aman.
+            Dengan tersambungnya database lokal, dasbor secara otomatis beralih menggunakan data dari database secara real-time. Jika tabel database kosong, dasbor akan secara otomatis kembali menggunakan data simulasi lokal (Mock Data) secara aman.
           </p>
         </div>
       </div>

@@ -105,7 +105,7 @@ export default function PaketProjectDetailPage(props: { params: Promise<{ id: st
       const vendors = useAppStore.getState().projectVendors.filter(v => v.project_id === projectId);
 
       // 2. Upload and save Photos
-      const updatedPhotos = [];
+      const updatedPhotos: any[] = [];
       for (const photo of photos) {
         let finalUrl = photo.file_url;
         if (photo.file_url.startsWith('data:')) {

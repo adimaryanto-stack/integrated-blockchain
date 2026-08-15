@@ -3,13 +3,24 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
+import { supabase } from '@/lib/supabase';
 
 export default function ProfilInstitusiPage() {
   const router = useRouter();
-  const schoolId = 'inst-sd-0'; // SDN 01 Menteng (matching user login)
 
   useEffect(() => {
-    router.replace(`/dashboard/profil-institusi/${schoolId}`);
+    supabase
+      .from('institusi_pendidikan')
+      .select('id')
+      .eq('npsn', '69893669')
+      .limit(1)
+      .then(({ data }) => {
+        const targetId = data?.[0]?.id || 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7';
+        router.replace(`/dashboard/profil-institusi/${targetId}`);
+      })
+      .catch(() => {
+        router.replace('/dashboard/profil-institusi/e45bdf94-41c6-4ee0-9864-8c3c7c4576f7');
+      });
   }, [router]);
 
   return (

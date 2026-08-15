@@ -62,25 +62,23 @@ export default function DashboardDbLoader({
     }
 
     async function loadDatabase() {
-      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-      if (!url || !key) {
-        console.log('[Supabase Loader] Credentials missing. Falling back to Mock Data.');
-        setIsSupabaseMode(false);
-        setIsLoadingDb(false);
-        return;
-      }
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2026';
+      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpweXR4bW54Ymljam1nc2dwcmJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2ODk1NzAsImV4cCI6MjA4ODI2NTU3MH0.BGQGztExtjrTr6XHrvQZ1A0njAAdkoBAp3APRfWsQNE';
 
       setIsLoadingDb(true);
-      setLoaderText('Memeriksa koneksi Supabase...');
+      setLoaderText('Memeriksa koneksi database lokal...');
 
       try {
-        // Test koneksi dengan query ringan
-        const { error: testError } = await supabase
+        // Test query on one table to see if connection works and schema exists
+        // Add timeout to prevent infinite loading if local DB is not running
+        const testPromise = supabase
           .from('tahun_anggaran')
-          .select('id')
+          .select('*')
           .limit(1);
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Koneksi ke database lokal timeout setelah 10 detik. Pastikan server database berjalan di localhost.')), 10000)
+        );
+        const { data: testData, error: testError } = await Promise.race([testPromise, timeoutPromise]) as any;
 
         if (testError) {
           if (testError.message.includes('relation') || testError.message.includes('does not exist')) {
@@ -92,52 +90,47 @@ export default function DashboardDbLoader({
           throw testError;
         }
 
-        // Fetch bertahap: hanya tabel ringan/referensi di awal
-        // Tabel berat (institusi, pengeluaran, rincian) di-lazy-load per halaman
-        async function fetchAll(tableName: string) {
-          let all: any[] = [];
-          let from = 0;
-          const limit = 1000;
+        setLoaderText('Mengunduh data anggaran dan wilayah...');
 
-          while (true) {
-            const { data, error } = await supabase
-              .from(tableName)
-              .select('*')
-              .range(from, from + limit - 1);
-
-            if (error) throw error;
-            if (!data || data.length === 0) break;
-
-            all = [...all, ...data];
-            if (data.length < limit) break;
-            from += limit;
-          }
-
-          return all;
-        }
-
-        setLoaderText('Mengunduh data referensi...');
-
-        // Batch 1: Tabel kecil / referensi — cepat
-        const [dataTahun, dataProv, dataAlokasiProv] = await Promise.all([
-          fetchAll('tahun_anggaran'),
-          fetchAll('provinsi'),
-          fetchAll('alokasi_provinsi'),
+        // Fetch all tables in parallel
+        const [
+          resTahun,
+          resProv,
+          resAlokasiProv,
+          resKab,
+          resAlokasiKab,
+          resUsers,
+          resAnoms,
+          resStats
+        ] = await Promise.all([
+          supabase.from('tahun_anggaran').select('*'),
+          supabase.from('provinsi').select('*'),
+          supabase.from('alokasi_provinsi').select('*'),
+          supabase.from('kabupaten_kota').select('*'),
+          supabase.from('alokasi_kabupaten_kota').select('*'),
+          supabase.from('users').select('*'),
+          supabase.from('audit_anomaly').select('*'),
+          supabase.from('province_school_stats').select('*')
         ]);
 
-        setLoaderText('Mengunduh data wilayah...');
-
-        // Batch 2: Kabupaten/kota & Institusi & Stats
-        const [dataKab, dataAlokasiKab, dataUsers, dataAnoms, dataInstitusi, dataStats] = await Promise.all([
-          fetchAll('kabupaten_kota'),
-          fetchAll('alokasi_kabupaten_kota'),
-          fetchAll('users'),
-          fetchAll('audit_anomaly'),
-          Promise.resolve([]),
-          fetchAll('province_school_stats').catch(() => []),
-        ]);
+        if (resTahun.error) throw resTahun.error;
+        if (resProv.error) throw resProv.error;
+        if (resAlokasiProv.error) throw resAlokasiProv.error;
+        if (resKab.error) throw resKab.error;
+        if (resAlokasiKab.error) throw resAlokasiKab.error;
+        if (resUsers.error) throw resUsers.error;
+        if (resAnoms.error) throw resAnoms.error;
 
         setLoaderText('Sinkronisasi selesai...');
+
+        const dataTahun = resTahun.data || [];
+        const dataProv = resProv.data || [];
+        const dataAlokasiProv = resAlokasiProv.data || [];
+        const dataKab = resKab.data || [];
+        const dataAlokasiKab = resAlokasiKab.data || [];
+        const dataUsers = resUsers.data || [];
+        const dataAnoms = resAnoms.data || [];
+        const dataStats = resStats.data || [];
 
         // Populate provinsi relation on alokasi_provinsi
         const populatedAlokasiProv = dataAlokasiProv.map((ap: any) => {
@@ -165,7 +158,7 @@ export default function DashboardDbLoader({
           alokasi_provinsi: populatedAlokasiProv,
           kabupaten_kota: dataKab,
           alokasi_kabupaten_kota: populatedAlokasiKab,
-          institusi_pendidikan: dataInstitusi,
+          institusi_pendidikan: [],
           province_school_stats: dataStats,
           sumber_dana_institusi: [],
           pengeluaran_bulanan_institusi: [],
@@ -189,16 +182,15 @@ export default function DashboardDbLoader({
       } catch (err: any) {
         console.error('[Supabase Loader] Koneksi gagal:', err.message);
         setInitFailed(true);
-        setFailReason(err.message || 'Gagal menghubungi server Supabase.');
-        // Bug fix: tunggu 3 detik lalu fallback ke mock data
+        setFailReason(err.message || 'Gagal menghubungi server database lokal.');
+        // Fallback ke mock data
         setTimeout(() => {
           setIsSupabaseMode(false);
-          setIsLoadingDb(false); // ← hanya di-set false SETELAH timeout catch selesai
+          setIsLoadingDb(false);
         }, 3000);
-        return; // ← PENTING: return agar finally tidak mempengaruhi
+        return;
       }
 
-      // Hanya sampai di sini jika sukses
       setIsLoadingDb(false);
     }
 

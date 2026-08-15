@@ -10,31 +10,34 @@ import {
   fetchInstitusiPaginated,
   alokasiProvinsiData, 
   alokasiKabupatenKotaData, 
+  provinceSchoolStatsData,
   fetchKecamatanForKabkota 
 } from '@/lib/data';
+import { useAppStore } from '@/lib/store';
 import { fmtRupiah } from '@/lib/utils/formatters';
 import { Jenjang, InstitusiPendidikan } from '@/types';
 import { Search, ExternalLink, ChevronLeft, ChevronRight, School, GraduationCap, Building } from 'lucide-react';
 
 const jenjangOptions: { value: '' | Jenjang; label: string }[] = [
   { value: '', label: 'Semua Jenjang' },
-  { value: 'UNIVERSITAS', label: 'Universitas' },
-  { value: 'SMA', label: 'SMA' },
-  { value: 'SMP', label: 'SMP' },
-  { value: 'SD', label: 'SD' },
   { value: 'PAUD', label: 'PAUD' },
+  { value: 'SD', label: 'SD' },
+  { value: 'SMP', label: 'SMP' },
+  { value: 'SMA', label: 'SMA' },
+  { value: 'UNIVERSITAS', label: 'Universitas' },
 ];
 
 export default function ProfilInstitusiPage() {
+  const { dataVersion } = useAppStore();
   const [institusiList, setInstitusiList] = useState<InstitusiPendidikan[]>(getAllInstitusi());
   const [totalItems, setTotalItems] = useState<number>(0);
   const [loadingInstitusi, setLoadingInstitusi] = useState(true);
   const [dbSchoolCounts, setDbSchoolCounts] = useState<Record<Jenjang, number>>({
-    UNIVERSITAS: 4498,
-    SMA: 22407,
-    SMP: 41511,
-    SD: 136761,
-    PAUD: 162688,
+    PAUD: 0,
+    SD: 0,
+    SMP: 0,
+    SMA: 0,
+    UNIVERSITAS: 0,
   });
 
   // States
@@ -61,6 +64,7 @@ export default function ProfilInstitusiPage() {
   // Main Paginated Fetch Effect (100 items per page across 38 provinces)
   useEffect(() => {
     let isMounted = true;
+    setLoadingInstitusi(true);
     fetchInstitusiPaginated({
       page: currentPage,
       pageSize: 100,
@@ -153,20 +157,67 @@ export default function ProfilInstitusiPage() {
   // Jenjang Counts Stats calculation
   const stats = useMemo(() => {
     const categories = [
-      { type: 'UNIVERSITAS' as Jenjang, label: 'Universitas', bg: 'bg-indigo-50 border-indigo-100', text: 'text-indigo-700', icon: GraduationCap },
-      { type: 'SMA' as Jenjang, label: 'SMA', bg: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700', icon: School },
-      { type: 'SMP' as Jenjang, label: 'SMP', bg: 'bg-sky-50 border-sky-100', text: 'text-sky-700', icon: School },
-      { type: 'SD' as Jenjang, label: 'SD', bg: 'bg-amber-50 border-amber-100', text: 'text-amber-700', icon: School },
       { type: 'PAUD' as Jenjang, label: 'PAUD', bg: 'bg-pink-50 border-pink-100', text: 'text-pink-700', icon: Building },
+      { type: 'SD' as Jenjang, label: 'SD', bg: 'bg-amber-50 border-amber-100', text: 'text-amber-700', icon: School },
+      { type: 'SMP' as Jenjang, label: 'SMP', bg: 'bg-sky-50 border-sky-100', text: 'text-sky-700', icon: School },
+      { type: 'SMA' as Jenjang, label: 'SMA', bg: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700', icon: School },
+      { type: 'UNIVERSITAS' as Jenjang, label: 'Universitas', bg: 'bg-indigo-50 border-indigo-100', text: 'text-indigo-700', icon: GraduationCap },
     ];
 
     const hasFilter = Boolean(search || selectedJenjang || selectedProvinsiId || selectedKabkotaId || selectedKecamatan);
 
+    const targetProvObj = selectedProvinsiId
+      ? alokasiProvinsiData.find(p => p.provinsi_id === selectedProvinsiId || p.provinsi.id === selectedProvinsiId)
+      : null;
+
+    const targetProvName = targetProvObj?.provinsi?.nama_provinsi;
+    const targetProvCode = targetProvObj?.provinsi?.kode_provinsi;
+
+    const provStatsList = selectedProvinsiId
+      ? (provinceSchoolStatsData || []).filter((s: any) => {
+          if (s.province_id && (s.province_id === selectedProvinsiId || s.province_id === targetProvCode)) return true;
+          if (s.province_code && (s.province_code === selectedProvinsiId || s.province_code === targetProvCode)) return true;
+          if (s.province_name && targetProvName && s.province_name.toLowerCase() === targetProvName.toLowerCase()) return true;
+          return false;
+        })
+      : [];
+
+    const provCounts: Record<Jenjang, number> = {
+      PAUD: 0,
+      SD: 0,
+      SMP: 0,
+      SMA: 0,
+      UNIVERSITAS: 0,
+    };
+
+    provStatsList.forEach((stat: any) => {
+      if (stat.jenjang && stat.school_count !== undefined) {
+        const key = String(stat.jenjang).toUpperCase() as Jenjang;
+        if (key in provCounts) {
+          provCounts[key] = Number(stat.school_count) || 0;
+        }
+      } else if ('univ' in stat) {
+        provCounts.UNIVERSITAS = Number(stat.univ) || 0;
+        provCounts.SMA = Number(stat.sma) || 0;
+        provCounts.SMP = Number(stat.smp) || 0;
+        provCounts.SD = Number(stat.sd) || 0;
+        provCounts.PAUD = Number(stat.paud) || 0;
+      }
+    });
+
     return categories.map(cat => {
       const totalCount = dbSchoolCounts[cat.type] || 0;
-      const filteredCount = hasFilter
-        ? (selectedJenjang ? (selectedJenjang === cat.type ? totalItems : 0) : Math.round(totalItems * (totalCount / 367865)))
-        : totalCount;
+      let filteredCount = totalCount;
+
+      if (hasFilter) {
+        if (selectedJenjang) {
+          filteredCount = selectedJenjang === cat.type ? totalItems : 0;
+        } else if (selectedProvinsiId && provStatsList.length > 0) {
+          filteredCount = provCounts[cat.type] || 0;
+        } else {
+          filteredCount = totalItems;
+        }
+      }
 
       return {
         ...cat,
@@ -174,12 +225,33 @@ export default function ProfilInstitusiPage() {
         filteredCount
       };
     });
-  }, [dbSchoolCounts, totalItems, search, selectedJenjang, selectedProvinsiId, selectedKabkotaId, selectedKecamatan]);
+  }, [dbSchoolCounts, totalItems, search, selectedJenjang, selectedProvinsiId, selectedKabkotaId, selectedKecamatan, dataVersion]);
 
-  // Pagination Logic
+  // Sorted Provinsi Options (A-Z)
+  const sortedProvinsiOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const list = [];
+    for (const item of alokasiProvinsiData) {
+      if (item.provinsi && !seen.has(item.provinsi_id)) {
+        seen.add(item.provinsi_id);
+        list.push(item);
+      }
+    }
+    return list.sort((a, b) => (a.provinsi.nama_provinsi || '').localeCompare(b.provinsi.nama_provinsi || ''));
+  }, [alokasiProvinsiData, dataVersion]);
+
+  // Pagination & Sorted List (Alphabetical: Provinsi A-Z -> Kab/Kota A-Z -> Nama Institusi A-Z)
   const pageSize = 100;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const paginated = institusiList;
+  const paginated = useMemo(() => {
+    return [...institusiList].sort((a, b) => {
+      const pComp = (a.provinsi_nama || '').localeCompare(b.provinsi_nama || '');
+      if (pComp !== 0) return pComp;
+      const kComp = (a.kabupaten_kota_nama || '').localeCompare(b.kabupaten_kota_nama || '');
+      if (kComp !== 0) return kComp;
+      return (a.nama_institusi || '').localeCompare(b.nama_institusi || '');
+    });
+  }, [institusiList]);
 
   return (
     <div className="min-h-screen">
@@ -235,7 +307,7 @@ export default function ProfilInstitusiPage() {
               className="select-dropdown font-medium text-xs text-text-secondary"
             >
               <option value="">Semua Provinsi</option>
-              {alokasiProvinsiData.map(p => (
+              {sortedProvinsiOptions.map(p => (
                 <option key={p.provinsi_id} value={p.provinsi_id}>{p.provinsi.nama_provinsi}</option>
               ))}
             </select>

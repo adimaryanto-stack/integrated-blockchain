@@ -32,7 +32,7 @@ export default function Header({ title, subtitle, showYearSelector = true, showS
     markAllAsRead,
     markAllAsUnread
   } = useAppStore();
-  const activeTahunList = tahunAnggaranData.filter(t => t.status !== 'DRAFT');
+  const activeTahunList = [...tahunAnggaranData].sort((a, b) => a.tahun - b.tahun).filter(t => t.status !== 'DRAFT');
   const router = useRouter();
 
   // Notification States
@@ -66,11 +66,11 @@ export default function Header({ title, subtitle, showYearSelector = true, showS
               <select
                 value={activeTahun}
                 onChange={(e) => setActiveTahun(Number(e.target.value))}
-                className="select-dropdown"
+                className="select-dropdown font-bold text-indigo-700"
               >
                 {activeTahunList.map(t => (
                   <option key={t.tahun} value={t.tahun}>
-                    {t.tahun} {t.status === 'ACTIVE' ? '✓' : ''}
+                    {t.tahun} {t.tahun === activeTahun ? '✓ (Aktif)' : ''}
                   </option>
                 ))}
               </select>

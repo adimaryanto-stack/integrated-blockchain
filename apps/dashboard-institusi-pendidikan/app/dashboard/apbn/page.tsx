@@ -1,17 +1,34 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import { useAppStore } from '@/lib/store';
 import StatusBadge from '@/components/ui/StatusBadge';
-import { tahunAnggaranData } from '@/lib/data';
+import { supabase } from '@/lib/supabase';
 import { fmtRupiah } from '@/lib/utils/formatters';
 import { TahunAnggaran } from '@/types';
 
 export default function APBNPage() {
   const { setActiveTahun } = useAppStore();
-  const [data] = useState<TahunAnggaran[]>(tahunAnggaranData);
+  const [data, setData] = useState<TahunAnggaran[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase
+      .from('tahun_anggaran')
+      .select('*')
+      .order('tahun', { ascending: true })
+      .then(({ data: rows, error }) => {
+        if (!error && rows) {
+          setData(rows.map((r: any) => ({
+            ...r,
+            total_anggaran: Number(r.total_anggaran || 0)
+          })));
+        }
+        setLoading(false);
+      });
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -26,43 +43,48 @@ export default function APBNPage() {
           <span className="text-xs text-text-muted">{data.length} tahun</span>
         </div>
 
-        {/* Table */}
-        <div className="sheet-container">
-          <table className="w-full">
-            <thead>
-              <tr>
-                <th className="sheet-header-cell text-center" style={{ width: 50 }}>No</th>
-                <th className="sheet-header-cell text-center" style={{ width: 100 }}>Tahun</th>
-                <th className="sheet-header-cell text-right">Total Anggaran (APBN Pendidikan)</th>
-                <th className="sheet-header-cell text-center" style={{ width: 120 }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.sort((a, b) => a.tahun - b.tahun).map((row, idx) => (
-                <tr key={row.id} className="hover:bg-indigo-50/50 transition">
-                  <td className="sheet-cell text-center text-text-muted">{idx + 1}</td>
-                  <td className="sheet-cell text-center font-semibold text-text-primary">
-                    <Link
-                      href="/dashboard"
-                      onClick={() => setActiveTahun(row.tahun)}
-                      className="text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer"
-                    >
-                      {row.tahun}
-                    </Link>
-                  </td>
-                  <td className="sheet-cell text-right">
-                    <span>
-                      {fmtRupiah(row.total_anggaran)}
-                    </span>
-                  </td>
-                  <td className="sheet-cell text-center">
-                    <StatusBadge status={row.status} />
-                  </td>
+        {loading ? (
+          <div className="flex items-center justify-center min-h-[300px]">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600"></div>
+          </div>
+        ) : (
+          <div className="sheet-container">
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th className="sheet-header-cell text-center" style={{ width: 50 }}>No</th>
+                  <th className="sheet-header-cell text-center" style={{ width: 100 }}>Tahun</th>
+                  <th className="sheet-header-cell text-right">Total Anggaran (APBN Pendidikan)</th>
+                  <th className="sheet-header-cell text-center" style={{ width: 120 }}>Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {data.map((row, idx) => (
+                  <tr key={row.id} className="hover:bg-indigo-50/50 transition">
+                    <td className="sheet-cell text-center text-text-muted">{idx + 1}</td>
+                    <td className="sheet-cell text-center font-semibold text-text-primary">
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setActiveTahun(row.tahun)}
+                        className="text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer"
+                      >
+                        {row.tahun}
+                      </Link>
+                    </td>
+                    <td className="sheet-cell text-right">
+                      <span>
+                        {fmtRupiah(row.total_anggaran)}
+                      </span>
+                    </td>
+                    <td className="sheet-cell text-center">
+                      <StatusBadge status={row.status} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* Status Legend */}
         <div className="mt-4 flex items-center gap-6 text-xs text-text-muted">

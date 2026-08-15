@@ -15,12 +15,21 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://postgres@localhost:2025/postgres'
+  connectionString: process.env.DATABASE_URL || 'postgresql://postgres@localhost:2025/postgres',
+  max: 20,              // Increase from default 10 → 20 concurrent connections
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
 
-// Middleware to log requests
+// Middleware to log requests (only log slow or error responses)
 app.use((req, res, next) => {
-  console.log(`[Proxy] ${req.method} ${req.url}`);
+  const start = Date.now();
+  res.on('finish', () => {
+    const ms = Date.now() - start;
+    if (ms > 500 || res.statusCode >= 400) {
+      console.log(`[Proxy] ${req.method} ${req.url} → ${res.statusCode} (${ms}ms)`);
+    }
+  });
   next();
 });
 
@@ -43,7 +52,7 @@ app.get('/', (req, res) => {
 app.post('/rest/v1/rpc/:function', async (req, res) => {
   const func = req.params.function;
   const body = req.body;
-  console.log(`[Proxy RPC] Called ${func} with body:`, body);
+  // console.log(`[Proxy RPC] Called ${func} with body:`, body);
 
   try {
     if (func === 'get_national_school_stats') {
@@ -140,6 +149,27 @@ app.post('/rest/v1/rpc/:function', async (req, res) => {
       return res.json(dbRes.rows);
     }
 
+    // ── get_all_province_stats: aggregate directly from institusi_pendidikan ──
+    else if (func === 'get_all_province_stats') {
+      const dbRes = await pool.query(`
+        SELECT
+          p.id          AS province_id,
+          p.kode_provinsi AS province_code,
+          p.nama_provinsi AS province_name,
+          COUNT(ip.id)::integer AS total_schools,
+          COALESCE(SUM(CASE WHEN ip.jenjang = 'PAUD'        THEN 1 ELSE 0 END),0)::integer AS paud,
+          COALESCE(SUM(CASE WHEN ip.jenjang = 'SD'          THEN 1 ELSE 0 END),0)::integer AS sd,
+          COALESCE(SUM(CASE WHEN ip.jenjang = 'SMP'         THEN 1 ELSE 0 END),0)::integer AS smp,
+          COALESCE(SUM(CASE WHEN ip.jenjang = 'SMA'         THEN 1 ELSE 0 END),0)::integer AS sma,
+          COALESCE(SUM(CASE WHEN ip.jenjang = 'UNIVERSITAS' THEN 1 ELSE 0 END),0)::integer AS univ
+        FROM public.provinsi p
+        LEFT JOIN public.institusi_pendidikan ip ON ip.provinsi_id = p.id
+        GROUP BY p.id, p.kode_provinsi, p.nama_provinsi
+        ORDER BY p.nama_provinsi
+      `);
+      return res.json(dbRes.rows);
+    }
+
     return res.status(404).json({ error: `RPC function ${func} not supported` });
   } catch (err) {
     console.error(`[Proxy RPC Error] ${func}:`, err.message);
@@ -160,11 +190,12 @@ function parseFilters(queryParams) {
     if (skip.has(key) || typeof val !== 'string') continue;
 
     if (val.startsWith('eq.')) {
-      const v = val.slice(3);
+      let v = val.slice(3).replace(/^["']|["']$/g, '');
       if (v === 'null') { whereClauses.push(`"${key}" IS NULL`); }
       else { whereClauses.push(`"${key}" = $${idx++}`); values.push(v); }
     } else if (val.startsWith('neq.')) {
-      whereClauses.push(`"${key}" != $${idx++}`); values.push(val.slice(4));
+      let v = val.slice(4).replace(/^["']|["']$/g, '');
+      whereClauses.push(`"${key}" != $${idx++}`); values.push(v);
     } else if (val.startsWith('gte.')) {
       whereClauses.push(`"${key}" >= $${idx++}`); values.push(val.slice(4));
     } else if (val.startsWith('lte.')) {
@@ -174,11 +205,17 @@ function parseFilters(queryParams) {
     } else if (val.startsWith('lt.')) {
       whereClauses.push(`"${key}" < $${idx++}`); values.push(val.slice(3));
     } else if (val.startsWith('ilike.')) {
-      whereClauses.push(`"${key}" ILIKE $${idx++}`); values.push(val.slice(6).replace(/\*/g, '%'));
+      let v = val.slice(6).replace(/\*/g, '%').replace(/^["']|["']$/g, '');
+      if (!v.includes('%')) v = `%${v}%`;
+      whereClauses.push(`"${key}" ILIKE $${idx++}`);
+      values.push(v);
     } else if (val.startsWith('like.')) {
-      whereClauses.push(`"${key}" LIKE $${idx++}`); values.push(val.slice(5).replace(/\*/g, '%'));
+      let v = val.slice(5).replace(/\*/g, '%').replace(/^["']|["']$/g, '');
+      if (!v.includes('%')) v = `%${v}%`;
+      whereClauses.push(`"${key}" LIKE $${idx++}`);
+      values.push(v);
     } else if (val.startsWith('in.')) {
-      const list = val.slice(4, -1).split(',').map(s => s.trim());
+      const list = val.slice(4, -1).split(',').map(s => s.trim().replace(/^["']|["']$/g, ''));
       const placeholders = list.map(() => `$${idx++}`);
       whereClauses.push(`"${key}" IN (${placeholders.join(',')})`);
       values.push(...list);
@@ -191,22 +228,26 @@ function parseFilters(queryParams) {
     }
   }
 
-  // Handle `or=` filter: e.g. or=(name.ilike.%foo%,npsn.ilike.%foo%)
+  // Handle `or=` filter: e.g. or=(name.ilike.%foo%,npsn.ilike.%foo%) or or=(name.ilike.*foo*,npsn.ilike.*foo*)
   if (queryParams.or) {
     const orStr = queryParams.or.replace(/^\(|\)$/g, '');
     const orClauses = orStr.split(',').map(part => {
       const dotIdx = part.indexOf('.');
+      if (dotIdx === -1) return null;
       const col = part.substring(0, dotIdx);
       const rest = part.substring(dotIdx + 1);
       if (rest.startsWith('ilike.')) {
-        const v = rest.slice(6).replace(/\*/g, '%');
+        let v = rest.slice(6).replace(/\*/g, '%').replace(/^["']|["']$/g, '');
+        if (!v.includes('%')) v = `%${v}%`;
         values.push(v);
         return `"${col}" ILIKE $${idx++}`;
       } else if (rest.startsWith('eq.')) {
-        values.push(rest.slice(3));
+        let v = rest.slice(3).replace(/^["']|["']$/g, '');
+        values.push(v);
         return `"${col}" = $${idx++}`;
       } else if (rest.startsWith('like.')) {
-        const v = rest.slice(5).replace(/\*/g, '%');
+        let v = rest.slice(5).replace(/\*/g, '%').replace(/^["']|["']$/g, '');
+        if (!v.includes('%')) v = `%${v}%`;
         values.push(v);
         return `"${col}" LIKE $${idx++}`;
       }
@@ -264,7 +305,7 @@ function buildBaseQuery(table, selectParam) {
          FROM kabupaten_kota kk WHERE kk.id = akk.kabupaten_kota_id) as kabupaten_kota
       FROM alokasi_kabupaten_kota akk
     `;
-  } else if (table === 'mv_province_school_stats' || table === 'province_school_stats') {
+  } else if (table === 'mv_province_school_stats') {
     return `
       SELECT r.province_id,
         CASE
@@ -279,6 +320,7 @@ function buildBaseQuery(table, selectParam) {
       JOIN public.regencies r ON s.regency_id = r.id
       GROUP BY r.province_id, jenjang
     `;
+
   } else if (table === 'audit_anomaly') {
     return `
       SELECT a.*,
@@ -362,7 +404,7 @@ app.all('/rest/v1/:table', async (req, res) => {
       }
       if (limit !== null) sql += ` LIMIT ${limit} OFFSET ${offset}`;
 
-      console.log(`[Proxy SQL] ${sql.replace(/\s+/g, ' ').trim()} | Values:`, values);
+      // console.log(`[Proxy SQL] ${sql.replace(/\s+/g, ' ').trim()} | Values:`, values);
       const dbRes = await pool.query(sql, values);
 
       const totalRows = total !== null ? total : '*';
@@ -416,7 +458,7 @@ app.all('/rest/v1/:table', async (req, res) => {
       else if (table === 'schools') onConflict = 'ON CONFLICT (npsn) DO UPDATE SET name = EXCLUDED.name, location = EXCLUDED.location, accreditation = EXCLUDED.accreditation';
 
       const sql = `INSERT INTO "${table}" (${columns.map(c => `"${c}"`).join(', ')}) VALUES ${rowPlaceholders.join(', ')} ${onConflict} RETURNING *`;
-      console.log(`[Proxy SQL] Insert into ${table} with ${items.length} row(s)`);
+      // console.log(`[Proxy SQL] Insert into ${table} with ${items.length} row(s)`);
       const dbRes = await pool.query(sql, vals);
 
       const acceptHeader = req.get('Accept') || '';
@@ -438,7 +480,7 @@ app.all('/rest/v1/:table', async (req, res) => {
       });
 
       const sql = `UPDATE "${table}" SET ${setClauses.join(', ')} WHERE ${whereClauses.join(' AND ')} RETURNING *`;
-      console.log(`[Proxy SQL] ${sql} | Values:`, values);
+      // console.log(`[Proxy SQL] ${sql} | Values:`, values);
       const dbRes = await pool.query(sql, values);
       return res.json(dbRes.rows);
     }
@@ -449,7 +491,7 @@ app.all('/rest/v1/:table', async (req, res) => {
       if (whereClauses.length === 0) return res.status(400).json({ error: 'DELETE requires filter params' });
 
       const sql = `DELETE FROM "${table}" WHERE ${whereClauses.join(' AND ')} RETURNING *`;
-      console.log(`[Proxy SQL] ${sql} | Values:`, values);
+      // console.log(`[Proxy SQL] ${sql} | Values:`, values);
       const dbRes = await pool.query(sql, values);
       return res.json(dbRes.rows);
     }

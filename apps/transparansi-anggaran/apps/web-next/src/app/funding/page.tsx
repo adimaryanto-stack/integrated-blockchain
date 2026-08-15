@@ -70,7 +70,7 @@ export default function FundingPage() {
         fetchAllData();
     }, []);
 
-    const currentYearData = apbnData.find(d => d.year === "2025") || { amount: 724.3 };
+    const currentYearData = apbnData.find(d => d.year === "2026") || apbnData[0] || { amount: 769.1 };
 
     return (
         <div className="min-h-screen bg-slate-50">

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '@/lib/store';
 import { useRouter } from 'next/navigation';
-import { tahunAnggaranData, institusiPendidikanData } from '@/lib/data';
+import { tahunAnggaranData, institusiPendidikanData, updateTahunAnggaran } from '@/lib/data';
 import { Bell, Search, Menu, CheckCheck, Info, AlertTriangle, Sparkles, History, UserCheck } from 'lucide-react';
 import AuditTrailDrawer from '@/components/ui/AuditTrailDrawer';
 import { UserRole, InstitusiPendidikan } from '@/types';
@@ -32,9 +32,10 @@ export default function Header({ title, subtitle }: HeaderProps) {
     setCurrentUser,
     auditLogs,
     toggleAuditDrawer,
+    dataVersion,
   } = useAppStore();
 
-  const activeTahunList = tahunAnggaranData.filter(t => t.status !== 'DRAFT');
+  const activeTahunList = [...tahunAnggaranData].sort((a, b) => a.tahun - b.tahun);
 
   // Search States
   const [searchQuery, setSearchQuery] = useState('');
@@ -168,12 +169,16 @@ export default function Header({ title, subtitle }: HeaderProps) {
               <span className="text-xs text-text-muted">Tahun:</span>
               <select
                 value={activeTahun}
-                onChange={(e) => setActiveTahun(Number(e.target.value))}
-                className="select-dropdown"
+                onChange={(e) => {
+                  const selectedYear = Number(e.target.value);
+                  setActiveTahun(selectedYear);
+                  useAppStore.getState().incrementVersion();
+                }}
+                className="select-dropdown font-bold text-indigo-700"
               >
                 {activeTahunList.map(t => (
                   <option key={t.tahun} value={t.tahun}>
-                    {t.tahun} {t.status === 'ACTIVE' ? '✓' : ''}
+                    {t.tahun} {t.tahun === activeTahun ? '✓ (Aktif)' : ''}
                   </option>
                 ))}
               </select>

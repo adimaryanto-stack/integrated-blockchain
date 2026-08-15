@@ -576,8 +576,8 @@ export default function KabkotaDetailPage() {
         )}
 
         <p className="text-xs text-text-muted flex items-center gap-1">
-          <span>✏️</span>
-          <span>Klik langsung pada kolom <strong>Nominal Anggaran</strong> atau <strong>Realisasi</strong> untuk mengubah data • Tekan <strong>Enter</strong> untuk menyimpan • Limit {itemsPerPage} data per halaman</span>
+          <span>🔒</span>
+          <span>Mode Read-Only • Data ini dikunci dan tidak dapat diubah oleh Auditor • Limit {itemsPerPage} data per halaman</span>
         </p>
       </div>
     </div>

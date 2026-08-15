@@ -147,7 +147,7 @@ async function main() {
     const allRincianItems: any[] = [];
     const schoolIds = new Set<string>();
 
-    defaultSchools.forEach(school => {
+    for (const school of defaultSchools) {
       if (!schoolIds.has(school.id)) {
         allSchools.push({
           id: school.id,
@@ -169,7 +169,7 @@ async function main() {
         });
         schoolIds.add(school.id);
 
-        const profil = getProfilInstitusi(school.id, 2026);
+        const profil = await getProfilInstitusi(school.id, 2026);
         if (profil) {
           profil.sumber_dana.forEach(sd => {
             allSumberDana.push({
@@ -183,7 +183,7 @@ async function main() {
             });
           });
 
-          profil.pengeluaran_bulanan.forEach(pb => {
+          for (const pb of profil.pengeluaran_bulanan) {
             allPengeluaranBulanan.push({
               id: pb.id,
               institusi_id: pb.institusi_id,
@@ -194,7 +194,7 @@ async function main() {
               sub_total: pb.sub_total
             });
 
-            const rincian = getRincianPengeluaranBulanan(school.id, pb.nomor, 2026);
+            const rincian = await getRincianPengeluaranBulanan(school.id, pb.nomor, 2026);
             if (rincian) {
               rincian.items.forEach(item => {
                 allRincianItems.push({
@@ -209,10 +209,10 @@ async function main() {
                 });
               });
             }
-          });
+          }
         }
       }
-    });
+    }
 
     const { error: errSchool } = await supabase.from('institusi_pendidikan').upsert(allSchools);
     if (errSchool) throw new Error(`institusi_pendidikan: ${errSchool.message}`);

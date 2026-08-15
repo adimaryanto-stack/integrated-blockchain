@@ -32,7 +32,7 @@ interface AppState {
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
   
-  // Supabase states
+  // Database states
   isSupabaseMode: boolean;
   setIsSupabaseMode: (active: boolean) => void;
   dbData: DbData | null;
@@ -187,7 +187,7 @@ export const useAppStore = create<AppState>((set) => ({
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
   
-  // Supabase initial states
+  // Database initial states
   isSupabaseMode: false,
   setIsSupabaseMode: (active) => set({ isSupabaseMode: active }),
   dbData: null,

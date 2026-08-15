@@ -30,7 +30,8 @@ export default function Header({ title, subtitle }: HeaderProps) {
   useEffect(() => {
     getTahunAnggaran()
       .then(res => {
-        setActiveTahunList(res.filter(t => t.status !== 'DRAFT'));
+        const sorted = [...res].sort((a, b) => a.tahun - b.tahun);
+        setActiveTahunList(sorted.filter(t => t.status !== 'DRAFT'));
       })
       .catch(console.error);
   }, []);
@@ -144,11 +145,11 @@ export default function Header({ title, subtitle }: HeaderProps) {
             <select
               value={activeTahun}
               onChange={(e) => setActiveTahun(Number(e.target.value))}
-              className="select-dropdown"
+              className="select-dropdown font-bold text-indigo-700"
             >
               {activeTahunList.map(t => (
                 <option key={t.tahun} value={t.tahun}>
-                  {t.tahun} {t.status === 'ACTIVE' ? '✓' : ''}
+                  {t.tahun} {t.tahun === activeTahun ? '✓ (Aktif)' : ''}
                 </option>
               ))}
             </select>

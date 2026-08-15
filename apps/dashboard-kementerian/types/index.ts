@@ -139,6 +139,7 @@ export interface User {
 export interface DashboardSummary {
   total_nominal: number;
   total_realisasi: number;
+  total_selisih: number; // pre-computed as BigInt string to avoid NaN
   persentase_penyerapan: number;
   per_jenjang: JenjangSummary[];
   tren_tahunan: TrenTahunan[];

@@ -548,7 +548,7 @@ export default function PengeluaranPage() {
     <div className="min-h-screen pb-12">
       <Header
         title="Daftar Pengeluaran Riil"
-        subtitle="Verifikasi dan pantau transaksi belanja operasional dari SDN 01 Menteng secara real-time"
+        subtitle="Verifikasi dan pantau transaksi belanja operasional dari KB AL-IKHLAS (NPSN: 69893669) secara real-time"
       />
 
       <div className="p-6 space-y-6">
@@ -948,7 +948,7 @@ export default function PengeluaranPage() {
                 </div>
               </div>
 
-              {/* School Selector - Locked to SDN 01 Menteng */}
+              {/* School Selector - Locked to KB AL-IKHLAS */}
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider block">Institusi Pendidikan</label>
                 <div className="relative">
@@ -956,7 +956,7 @@ export default function PengeluaranPage() {
                   <input
                     type="text"
                     disabled
-                    value="SDN 01 Menteng (SD)"
+                    value="KB AL-IKHLAS (PAUD - NPSN: 69893669)"
                     className="w-full pl-9 pr-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs text-text-muted font-semibold focus:outline-none"
                   />
                 </div>

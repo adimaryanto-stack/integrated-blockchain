@@ -3,78 +3,138 @@
 import Header from '@/components/layout/Header';
 import MetricCard from '@/components/ui/MetricCard';
 import PctBadge from '@/components/ui/PctBadge';
-import { getProfilInstitusi } from '@/lib/data';
-import { fmtTriliun, fmtPct, fmtRupiah } from '@/lib/utils/formatters';
+import { fmtPct, fmtRupiah } from '@/lib/utils/formatters';
 import { Wallet, TrendingUp, PieChart, Calendar, Landmark } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Area, AreaChart, Legend
 } from 'recharts';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useAppStore } from '@/lib/store';
-import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+
+interface YearData {
+  tahun: number;
+  nominal: number;
+  realisasi: number;
+  persentase: number;
+  selisih: number;
+}
 
 export default function DashboardPage() {
-  const { activeTahun, setActiveTahun, dbData } = useAppStore();
-  const router = useRouter();
-  const schoolId = 'inst-sd-0'; // SDN 01 Menteng (SDN 01 Pagi benchmark)
+  const { activeTahun, setActiveTahun } = useAppStore();
 
-  // Fetch active school details for active year
-  const activeSchoolData = useMemo(() => {
-    return getProfilInstitusi(schoolId, activeTahun);
-  }, [activeTahun, dbData]);
+  // Fetch institusi data for the currently logged-in school from DB
+  const [institusi, setInstitusi] = useState<any>(null);
+  const [yearlyData, setYearlyData] = useState<YearData[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Generate Year-over-Year data for SDN 01 Menteng (2020 - 2026)
-  const yearlyData = useMemo(() => {
-    const years = [2020, 2021, 2022, 2023, 2024, 2025, 2026];
-    return years.map(yr => {
-      const data = getProfilInstitusi(schoolId, yr);
-      const nominal = data?.institusi.nominal_alokasi || 0;
-      const realisasi = data?.institusi.realisasi_total || 0;
-      const persentase = nominal > 0 ? (realisasi / nominal) * 100 : 0;
-      const selisih = nominal - realisasi;
-      return {
-        tahun: yr,
-        nominal,
-        realisasi,
-        persentase,
-        selisih
-      };
-    });
-  }, [schoolId, dbData]);
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Fetch KB AL-IKHLAS (NPSN 69893669) as the active school account
+        let { data: instList } = await supabase
+          .from('institusi_pendidikan')
+          .select('*')
+          .eq('npsn', '69893669')
+          .limit(1);
 
-  const schoolName = activeSchoolData?.institusi.nama_institusi || 'SDN 01 Menteng';
+        if (!instList || instList.length === 0) {
+          const res = await supabase.from('institusi_pendidikan').select('*').limit(1);
+          instList = res.data;
+        }
 
-  // Format chart data
-  const chartData = useMemo(() => {
-    return yearlyData.map(d => ({
+        if (instList && instList.length > 0) {
+          const inst = instList[0];
+          setInstitusi(inst);
+
+          // Fetch per-tahun allocations from alokasi_provinsi aggregated
+          // Use real data from institusi_pendidikan grouped by tahun via nominal_alokasi
+          // For now: build yearly chart from pengeluaran_bulanan_institusi if available
+          const { data: bulananRows } = await supabase
+            .from('pengeluaran_bulanan_institusi')
+            .select('tahun, nominal_alokasi, realisasi_total')
+            .eq('institusi_id', inst.id)
+            .order('tahun', { ascending: true });
+
+          if (bulananRows && bulananRows.length > 0) {
+            // Group by tahun
+            const byTahun = new Map<number, { nominal: number; realisasi: number }>();
+            bulananRows.forEach((r: any) => {
+              const yr = Number(r.tahun);
+              const existing = byTahun.get(yr) || { nominal: 0, realisasi: 0 };
+              existing.nominal += Number(r.nominal_alokasi || 0);
+              existing.realisasi += Number(r.realisasi_total || 0);
+              byTahun.set(yr, existing);
+            });
+            const yd = Array.from(byTahun.entries()).map(([tahun, d]) => ({
+              tahun,
+              nominal: d.nominal,
+              realisasi: d.realisasi,
+              selisih: d.nominal - d.realisasi,
+              persentase: d.nominal > 0 ? (d.realisasi / d.nominal) * 100 : 0,
+            }));
+            setYearlyData(yd);
+          } else {
+            // Fallback: use institusi nominal_alokasi for activeTahun only
+            const nominal = Number(inst.nominal_alokasi || 0);
+            const realisasi = Number(inst.realisasi_total || 0);
+            setYearlyData([{
+              tahun: activeTahun,
+              nominal,
+              realisasi,
+              selisih: nominal - realisasi,
+              persentase: nominal > 0 ? (realisasi / nominal) * 100 : 0,
+            }]);
+          }
+        }
+      } catch (err) {
+        console.error('Dashboard fetch error:', err);
+      }
+      setLoading(false);
+    };
+
+    fetchData();
+  }, [activeTahun]);
+
+  const activeYearData = useMemo(
+    () => yearlyData.find(d => d.tahun === activeTahun) || yearlyData[yearlyData.length - 1] || { nominal: 0, realisasi: 0, selisih: 0, persentase: 0 },
+    [yearlyData, activeTahun]
+  );
+
+  const currentSaldo = useMemo(
+    () => yearlyData.filter(d => d.tahun <= activeTahun).reduce((sum, d) => sum + d.selisih, 0),
+    [yearlyData, activeTahun]
+  );
+
+  const chartData = useMemo(() =>
+    yearlyData.map(d => ({
       tahun: String(d.tahun),
       Nominal: d.nominal,
       Realisasi: d.realisasi,
-    }));
-  }, [yearlyData]);
+    })),
+    [yearlyData]
+  );
 
-  // Formatter for large values on chart axis
   const formatChartValue = (val: number) => {
-    if (val >= 1_000_000_000) {
-      return `${(val / 1_000_000_000).toFixed(1)} M`;
-    }
-    if (val >= 1_000_000) {
-      return `${(val / 1_000_000).toFixed(1)} Jt`;
-    }
+    if (val >= 1_000_000_000) return `${(val / 1_000_000_000).toFixed(1)} M`;
+    if (val >= 1_000_000) return `${(val / 1_000_000).toFixed(1)} Jt`;
     return String(val);
   };
 
-  const currentNominal = activeSchoolData?.institusi.nominal_alokasi || 0;
-  const currentRealisasi = activeSchoolData?.institusi.realisasi_total || 0;
-  const currentPercentage = currentNominal > 0 ? (currentRealisasi / currentNominal) * 100 : 0;
-  
-  // Cumulative bank balance rekapitulasi: sum of surplus from 2020 to activeTahun
-  const currentSaldo = useMemo(() => {
-    return yearlyData
-      .filter(d => d.tahun <= activeTahun)
-      .reduce((sum, d) => sum + d.selisih, 0);
-  }, [yearlyData, activeTahun]);
+  const schoolName = institusi?.nama_institusi || 'Institusi Pendidikan';
+
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        <Header title="Dashboard" subtitle="Memuat data dari database lokal..." />
+        <div className="p-6 flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -84,11 +144,11 @@ export default function DashboardPage() {
       />
 
       <div className="p-6 space-y-6">
-        {/* Metric Cards - Localized for the school */}
+        {/* Metric Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard
             title="Total Alokasi Anggaran Sekolah"
-            value={`Rp ${fmtRupiah(currentNominal)}`}
+            value={`Rp ${fmtRupiah(activeYearData.nominal)}`}
             subtitle={`Alokasi Dana Sekolah ${activeTahun}`}
             icon={<Wallet size={20} className="text-indigo-600" />}
             accent="indigo"
@@ -96,7 +156,7 @@ export default function DashboardPage() {
           />
           <MetricCard
             title="Total Realisasi Belanja"
-            value={`Rp ${fmtRupiah(currentRealisasi)}`}
+            value={`Rp ${fmtRupiah(activeYearData.realisasi)}`}
             subtitle="Penyerapan anggaran sekolah saat ini"
             icon={<TrendingUp size={20} className="text-emerald-600" />}
             accent="emerald"
@@ -104,7 +164,7 @@ export default function DashboardPage() {
           />
           <MetricCard
             title="Persentase Penyerapan"
-            value={fmtPct(currentPercentage)}
+            value={fmtPct(activeYearData.persentase)}
             subtitle="Target minimal penyerapan 85%"
             icon={<PieChart size={20} className="text-amber-600" />}
             accent="amber"
@@ -112,7 +172,7 @@ export default function DashboardPage() {
           <MetricCard
             title="Saldo Rekapitulasi di Bank"
             value={`Rp ${fmtRupiah(currentSaldo)}`}
-            subtitle={`Akumulasi sisa anggaran 2020 - ${activeTahun}`}
+            subtitle={`Akumulasi sisa anggaran s.d. ${activeTahun}`}
             icon={<Landmark size={20} className="text-blue-600" />}
             accent="blue"
           />
@@ -137,109 +197,106 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {yearlyData.map((d, idx) => {
-                  const barColor = d.persentase >= 85 ? '#10b981' : d.persentase >= 70 ? '#f59e0b' : '#ef4444';
-                  const isCurrent = d.tahun === activeTahun;
-                  return (
-                    <tr
-                      key={d.tahun}
-                      className={`transition cursor-pointer ${isCurrent ? 'bg-indigo-50/70 hover:bg-indigo-50 font-bold border-l-4 border-l-indigo-600' : 'hover:bg-indigo-50/30'}`}
-                      style={{ animationDelay: `${idx * 80}ms` }}
-                      onClick={() => {
-                        setActiveTahun(d.tahun);
-                        router.push('/dashboard/profil-institusi/inst-sd-0');
-                      }}
-                    >
-                      <td className="sheet-cell text-left">
-                        <span className={`text-xs font-semibold ${isCurrent ? 'text-indigo-700' : 'text-text-primary'}`}>
-                          Tahun {d.tahun} {isCurrent ? ' (Aktif)' : ''}
-                        </span>
-                      </td>
-                      <td className="sheet-cell text-right font-mono">Rp {fmtRupiah(d.nominal)}</td>
-                      <td className="sheet-cell text-right font-mono">Rp {fmtRupiah(d.realisasi)}</td>
-                      <td className={`sheet-cell text-right font-mono ${d.selisih >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        Rp {fmtRupiah(d.selisih)}
-                      </td>
-                      <td className="sheet-cell text-center">
-                        <PctBadge value={d.persentase} />
-                      </td>
-                      <td className="sheet-cell">
-                        <div className="progress-bar-track">
-                          <div
-                            className="progress-bar-fill"
-                            style={{
-                              width: `${Math.min(d.persentase, 100)}%`,
-                              background: `linear-gradient(90deg, ${barColor}88, ${barColor})`,
-                            }}
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {yearlyData.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="sheet-cell text-center text-text-muted text-xs py-8">
+                      Tidak ada data pengeluaran bulanan di database.
+                    </td>
+                  </tr>
+                ) : (
+                  yearlyData.map((d, idx) => {
+                    const barColor = d.persentase >= 85 ? '#10b981' : d.persentase >= 70 ? '#f59e0b' : '#ef4444';
+                    const isCurrent = d.tahun === activeTahun;
+                    return (
+                      <tr
+                        key={d.tahun}
+                        className={`transition cursor-pointer ${isCurrent ? 'bg-indigo-50/70 hover:bg-indigo-50 font-bold border-l-4 border-l-indigo-600' : 'hover:bg-indigo-50/30'}`}
+                        style={{ animationDelay: `${idx * 80}ms` }}
+                        onClick={() => setActiveTahun(d.tahun)}
+                      >
+                        <td className="sheet-cell text-left">
+                          <span className={`text-xs font-semibold ${isCurrent ? 'text-indigo-700' : 'text-text-primary'}`}>
+                            Tahun {d.tahun} {isCurrent ? ' (Aktif)' : ''}
+                          </span>
+                        </td>
+                        <td className="sheet-cell text-right font-mono">Rp {fmtRupiah(d.nominal)}</td>
+                        <td className="sheet-cell text-right font-mono">Rp {fmtRupiah(d.realisasi)}</td>
+                        <td className={`sheet-cell text-right font-mono ${d.selisih >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                          Rp {fmtRupiah(d.selisih)}
+                        </td>
+                        <td className="sheet-cell text-center">
+                          <PctBadge value={d.persentase} />
+                        </td>
+                        <td className="sheet-cell">
+                          <div className="progress-bar-track">
+                            <div
+                              className="progress-bar-fill"
+                              style={{
+                                width: `${Math.min(d.persentase, 100)}%`,
+                                background: `linear-gradient(90deg, ${barColor}88, ${barColor})`,
+                              }}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Bar Chart */}
-          <div className="glass-card p-5">
-            <h3 className="text-sm font-semibold text-text-primary mb-4">Perbandingan Anggaran vs Realisasi Pertahun</h3>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={chartData} barGap={4}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="tahun" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={{ stroke: '#e2e8f0' }} />
-                <YAxis
-                  tick={{ fill: '#64748b', fontSize: 11 }}
-                  axisLine={{ stroke: '#e2e8f0' }}
-                  tickFormatter={formatChartValue}
-                />
-                <Tooltip
-                  contentStyle={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#1e293b', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                  formatter={(value: any) => [`Rp ${fmtRupiah(Number(value))}`, '']}
-                />
-                <Legend wrapperStyle={{ fontSize: 11, color: '#64748b' }} />
-                <Bar dataKey="Nominal" name="Anggaran Alokasi" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Realisasi" name="Realisasi Belanja" fill="#10b981" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+        {chartData.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="glass-card p-5">
+              <h3 className="text-sm font-semibold text-text-primary mb-4">Perbandingan Anggaran vs Realisasi Pertahun</h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={chartData} barGap={4}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="tahun" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={{ stroke: '#e2e8f0' }} />
+                  <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={{ stroke: '#e2e8f0' }} tickFormatter={formatChartValue} />
+                  <Tooltip
+                    contentStyle={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#1e293b', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                    formatter={(value: any) => [`Rp ${fmtRupiah(Number(value))}`, '']}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 11, color: '#64748b' }} />
+                  <Bar dataKey="Nominal" name="Anggaran Alokasi" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Realisasi" name="Realisasi Belanja" fill="#10b981" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
 
-          {/* Trend Line/Area Chart */}
-          <div className="glass-card p-5">
-            <h3 className="text-sm font-semibold text-text-primary mb-4">Tren Penyerapan Anggaran Sekolah (2020–2026)</h3>
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="gradNominal" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#6366f1" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="gradRealisasi" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="tahun" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={{ stroke: '#e2e8f0' }} />
-                <YAxis
-                  tick={{ fill: '#64748b', fontSize: 11 }}
-                  axisLine={{ stroke: '#e2e8f0' }}
-                  tickFormatter={formatChartValue}
-                />
-                <Tooltip
-                  contentStyle={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#1e293b', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                  formatter={(value: any) => [`Rp ${fmtRupiah(Number(value))}`, '']}
-                />
-                <Legend wrapperStyle={{ fontSize: 11, color: '#64748b' }} />
-                <Area type="monotone" dataKey="Nominal" name="Anggaran Alokasi" stroke="#6366f1" fill="url(#gradNominal)" strokeWidth={2} />
-                <Area type="monotone" dataKey="Realisasi" name="Realisasi Belanja" stroke="#10b981" fill="url(#gradRealisasi)" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
+            <div className="glass-card p-5">
+              <h3 className="text-sm font-semibold text-text-primary mb-4">Tren Penyerapan Anggaran Sekolah</h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="gradNominal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#6366f1" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="gradRealisasi" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="tahun" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={{ stroke: '#e2e8f0' }} />
+                  <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={{ stroke: '#e2e8f0' }} tickFormatter={formatChartValue} />
+                  <Tooltip
+                    contentStyle={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#1e293b', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                    formatter={(value: any) => [`Rp ${fmtRupiah(Number(value))}`, '']}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 11, color: '#64748b' }} />
+                  <Area type="monotone" dataKey="Nominal" name="Anggaran Alokasi" stroke="#6366f1" fill="url(#gradNominal)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="Realisasi" name="Realisasi Belanja" stroke="#10b981" fill="url(#gradRealisasi)" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

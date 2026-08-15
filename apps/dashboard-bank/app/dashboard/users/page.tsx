@@ -9,11 +9,16 @@ import { Search, Plus, Edit3, Trash2, UserCheck, UserX } from 'lucide-react';
 
 const roleConfig: Record<UserRole, { label: string; color: string }> = {
   SUPER_ADMIN: { label: 'Super Admin', color: 'bg-purple-100 text-purple-700 border-purple-300' },
-  ADMIN: { label: 'Admin Bank Pusat', color: 'bg-indigo-100 text-indigo-700 border-indigo-300' },
-  ADMIN_PROVINSI: { label: 'Admin Bank Regional', color: 'bg-blue-100 text-blue-700 border-blue-300' },
-  ADMIN_KABKOTA: { label: 'Admin Bank Area', color: 'bg-cyan-100 text-cyan-700 border-cyan-300' },
-  VIEWER: { label: 'Viewer Eksternal', color: 'bg-gray-100 text-gray-600 border-gray-300' },
-  AUDITOR: { label: 'Internal Auditor Bank', color: 'bg-amber-100 text-amber-700 border-amber-300' },
+  ADMIN: { label: 'Admin', color: 'bg-indigo-100 text-indigo-700 border-indigo-300' },
+  ADMIN_PROVINSI: { label: 'Admin Provinsi', color: 'bg-blue-100 text-blue-700 border-blue-300' },
+  ADMIN_KABKOTA: { label: 'Admin Kab/Kota', color: 'bg-cyan-100 text-cyan-700 border-cyan-300' },
+  VIEWER: { label: 'Viewer', color: 'bg-gray-100 text-gray-600 border-gray-300' },
+  AUDITOR: { label: 'Auditor', color: 'bg-amber-100 text-amber-700 border-amber-300' },
+  PUBLIC_RESEARCHER: { label: 'Public Researcher', color: 'bg-teal-100 text-teal-700 border-teal-300' },
+};
+
+const getRoleConfig = (role: string) => {
+  return roleConfig[role as UserRole] || { label: role || 'User', color: 'bg-gray-100 text-gray-600 border-gray-300' };
 };
 
 export default function UsersPage() {
@@ -158,7 +163,7 @@ export default function UsersPage() {
   if (loading) {
     return (
       <div className="min-h-screen">
-        <Header title="Manajer Pengguna" subtitle="Kelola pengguna dan hak akses staf perbankan serta pengawas" />
+        <Header title="User Manager" subtitle="Kelola pengguna dan hak akses staf perbankan serta pengawas" />
         <div className="p-6 flex items-center justify-center min-h-[400px]">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600"></div>
         </div>
@@ -168,7 +173,7 @@ export default function UsersPage() {
 
   return (
     <div className="min-h-screen">
-      <Header title="Manajer Pengguna" subtitle="Kelola pengguna dan hak akses staf perbankan serta pengawas" />
+      <Header title="User Manager" subtitle="Kelola pengguna dan hak akses staf perbankan serta pengawas" />
 
       <div className="p-6">
         {/* Toolbar */}

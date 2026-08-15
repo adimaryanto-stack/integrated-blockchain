@@ -117,7 +117,7 @@ export default function Sidebar() {
 
           <Link href="/dashboard/users" className={`sidebar-item ${isActive('/dashboard/users') ? 'active' : ''}`}>
             <Users size={18} />
-            <span>Manajer Pengguna</span>
+            <span>User Manager</span>
           </Link>
         </nav>
 

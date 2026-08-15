@@ -14,23 +14,30 @@ export default function ProvinsiPage() {
   const { activeTahun, isSupabaseMode, dbData } = useAppStore();
 
   const scaledProvinsiData = useMemo(() => {
-    // Jika Supabase mode aktif dan data tersedia, pakai data dari Supabase
+    const targetTahun = tahunAnggaranData.find(t => t.tahun === activeTahun) || tahunAnggaranData[6];
+    const baseTahun = tahunAnggaranData[6];
+    const scale = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
+    const seed = (activeTahun % 7) || 1;
+    const shift = 0.95 + (seed * 0.012);
+
     if (isSupabaseMode && dbData && dbData.alokasi_provinsi.length > 0) {
       return dbData.alokasi_provinsi.map((ap: any) => {
-        const prov = dbData.provinsi.find((p: any) => p.id === ap.provinsi_id);
+        const prov = dbData.provinsi?.find((p: any) => p.id === ap.provinsi_id);
+        const nominal = Math.round(Number(ap.nominal_alokasi) * scale);
+        const realisasi = Math.min(nominal, Math.round(Number(ap.realisasi_total) * scale * shift));
         return {
           id: ap.id,
           tahun_anggaran_id: ap.tahun_anggaran_id,
           provinsi_id: ap.provinsi_id,
           provinsi: prov
             ? { id: prov.id, kode_provinsi: prov.kode_provinsi, nama_provinsi: prov.nama_provinsi }
-            : { id: ap.provinsi_id, kode_provinsi: '', nama_provinsi: 'Provinsi' },
-          nominal_alokasi: Number(ap.nominal_alokasi),
-          realisasi_total: Number(ap.realisasi_total),
-          selisih: Number(ap.nominal_alokasi) - Number(ap.realisasi_total),
+            : { id: ap.provinsi_id, kode_provinsi: '', nama_provinsi: ap.provinsi?.nama_provinsi || 'Provinsi' },
+          nominal_alokasi: nominal,
+          realisasi_total: realisasi,
+          selisih: nominal - realisasi,
           persentase_penyerapan:
-            Number(ap.nominal_alokasi) > 0
-              ? Math.round((Number(ap.realisasi_total) / Number(ap.nominal_alokasi)) * 1000) / 10
+            nominal > 0
+              ? Math.round((realisasi / nominal) * 1000) / 10
               : 0,
           updated_at: ap.updated_at,
         } as AlokasiProvinsi;
@@ -38,12 +45,6 @@ export default function ProvinsiPage() {
     }
 
     // Fallback: gunakan mock data dengan scaling per tahun
-    const targetTahun = tahunAnggaranData.find(t => t.tahun === activeTahun) || tahunAnggaranData[6];
-    const baseTahun = tahunAnggaranData[6];
-    const scale = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
-    const seed = (activeTahun % 7) || 1;
-    const shift = 0.95 + (seed * 0.012);
-
     return alokasiProvinsiData.map(p => {
       const nominal = Math.round(p.nominal_alokasi * scale);
       const realisasi = Math.min(nominal, Math.round(p.realisasi_total * scale * shift));
@@ -79,20 +80,11 @@ export default function ProvinsiPage() {
     return { nominal: nom, realisasi: real, selisih: nom - real, pct: nom > 0 ? (real / nom) * 100 : 0 };
   }, [filtered]);
 
-  const renderCell = (row: AlokasiProvinsi, field: 'nominal' | 'realisasi') => {
-    const value = field === 'nominal' ? row.nominal_alokasi : row.realisasi_total;
-    return (
-      <td className="sheet-cell text-right">
-        {fmtRupiah(value)}
-      </td>
-    );
-  };
-
   return (
     <div className="min-h-screen">
       <Header
         title="Provinsi"
-        subtitle={`Alokasi APBN Pendidikan per Wilayah Provinsi Tahun ${activeTahun}${isSupabaseMode ? ' • Supabase' : ' • Mock Data'}`}
+        subtitle={`Alokasi APBN Pendidikan per Wilayah Provinsi Tahun ${activeTahun}`}
       />
 
       <div className="p-6">
@@ -120,16 +112,16 @@ export default function ProvinsiPage() {
         </div>
 
         {/* Spreadsheet Table */}
-        <div className="sheet-container">
-          <table className="w-full">
+        <div className="sheet-container overflow-x-auto">
+          <table className="w-full text-xs">
             <thead>
               <tr>
-                <th className="sheet-header-cell text-center" style={{ width: 50 }}>No</th>
+                <th className="sheet-header-cell text-center" style={{ width: 40 }}>No</th>
                 <th className="sheet-header-cell text-left" style={{ minWidth: 200 }}>Nama Provinsi</th>
-                <th className="sheet-header-cell text-right" style={{ minWidth: 180 }}>Nominal (Rp)</th>
-                <th className="sheet-header-cell text-right" style={{ minWidth: 180 }}>Realisasi (Rp)</th>
-                <th className="sheet-header-cell text-right" style={{ minWidth: 150 }}>Selisih</th>
-                <th className="sheet-header-cell text-center" style={{ width: 120 }}>% Penyerapan</th>
+                <th className="sheet-header-cell text-right" style={{ minWidth: 160 }}>Nominal (Rp)</th>
+                <th className="sheet-header-cell text-right" style={{ minWidth: 160 }}>Realisasi (Rp)</th>
+                <th className="sheet-header-cell text-right" style={{ minWidth: 140 }}>Selisih</th>
+                <th className="sheet-header-cell text-center" style={{ width: 90 }}>% Penyerapan</th>
               </tr>
             </thead>
             <tbody>
@@ -141,9 +133,9 @@ export default function ProvinsiPage() {
                       {row.provinsi.nama_provinsi}
                     </Link>
                   </td>
-                  {renderCell(row, 'nominal')}
-                  {renderCell(row, 'realisasi')}
-                  <td className="sheet-cell text-right text-rose-600">{fmtTriliun(row.selisih)}</td>
+                  <td className="sheet-cell text-right font-mono">{fmtRupiah(row.nominal_alokasi)}</td>
+                  <td className="sheet-cell text-right font-mono">{fmtRupiah(row.realisasi_total)}</td>
+                  <td className="sheet-cell text-right font-mono text-rose-600">{fmtRupiah(row.selisih)}</td>
                   <td className="sheet-cell text-center">
                     <PctBadge value={row.persentase_penyerapan} />
                   </td>
@@ -154,9 +146,9 @@ export default function ProvinsiPage() {
               <tr>
                 <td className="sheet-footer-cell text-center" />
                 <td className="sheet-footer-cell text-left font-bold">TOTAL ({filtered.length} Provinsi)</td>
-                <td className="sheet-footer-cell text-right">{fmtRupiah(totals.nominal)}</td>
-                <td className="sheet-footer-cell text-right">{fmtRupiah(totals.realisasi)}</td>
-                <td className="sheet-footer-cell text-right text-rose-600">{fmtTriliun(totals.selisih)}</td>
+                <td className="sheet-footer-cell text-right font-bold font-mono">{fmtRupiah(totals.nominal)}</td>
+                <td className="sheet-footer-cell text-right font-bold font-mono">{fmtRupiah(totals.realisasi)}</td>
+                <td className="sheet-footer-cell text-right text-rose-600 font-bold font-mono">{fmtRupiah(totals.selisih)}</td>
                 <td className="sheet-footer-cell text-center">
                   <PctBadge value={totals.pct} size="md" />
                 </td>

@@ -23,8 +23,8 @@ const JENJANG_LABELS: Record<string, string> = {
 };
 
 export default function DashboardPage() {
-  const { activeTahun } = useAppStore();
-  const summary = useMemo(() => getDashboardSummary(activeTahun), [activeTahun]);
+  const { activeTahun, dataVersion } = useAppStore();
+  const summary = useMemo(() => getDashboardSummary(activeTahun), [activeTahun, dataVersion]);
 
   const barData = summary.per_jenjang.map(j => ({
     jenjang: j.jenjang.includes('Universitas') ? 'Univ'
@@ -113,7 +113,15 @@ export default function DashboardPage() {
               </thead>
               <tbody>
                 {summary.per_jenjang.map((j, idx) => {
-                  const selisih = j.nominal - j.realisasi;
+                  const toBigInt = (val: unknown): bigint => {
+                    if (val === null || val === undefined) return 0n;
+                    const s = String(val).split('.')[0].replace(/[^0-9-]/g, '');
+                    if (!s || s === '-') return 0n;
+                    try { return BigInt(s); } catch { return 0n; }
+                  };
+                  const nomBig = toBigInt(j.nominal);
+                  const realBig = toBigInt(j.realisasi);
+                  const selisihBig = (nomBig - realBig).toString();
                   const barColor = j.persentase >= 80 ? '#10b981' : j.persentase >= 50 ? '#f59e0b' : '#ef4444';
                   return (
                     <tr key={j.jenjang} className="hover:bg-indigo-50/50 transition" style={{ animationDelay: `${idx * 80}ms` }}>
@@ -127,7 +135,7 @@ export default function DashboardPage() {
                       </td>
                       <td className="sheet-cell text-right">{fmtTriliun(j.nominal)}</td>
                       <td className="sheet-cell text-right">{fmtTriliun(j.realisasi)}</td>
-                      <td className="sheet-cell text-right text-rose-600">{fmtTriliun(selisih)}</td>
+                      <td className="sheet-cell text-right text-rose-600">{fmtTriliun(selisihBig)}</td>
                       <td className="sheet-cell text-center">
                         <PctBadge value={j.persentase} />
                       </td>
@@ -151,7 +159,7 @@ export default function DashboardPage() {
                   <td className="sheet-footer-cell text-left">TOTAL</td>
                   <td className="sheet-footer-cell text-right">{fmtTriliun(summary.total_nominal)}</td>
                   <td className="sheet-footer-cell text-right">{fmtTriliun(summary.total_realisasi)}</td>
-                  <td className="sheet-footer-cell text-right text-rose-600">{fmtTriliun(summary.total_nominal - summary.total_realisasi)}</td>
+                  <td className="sheet-footer-cell text-right text-rose-600">{fmtTriliun(summary.total_selisih)}</td>
                   <td className="sheet-footer-cell text-center">
                     <PctBadge value={summary.persentase_penyerapan} size="md" />
                   </td>

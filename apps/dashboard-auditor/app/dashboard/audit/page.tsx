@@ -14,53 +14,6 @@ import {
   FileSearch, X
 } from 'lucide-react';
 
-// Pre-defined Gemini audit reports based on selected institution
-const SIMULATED_REPORTS: Record<string, {
-  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CLEAN';
-  isAnomalyDetected: boolean;
-  findings: Array<{ item: string; issue: string; estimatedLoss: number }>;
-  reasoning: string;
-}> = {
-  'inst-universitas-0': {
-    severity: 'HIGH',
-    isAnomalyDetected: true,
-    findings: [
-      { item: 'Pembangunan Gedung Mahasiswa Baru', issue: 'Mark-up Rencana Anggaran Biaya (RAB) sebesar 35% di atas nilai wajar pasar regional.', estimatedLoss: 45000000000 }
-    ],
-    reasoning: 'Analisis Gemini mendeteksi harga satuan bahan konstruksi beton dan finishing besi struktur dilaporkan 1.5x lebih mahal dari e-Katalog LKPP Jawa Barat tahun 2026.'
-  },
-  'inst-sma-0': {
-    severity: 'MEDIUM',
-    isAnomalyDetected: true,
-    findings: [
-      { item: 'Kuitansi Buku Pelajaran Kurikulum Merdeka', issue: 'Duplikasi Invoice dengan nomor seri INV-2026-089A dan nominal yang sama persis.', estimatedLoss: 120000000 }
-    ],
-    reasoning: 'Gemini mencocokkan dua entri pencatatan di bulan Januari yang melampirkan file scan kuitansi yang identik, mengindikasikan pencatatan ganda atau potensi transfer dana ganda.'
-  },
-  'inst-smp-2': {
-    severity: 'LOW',
-    isAnomalyDetected: true,
-    findings: [
-      { item: 'Pajak PPN Belanja ATK & Laptop Kurikulum', issue: 'Kurang bayar setoran PPN 11% (Disetor Rp 2.500.000 dari kewajiban Rp 7.000.000).', estimatedLoss: 4500000 }
-    ],
-    reasoning: 'Pajak yang dipotong pada transaksi pembelian alat penunjang belajar mengajar tidak dilaporkan secara penuh. Selisih Rp 4.500.000 terdeteksi sebagai utang pajak.'
-  },
-  'inst-universitas-1': {
-    severity: 'HIGH',
-    isAnomalyDetected: true,
-    findings: [
-      { item: 'Penarikan Tunai Kas Operasional Mandiri', issue: 'Realisasi penarikan dana kas tunai tanpa dokumen SPJ (Surat Pertanggungjawaban) pendukung.', estimatedLoss: 12000000000 }
-    ],
-    reasoning: 'Ditemukan selisih saldo bank sebesar Rp 12.000.000.000 yang ditarik tunai pada tanggal 05 April 2026, tetapi tidak diiringi dengan rincian nota belanja yang di-upload ke sistem.'
-  },
-  'clean': {
-    severity: 'CLEAN',
-    isAnomalyDetected: false,
-    findings: [],
-    reasoning: 'Pemindaian Gemini AI tidak menemukan anomali harga, indikasi kuitansi ganda, maupun selisih pajak. Semua pengeluaran berada dalam batas toleransi wajar dan dokumen pendukung lengkap.'
-  }
-};
-
 interface ChatMessage {
   id: string;
   sender: 'user' | 'ai';
@@ -71,12 +24,17 @@ interface ChatMessage {
 export default function AuditPage() {
   const { isSupabaseMode, dbData } = useAppStore();
   const [anomalies, setAnomalies] = useState<AuditAnomaly[]>(mockAnomalies);
-  const [selectedInst, setSelectedInst] = useState('inst-universitas-0');
+  const [selectedInst, setSelectedInst] = useState('');
   const [scanStatus, setScanStatus] = useState<'IDLE' | 'SCANNING' | 'DONE'>('IDLE');
   const [scanProgress, setScanProgress] = useState(0);
   const [scanMessage, setScanMessage] = useState('');
-  const [activeReport, setActiveReport] = useState<typeof SIMULATED_REPORTS[string] | null>(null);
-  
+  const [activeReport, setActiveReport] = useState<{
+    severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CLEAN';
+    isAnomalyDetected: boolean;
+    findings: Array<{ item: string; issue: string; estimatedLoss: number }>;
+    reasoning: string;
+  } | null>(null);
+
   // Investigation Modal states
   const [selectedAnomaly, setSelectedAnomaly] = useState<AuditAnomaly | null>(null);
   const [chatInput, setChatInput] = useState('');
@@ -88,12 +46,22 @@ export default function AuditPage() {
   const [isSavingStatus, setIsSavingStatus] = useState(false);
   const [saveFeedback, setSaveFeedback] = useState(false);
 
-  // Sync anomalies from store if Supabase mode is active
+  // Sync anomalies from store if Supabase/local DB mode is active
   useEffect(() => {
     if (isSupabaseMode && dbData?.audit_anomaly) {
-      setAnomalies(dbData.audit_anomaly);
+      const mapped = dbData.audit_anomaly.map((a: any) => ({
+        ...a,
+        nominal_selisih: Number(a.nominal_selisih || 0)
+      }));
+      setAnomalies(mapped);
+      if (mapped.length > 0 && !selectedInst) {
+        setSelectedInst(mapped[0].institusi_id || mapped[0].id);
+      }
     } else {
       setAnomalies(mockAnomalies);
+      if (mockAnomalies.length > 0 && !selectedInst) {
+        setSelectedInst(mockAnomalies[0].institusi_id || mockAnomalies[0].id);
+      }
     }
   }, [isSupabaseMode, dbData?.audit_anomaly]);
 
@@ -101,7 +69,7 @@ export default function AuditPage() {
   const activeCount = anomalies.filter(a => a.status !== 'SELESAI').length;
   const totalLoss = anomalies
     .filter(a => a.status !== 'SELESAI')
-    .reduce((sum, a) => sum + a.nominal_selisih, 0);
+    .reduce((sum, a) => sum + Number(a.nominal_selisih || 0), 0);
   const resolvedCount = anomalies.filter(a => a.status === 'SELESAI').length;
 
   // Initial greeting and status initialization when an anomaly is selected
@@ -154,14 +122,14 @@ export default function AuditPage() {
     }
   };
 
-  // Run Gemini AI Scan simulation
+  // Run Gemini AI Scan simulation reading from local database
   const handleStartScan = () => {
     setScanStatus('SCANNING');
     setScanProgress(0);
     setActiveReport(null);
     
     const messages = [
-      'Menghubungkan ke Gemini AI Gateway...',
+      'Menghubungkan ke Database Lokal & Gemini Gateway...',
       'Membaca histori sumber dana & alokasi bank...',
       'Memindai dokumen kuitansi & nota belanja bulanan...',
       'Mengevaluasi kepatuhan PPN (11%) & PPh...',
@@ -178,58 +146,28 @@ export default function AuditPage() {
       if (currentStep >= 6) {
         clearInterval(interval);
         setScanStatus('DONE');
-        const reportKey = SIMULATED_REPORTS[selectedInst] ? selectedInst : 'clean';
-        setActiveReport(SIMULATED_REPORTS[reportKey]);
 
-        // If it's a new anomaly that is not in the list, we can add it
-        if (reportKey !== 'clean' && !anomalies.some(a => a.institusi_id === reportKey)) {
-          // add to table simulation
-          const nameMap: Record<string, string> = {
-            'inst-universitas-0': 'Universitas Indonesia',
-            'inst-sma-0': 'SMAN 1 Jakarta',
-            'inst-smp-2': 'SMPN 1 Surabaya',
-            'inst-universitas-1': 'Institut Teknologi Bandung'
-          };
-          const jenjangMap: Record<string, any> = {
-            'inst-universitas-0': 'UNIVERSITAS',
-            'inst-sma-0': 'SMA',
-            'inst-smp-2': 'SMP',
-            'inst-universitas-1': 'UNIVERSITAS'
-          };
-
-          const newAnomaly: AuditAnomaly = {
-            id: `anom-${Date.now()}`,
-            institusi_id: reportKey,
-            nama_institusi: nameMap[reportKey] || 'Institusi Baru',
-            jenjang: jenjangMap[reportKey] || 'SMA',
-            bulan: 'Mei',
-            nomor_bulan: 5,
-            tipe_anomali: SIMULATED_REPORTS[reportKey].findings[0]?.item || 'Anomali Anggaran',
-            keterangan: SIMULATED_REPORTS[reportKey].findings[0]?.issue || '',
-            nominal_selisih: SIMULATED_REPORTS[reportKey].findings[0]?.estimatedLoss || 0,
-            tingkat_keparahan: SIMULATED_REPORTS[reportKey].severity as any,
-            status: 'TEMUAN',
-            tanggal_ditemukan: new Date().toISOString().split('T')[0],
-            audit_what: SIMULATED_REPORTS[reportKey].findings[0]?.item + ': ' + SIMULATED_REPORTS[reportKey].findings[0]?.issue,
-            audit_why: SIMULATED_REPORTS[reportKey].reasoning,
-            audit_where: `${nameMap[reportKey]}, Kantor Administrasi Keuangan.`,
-            audit_when: 'Mei 2026.',
-            audit_who: 'Kepala Bagian Keuangan & Vendor Pelaksana.',
-            audit_how: 'Lakukan audit verifikasi fisik kuitansi dan sesuaikan dengan regulasi harga pasar.',
-          };
-          setAnomalies(prev => [newAnomaly, ...prev]);
-          
-          // Sync with Zustand and Supabase
-          const { isSupabaseMode, dbData, setDbData } = useAppStore.getState();
-          if (isSupabaseMode && dbData) {
-            setDbData({ ...dbData, audit_anomaly: [newAnomaly, ...dbData.audit_anomaly] });
-            supabase
-              .from('audit_anomaly')
-              .insert([newAnomaly])
-              .then(({ error }) => {
-                if (error) console.error('Failed to insert anomaly to Supabase:', error.message);
-              });
-          }
+        const targetAnomaly = anomalies.find(a => (a.institusi_id === selectedInst || a.id === selectedInst));
+        if (targetAnomaly) {
+          setActiveReport({
+            severity: targetAnomaly.tingkat_keparahan,
+            isAnomalyDetected: true,
+            findings: [
+              {
+                item: targetAnomaly.tipe_anomali,
+                issue: targetAnomaly.audit_what || targetAnomaly.keterangan,
+                estimatedLoss: Number(targetAnomaly.nominal_selisih || 0)
+              }
+            ],
+            reasoning: targetAnomaly.audit_why || targetAnomaly.keterangan
+          });
+        } else {
+          setActiveReport({
+            severity: 'CLEAN',
+            isAnomalyDetected: false,
+            findings: [],
+            reasoning: 'Pemindaian Database Lokal oleh Gemini AI tidak menemukan anomali harga, indikasi kuitansi ganda, maupun selisih pajak. Semua pengeluaran berada dalam batas toleransi wajar dan dokumen pendukung lengkap.'
+          });
         }
       }
     }, 800);
@@ -241,7 +179,7 @@ export default function AuditPage() {
       setSelectedAnomaly(prev => prev ? { ...prev, status: newStatus } : null);
     }
 
-    // Sync with Zustand and Supabase
+    // Sync with Zustand and Database Lokal (PostgreSQL port 2025 via 2026)
     const { isSupabaseMode, dbData, setDbData } = useAppStore.getState();
     if (isSupabaseMode && dbData) {
       const updatedAnoms = dbData.audit_anomaly.map((a: any) => a.id === id ? { ...a, status: newStatus } : a);
@@ -251,7 +189,7 @@ export default function AuditPage() {
         .update({ status: newStatus })
         .eq('id', id);
       if (error) {
-        console.error('Failed to update status in Supabase:', error.message);
+        console.error('Gagal memperbarui status di Database Lokal:', error.message);
       }
     }
   };
@@ -271,7 +209,7 @@ export default function AuditPage() {
     }
   };
 
-  // Chat Q&A response generation logic
+  // Chat Q&A response generation logic (Dynamic from selected anomaly data)
   const handleSendChat = () => {
     if (!chatInput.trim() || !selectedAnomaly) return;
 
@@ -287,86 +225,26 @@ export default function AuditPage() {
     setChatInput('');
     setIsAiTyping(true);
 
-    // Simulate AI response based on the anomaly context
+    // Dynamic AI response based on the database anomaly context
     setTimeout(() => {
       let aiText = '';
       const textLower = userText.toLowerCase();
 
-      // UI (Gedung UI)
-      if (selectedAnomaly.id === 'anom-1') {
-        if (textLower.includes('siapa') || textLower.includes('vendor') || textLower.includes('kontraktor') || textLower.includes('who')) {
-          aiText = `Untuk pembangunan Gedung Hub Mahasiswa di **Universitas Indonesia**, penanggung jawab pengaju anggaran adalah **Dr. Ir. Hermawan, M.T. (Pejabat Pembuat Komitmen/PPK)**. Pelaksana proyek konstruksi adalah kontraktor **PT Pembangunan Nusantara Jaya**.`;
-        } else if (textLower.includes('bagaimana') || textLower.includes('solusi') || textLower.includes('tindak') || textLower.includes('how')) {
-          aiText = `Rekomendasi tindakan mitigasi:
-1. **Revisi RAB**: Sesuaikan harga satuan besi struktur & beton dengan e-Katalog LKPP Jawa Barat (potensi penghematan Rp 45 Milyar).
-2. **Audit Fisik Lapangan**: Lakukan pengukuran ketebalan & mutu beton ready mix terpasang.
-3. **Penundaan**: Batasi sisa termin pencairan dana ke vendor PT Pembangunan Nusantara Jaya sampai klarifikasi RAB diselesaikan.`;
-        } else if (textLower.includes('kenapa') || textLower.includes('mengapa') || textLower.includes('bukti') || textLower.includes('why')) {
-          aiText = `Dicurigai karena adanya *markup* (penggelembungan) harga material pokok konstruksi. Besi struktur dilaporkan seharga **Rp 150.000/kg** (harga pasar Rp 95.000/kg) dan beton ready mix K-350 seharga **Rp 1.800.000/m³** (harga pasar Rp 1.100.000/m³).`;
-        } else {
-          aiText = `Temuan di **Universitas Indonesia** ini diklasifikasikan berisiko **HIGH** karena mencakup potensi mark-up bernilai fantastis (Rp 45 Milyar). Disarankan segera memanggil Dr. Ir. Hermawan untuk melakukan gelar klarifikasi kontrak RAB dengan PT Pembangunan Nusantara Jaya. Ada hal spesifik dari proyek konstruksi ini yang ingin Anda tanyakan lagi?`;
-        }
-      } 
-      // SMAN 1 (Duplikasi Buku)
-      else if (selectedAnomaly.id === 'anom-2') {
-        if (textLower.includes('siapa') || textLower.includes('bendahara') || textLower.includes('vendor') || textLower.includes('who')) {
-          aiText = `Transaksi buku pelajaran **SMAN 1 Jakarta** ini diajukan oleh Bendahara BOS Sekolah yaitu **Ibu Retno Lestari**, dengan supplier penyedia buku yaitu **CV Pustaka Raya**.`;
-        } else if (textLower.includes('bagaimana') || textLower.includes('solusi') || textLower.includes('tindak') || textLower.includes('how')) {
-          aiText = `Rekomendasi tindakan penyelesaian:
-1. **Recall Dana**: Minta **CV Pustaka Raya** mengembalikan kelebihan bayar Rp 120.000.000 ke rekening BOS sekolah.
-2. **Penghapusan Buku Kas**: Hapus entri jurnal pengeluaran kedua pada tanggal 24 Januari 2026.
-3. **Evaluasi Internal**: Berikan surat teguran kepada Ibu Retno Lestari agar memperketat rekonsiliasi invoice ganda.`;
-        } else if (textLower.includes('kenapa') || textLower.includes('mengapa') || textLower.includes('bukti') || textLower.includes('why')) {
-          aiText = `Penyebabnya adalah **Double Billing**. Sistem mendeteksi nomor invoice yang identik (**INV-2026-089A**) dengan file scan lampiran kuitansi yang 100% sama di-upload pada dua transaksi berbeda (12 Januari & 24 Januari).`;
-        } else {
-          aiText = `Untuk kasus **SMAN 1 Jakarta**, anomali ini bersumber dari kesalahan input/pembayaran ganda kepada CV Pustaka Raya senilai Rp 120 Juta. Kami merekomendasikan penarikan saldo lebih tersebut. Apakah Anda ingin mengunduh salinan kedua file kuitansi yang duplikat tersebut?`;
-        }
-      }
-      // SMPN 1 (PPN)
-      else if (selectedAnomaly.id === 'anom-3') {
-        if (textLower.includes('siapa') || textLower.includes('kepala') || textLower.includes('who')) {
-          aiText = `Penanggung jawab anggaran adalah Kepala Sekolah SMPN 1 Surabaya, **Bapak Drs. Bambang Utomo**, dengan transaksi pembayaran ditujukan kepada rekanan penyedia **CV Computerindo Surabaya**.`;
-        } else if (textLower.includes('bagaimana') || textLower.includes('solusi') || textLower.includes('tindak') || textLower.includes('how')) {
-          aiText = `Rekomendasi perbaikan:
-1. **Penerbitan SSP**: Terbitkan Surat Setoran Pajak (SSP) manual untuk menyetorkan sisa kekurangan PPN Rp 4.500.000 ke Kantor Pajak Pratama setempat.
-2. **Klarifikasi Faktur**: Minta CV Computerindo melampirkan Faktur Pajak e-Faktur yang sah senilai 11% dari subtotal transaksi (yaitu Rp 7.000.000).`;
-        } else if (textLower.includes('kenapa') || textLower.includes('mengapa') || textLower.includes('bukti') || textLower.includes('why')) {
-          aiText = `Indikasi anomali ini karena **kurang bayar setoran pajak**. Subtotal pembelian riil adalah Rp 63.636.363 yang mana kewajiban PPN 11% harusnya Rp 7.000.000, tetapi catatan pajak disetor yang terlaporkan ke kas daerah hanya Rp 2.500.000.`;
-        } else {
-          aiText = `Masalah di **SMPN 1 Surabaya** adalah ketidaksesuaian nominal PPN sebesar Rp 4,5 Juta. Ini tergolong risiko **LOW** dan dapat diselesaikan dengan menyetorkan kekurangan pajak via bank persepsi. Apakah Anda memerlukan kode billing pajak untuk transaksi ini?`;
-        }
-      }
-      // ITB (Unrecorded Cash)
-      else if (selectedAnomaly.id === 'anom-4') {
-        if (textLower.includes('siapa') || textLower.includes('biro') || textLower.includes('who')) {
-          aiText = `Penanggung jawab administrasi mutasi bank ini adalah Kepala Biro Keuangan ITB, **Bapak Ahmad Faisal**. Bank penampung transaksi penarikan adalah **Bank Mandiri KCP ITB**.`;
-        } else if (textLower.includes('bagaimana') || textLower.includes('solusi') || textLower.includes('tindak') || textLower.includes('how')) {
-          aiText = `Rekomendasi tindak lanjut:
-1. **Batas Waktu Dokumen**: Berikan tenggat waktu resmi selama 14 hari kerja bagi Biro Keuangan untuk melampirkan semua kuitansi belanja pendukung senilai Rp 12 Milyar.
-2. **Penyetoran Sisa**: Sisa dana kas tunai yang belum digunakan wajib langsung disetorkan kembali ke rekening giro bank ITB untuk menghindari penyalahgunaan sisa kas.`;
-        } else if (textLower.includes('kenapa') || textLower.includes('mengapa') || textLower.includes('bukti') || textLower.includes('why')) {
-          aiText = `Anomali ini terdeteksi karena **penarikan tunai tanpa pertanggungjawaban (SPJ)**. Rekening bank ITB didebet Rp 12.000.000.000 tunai pada 05 April 2026, tetapi tidak ada satupun dokumen SPJ/kuitansi rincian yang diunggah ke sistem keuangan daerah.`;
-        } else {
-          aiText = `Kasus di **ITB** dinilai berisiko **HIGH** karena melibatkan dana tunai non-lapor sebesar Rp 12 Milyar. Kami menyarankan untuk melakukan pemblokiran sementara limit debet rekening bank penampung jika kuitansi tidak di-upload melewati batas tenggat waktu. Ada dokumen lain yang ingin Anda periksa?`;
-        }
-      }
-      // SDN 01 Menteng (Fiktif ATK)
-      else if (selectedAnomaly.id === 'anom-5') {
-        if (textLower.includes('siapa') || textLower.includes('bendahara') || textLower.includes('toko') || textLower.includes('who')) {
-          aiText = `Pengadaan ATK diajukan oleh Bendahara BOS SDN 01 Menteng, **Ibu Rina Amalia**, dan dibeli dari rekanan penyedia **Toko ATK Makmur Jaya**.`;
-        } else if (textLower.includes('bagaimana') || textLower.includes('solusi') || textLower.includes('tindak') || textLower.includes('how')) {
-          aiText = `Rekomendasi audit fisik:
-1. **Stock Opname**: Kunjungi gudang logistik SDN 01 Menteng untuk mencocokkan stok fisik rim kertas A4, spidol, dan alat tulis lainnya dengan catatan nota pembelian.
-2. **Surat Jalan**: Verifikasi dokumen Surat Jalan pengiriman dari Toko ATK Makmur Jaya untuk memastikan barang benar-benar dikirim dan diterima secara fisik.`;
-        } else if (textLower.includes('kenapa') || textLower.includes('mengapa') || textLower.includes('bukti') || textLower.includes('why')) {
-          aiText = `Dicurigai sebagai **pengadaan fiktif** karena volume belanja ATK yang dilaporkan (misal: 500 rim kertas A4 dalam 1 bulan) dinilai melampaui rata-rata kebutuhan normal sekolah dasar yang hanya membutuhkan sekitar 50 rim per bulan.`;
-        } else {
-          aiText = `Kasus di **SDN 01 Menteng** terkait dugaan pembelian ATK fiktif senilai Rp 35 Juta (Risiko **MEDIUM**). Direkomendasikan melakukan sidak fisik ke gudang sekolah. Apakah Anda ingin menjadwalkan kunjungan investigasi lapangan?`;
-        }
-      }
-      // Fallback
-      else {
-        aiText = `Berdasarkan analisis forensik Gemini, kasus ini merupakan anomali tingkat **${selectedAnomaly.tingkat_keparahan}** di **${selectedAnomaly.nama_institusi}** terkait **${selectedAnomaly.tipe_anomali}**. Rekomendasi utama adalah melakukan klarifikasi formal dengan pihak manajemen institusi dan membatasi pencairan dana sementara sampai seluruh dokumen lengkap diunggah.`;
+      if (textLower.includes('siapa') || textLower.includes('vendor') || textLower.includes('kontraktor') || textLower.includes('who')) {
+        aiText = `Untuk temuan di **${selectedAnomaly.nama_institusi}**, pihak terkait yang terdeteksi dalam catatan database adalah: **${selectedAnomaly.audit_who || 'Pejabat Pembuat Komitmen (PPK) & Rekanan Vendor'}**.`;
+      } else if (textLower.includes('bagaimana') || textLower.includes('solusi') || textLower.includes('tindak') || textLower.includes('how')) {
+        aiText = `Rekomendasi tindakan mitigasi untuk **${selectedAnomaly.nama_institusi}**:
+1. **Verifikasi SPJ**: ${selectedAnomaly.audit_how || 'Melakukan audit verifikasi fisik kuitansi dan sesuaikan dengan regulasi harga pasar.'}
+2. **Klarifikasi Formal**: Lakukan pemanggilan kepada pengelola keuangan institusi.
+3. **Pembatasan Limiting**: Tahan sisa pembayaran termin sampai dokumen penunjang 100% lengkap.`;
+      } else if (textLower.includes('kenapa') || textLower.includes('mengapa') || textLower.includes('bukti') || textLower.includes('why')) {
+        aiText = `Indikasi anomali terjadi karena: **${selectedAnomaly.audit_why || selectedAnomaly.keterangan}** dengan potensi selisih senilai **${fmtRupiah(selectedAnomaly.nominal_selisih)}**.`;
+      } else if (textLower.includes('mana') || textLower.includes('lokasi') || textLower.includes('where')) {
+        aiText = `Lokasi fisik / administratif temuan: **${selectedAnomaly.audit_where || selectedAnomaly.nama_institusi}**.`;
+      } else if (textLower.includes('kapan') || textLower.includes('tanggal') || textLower.includes('when')) {
+        aiText = `Waktu kejadian / pendeteksian temuan: **${selectedAnomaly.audit_when || `Bulan ${selectedAnomaly.bulan} (${selectedAnomaly.tanggal_ditemukan})`}**.`;
+      } else {
+        aiText = `Temuan di **${selectedAnomaly.nama_institusi}** diklasifikasikan berisiko **${selectedAnomaly.tingkat_keparahan}** terkait **${selectedAnomaly.tipe_anomali}** (Potensi Selisih: ${fmtRupiah(selectedAnomaly.nominal_selisih)}). ${selectedAnomaly.audit_what || selectedAnomaly.keterangan}`;
       }
 
       const newAiMessage: ChatMessage = {
@@ -378,12 +256,12 @@ export default function AuditPage() {
 
       setChatMessages(prev => [...prev, newAiMessage]);
       setIsAiTyping(false);
-    }, 1200);
+    }, 1000);
   };
 
   return (
     <div className="min-h-screen">
-      <Header title="Audit Anggaran" subtitle="Panel pengawasan, deteksi fraud, dan verifikasi alokasi anggaran bertenaga Gemini AI" />
+      <Header title="Audit Anggaran" subtitle="Panel pengawasan, deteksi fraud, dan verifikasi alokasi anggaran bertenaga Gemini AI & Database Lokal" />
 
       <div className="p-6 space-y-6">
         {/* Metrik Ringkasan */}
@@ -437,22 +315,22 @@ export default function AuditPage() {
               <div className="px-5 py-4 border-b border-border flex justify-between items-center bg-white/40">
                 <div className="flex items-center gap-2">
                   <ShieldAlert size={18} className="text-rose-500" />
-                  <h3 className="text-sm font-semibold text-text-primary">Daftar Temuan Anomali Anggaran</h3>
+                  <h3 className="text-sm font-semibold text-text-primary">Daftar Temuan Anomali Anggaran (Database Lokal)</h3>
                 </div>
-                <span className="badge bg-rose-50 text-rose-700 border-rose-200 text-xs">Simulasi Live</span>
+                <span className="badge bg-indigo-50 text-indigo-700 border-indigo-200 text-xs">Live Database</span>
               </div>
               
-              <div className="overflow-x-auto">
-                <table className="w-full">
+              <div className="sheet-container overflow-x-auto">
+                <table className="w-full text-xs">
                   <thead>
                     <tr>
                       <th className="sheet-header-cell text-center" style={{ width: 40 }}>No</th>
-                      <th className="sheet-header-cell text-left">Institusi</th>
-                      <th className="sheet-header-cell text-left">Tipe Temuan</th>
-                      <th className="sheet-header-cell text-right">Potensi Selisih</th>
-                      <th className="sheet-header-cell text-center">Keparahan</th>
-                      <th className="sheet-header-cell text-center">Status</th>
-                      <th className="sheet-header-cell text-center">Aksi</th>
+                      <th className="sheet-header-cell text-left" style={{ minWidth: 160 }}>Institusi</th>
+                      <th className="sheet-header-cell text-left" style={{ minWidth: 160 }}>Tipe Temuan</th>
+                      <th className="sheet-header-cell text-right" style={{ minWidth: 140 }}>Potensi Selisih</th>
+                      <th className="sheet-header-cell text-center" style={{ width: 90 }}>Keparahan</th>
+                      <th className="sheet-header-cell text-center" style={{ width: 90 }}>Status</th>
+                      <th className="sheet-header-cell text-center" style={{ width: 60 }}>Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -468,7 +346,7 @@ export default function AuditPage() {
                         <td className="sheet-cell text-left text-text-secondary text-xs truncate max-w-[180px]" title={anom.tipe_anomali}>
                           {anom.tipe_anomali}
                         </td>
-                        <td className="sheet-cell text-right font-medium text-rose-600 text-xs">
+                        <td className="sheet-cell text-right font-mono text-rose-600 text-xs">
                           {fmtRupiah(anom.nominal_selisih)}
                         </td>
                         <td className="sheet-cell text-center">
@@ -509,7 +387,7 @@ export default function AuditPage() {
               </div>
 
               <p className="text-xs text-text-secondary leading-relaxed mb-4">
-                Pilih institusi di bawah ini untuk memicu audit anggaran instan. Gemini akan menganalisis histori SPJ, nota, dan kewajiban pajak PPN 11% secara forensik.
+                Pilih institusi di bawah ini untuk memicu audit anggaran instan. Gemini akan menganalisis histori SPJ, nota, dan kewajiban pajak PPN 11% dari Database Lokal secara forensik.
               </p>
 
               <div className="space-y-4">
@@ -525,11 +403,12 @@ export default function AuditPage() {
                     className="select-dropdown w-full"
                     disabled={scanStatus === 'SCANNING'}
                   >
-                    <option value="inst-universitas-0">Universitas Indonesia (High Risk - Markup)</option>
-                    <option value="inst-sma-0">SMAN 1 Jakarta (Medium Risk - Duplikasi)</option>
-                    <option value="inst-smp-2">SMPN 1 Surabaya (Low Risk - Pajak PPN)</option>
-                    <option value="inst-universitas-1">Institut Teknologi Bandung (High Risk - Saldo SPJ)</option>
-                    <option value="clean-ugm">Universitas Gadjah Mada (Clean - Patuh)</option>
+                    {anomalies.map(a => (
+                      <option key={a.id} value={a.institusi_id || a.id}>
+                        {a.nama_institusi} ({a.tingkat_keparahan} - {a.tipe_anomali})
+                      </option>
+                    ))}
+                    <option value="clean-ugm">Universitas Gadjah Mada (CLEAN - Patuh Sempurna)</option>
                   </select>
                 </div>
 
@@ -593,7 +472,7 @@ export default function AuditPage() {
                             <div key={i} className="p-2.5 bg-rose-50/50 border border-rose-100 rounded-lg">
                               <p className="font-bold text-rose-700 text-[11px]">{f.item}</p>
                               <p className="text-[10px] text-text-secondary mt-0.5">{f.issue}</p>
-                              <p className="text-[10px] font-semibold text-rose-600 mt-1">Potensi Selisih: {fmtRupiah(f.estimatedLoss)}</p>
+                              <p className="text-[10px] font-semibold text-rose-600 mt-1 font-mono">Potensi Selisih: {fmtRupiah(f.estimatedLoss)}</p>
                             </div>
                           ))}
                           <p className="text-[10px] text-text-secondary leading-relaxed bg-gray-50 p-2 rounded border border-border/40 italic">

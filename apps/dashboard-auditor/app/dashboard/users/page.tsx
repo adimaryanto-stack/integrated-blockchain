@@ -15,6 +15,11 @@ const roleConfig: Record<UserRole, { label: string; color: string }> = {
   ADMIN_KABKOTA: { label: 'Admin Kab/Kota', color: 'bg-cyan-100 text-cyan-700 border-cyan-300' },
   VIEWER: { label: 'Viewer', color: 'bg-gray-100 text-gray-600 border-gray-300' },
   AUDITOR: { label: 'Auditor', color: 'bg-amber-100 text-amber-700 border-amber-300' },
+  PUBLIC_RESEARCHER: { label: 'Public Researcher', color: 'bg-teal-100 text-teal-700 border-teal-300' },
+};
+
+const getRoleConfig = (role: string) => {
+  return roleConfig[role as UserRole] || { label: role || 'User', color: 'bg-gray-100 text-gray-600 border-gray-300' };
 };
 
 export default function UsersPage() {
@@ -44,7 +49,7 @@ export default function UsersPage() {
     return data.filter(u =>
       u.username.toLowerCase().includes(q) ||
       u.email.toLowerCase().includes(q) ||
-      roleConfig[u.role].label.toLowerCase().includes(q)
+      getRoleConfig(u.role).label.toLowerCase().includes(q)
     );
   }, [data, search]);
 
@@ -176,16 +181,16 @@ export default function UsersPage() {
         </div>
 
         {/* Table */}
-        <div className="sheet-container">
-          <table className="w-full">
+        <div className="sheet-container overflow-x-auto">
+          <table className="w-full text-xs">
             <thead>
               <tr>
-                <th className="sheet-header-cell text-center" style={{ width: 50 }}>No</th>
-                <th className="sheet-header-cell text-left" style={{ minWidth: 200 }}>User</th>
-                <th className="sheet-header-cell text-left" style={{ minWidth: 220 }}>Email</th>
-                <th className="sheet-header-cell text-center" style={{ minWidth: 140 }}>Role</th>
-                <th className="sheet-header-cell text-center" style={{ width: 100 }}>Status</th>
-                <th className="sheet-header-cell text-center" style={{ width: 140 }}>Aksi</th>
+                <th className="sheet-header-cell text-center" style={{ width: 40 }}>No</th>
+                <th className="sheet-header-cell text-left" style={{ minWidth: 180 }}>User</th>
+                <th className="sheet-header-cell text-left" style={{ minWidth: 200 }}>Email</th>
+                <th className="sheet-header-cell text-center" style={{ width: 120 }}>Role</th>
+                <th className="sheet-header-cell text-center" style={{ width: 90 }}>Status</th>
+                <th className="sheet-header-cell text-center" style={{ width: 110 }}>Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -194,7 +199,7 @@ export default function UsersPage() {
                   <td className="sheet-cell text-center text-text-muted text-xs">{idx + 1}</td>
                   <td className="sheet-cell text-left">
                     <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${
                         user.is_active ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white' : 'bg-gray-200 text-gray-400'
                       }`}>
                         {getInitials(user.username)}
@@ -204,8 +209,8 @@ export default function UsersPage() {
                   </td>
                   <td className="sheet-cell text-left text-text-secondary text-xs">{user.email}</td>
                   <td className="sheet-cell text-center">
-                    <span className={`badge ${roleConfig[user.role].color}`}>
-                      {roleConfig[user.role].label}
+                    <span className={`badge ${getRoleConfig(user.role).color}`}>
+                      {getRoleConfig(user.role).label}
                     </span>
                   </td>
                   <td className="sheet-cell text-center">

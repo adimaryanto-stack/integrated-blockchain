@@ -24,14 +24,11 @@ export default function Sidebar() {
   const [jenjangOpen, setJenjangOpen] = useState(pathname.includes('/jenjang'));
 
   const activeUser = useMemo(() => {
-    if (isSupabaseMode && dbData?.users && dbData.users.length > 0) {
-      return dbData.users[0];
-    }
     return {
-      username: 'admin.sd01menteng',
-      email: 'admin@sdn01menteng.sch.id'
+      username: 'KB AL-IKHLAS',
+      email: 'operator@kbalikhlas.sch.id'
     };
-  }, [dbData, isSupabaseMode]);
+  }, []);
 
   const isActive = (href: string) => pathname === href;
   const isJenjangActive = pathname.includes('/jenjang');
@@ -79,7 +76,7 @@ export default function Sidebar() {
           </Link>
 
 
-          <Link href="/dashboard/profil-institusi/inst-sd-0" className={`sidebar-item ${pathname.includes('/profil-institusi') ? 'active' : ''}`}>
+          <Link href="/dashboard/profil-institusi" className={`sidebar-item ${pathname.includes('/profil-institusi') ? 'active' : ''}`}>
             <School size={18} />
             <span>Profil Institusi</span>
           </Link>

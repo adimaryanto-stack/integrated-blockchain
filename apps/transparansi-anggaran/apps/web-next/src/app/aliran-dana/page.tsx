@@ -77,7 +77,7 @@ function AliranDanaPageContent() {
 
     const [data, setData] = useState<{ allocations: Allocation[]; flowLinks: FlowLink[] } | null>(null);
     const [apbnYears, setApbnYears] = useState<any[]>([]);
-    const [selectedYear, setSelectedYear] = useState(2025);
+    const [selectedYear, setSelectedYear] = useState(2026);
     const [loading, setLoading] = useState(true);
     const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
 

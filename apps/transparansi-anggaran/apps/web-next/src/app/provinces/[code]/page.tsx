@@ -155,47 +155,65 @@ export default function ProvinceDetailPage() {
             const regenciesWithCount = await Promise.all(countPromises);
             setRegencies(regenciesWithCount);
 
-            // Fetch province-wide stats in parallel using IN regencyIds to avoid slow inner joins
+            // Fetch province-wide stats directly from province_school_stats table in PostgreSQL
             try {
-                const regencyIds = regenciesWithCount.map(r => r.id);
-                if (regencyIds.length > 0) {
-                    const [univRes, smaRes, smpRes, sdRes, paudRes] = await Promise.all([
-                        supabase
-                            .from('schools')
-                            .select('id', { count: 'exact', head: true })
-                            .in('regency_id', regencyIds)
-                            .or('name.ilike.%universitas%,name.ilike.%institut%,name.ilike.%politeknik%,name.ilike.%akademi%,name.ilike.%sekolah tinggi%'),
-                        supabase
-                            .from('schools')
-                            .select('id', { count: 'exact', head: true })
-                            .in('regency_id', regencyIds)
-                            .or('name.ilike.%sma%,name.ilike.%sman%,name.ilike.%smas%,name.ilike.%smk%,name.ilike.%smkn%,name.ilike.%smks%,name.ilike.%ma%,name.ilike.%man%,name.ilike.%mas%'),
-                        supabase
-                            .from('schools')
-                            .select('id', { count: 'exact', head: true })
-                            .in('regency_id', regencyIds)
-                            .or('name.ilike.%smp%,name.ilike.%smpn%,name.ilike.%smps%,name.ilike.%mts%,name.ilike.%mtsn%,name.ilike.%mtss%'),
-                        supabase
-                            .from('schools')
-                            .select('id', { count: 'exact', head: true })
-                            .in('regency_id', regencyIds)
-                            .or('name.ilike.%sd%,name.ilike.%sdn%,name.ilike.%sds%,name.ilike.%mi%,name.ilike.%min%,name.ilike.%mis%'),
-                        supabase
-                            .from('schools')
-                            .select('id', { count: 'exact', head: true })
-                            .in('regency_id', regencyIds)
-                            .or('name.ilike.%paud%,name.ilike.%tk%,name.ilike.%kb%,name.ilike.%tpa%,name.ilike.%sps%')
-                    ]);
+                const { data: pssData } = await supabase
+                    .from('province_school_stats')
+                    .select('*')
+                    .or(`province_id.eq.${prov.id},province_code.eq.${prov.code}`)
+                    .maybeSingle();
 
+                if (pssData) {
                     const initialStats = {
-                        Universitas: univRes.count || 0,
-                        SMA: smaRes.count || 0,
-                        SMP: smpRes.count || 0,
-                        SD: sdRes.count || 0,
-                        PAUD: paudRes.count || 0
+                        Universitas: Number(pssData.univ) || 0,
+                        SMA: Number(pssData.sma) || 0,
+                        SMP: Number(pssData.smp) || 0,
+                        SD: Number(pssData.sd) || 0,
+                        PAUD: Number(pssData.paud) || 0
                     };
                     setProvinceStats(initialStats);
                     setStats(initialStats);
+                } else {
+                    const regencyIds = regenciesWithCount.map(r => r.id);
+                    if (regencyIds.length > 0) {
+                        const [univRes, smaRes, smpRes, sdRes, paudRes] = await Promise.all([
+                            supabase
+                                .from('schools')
+                                .select('id', { count: 'exact', head: true })
+                                .in('regency_id', regencyIds)
+                                .or('name.ilike.%universitas%,name.ilike.%institut%,name.ilike.%politeknik%,name.ilike.%akademi%,name.ilike.%sekolah tinggi%'),
+                            supabase
+                                .from('schools')
+                                .select('id', { count: 'exact', head: true })
+                                .in('regency_id', regencyIds)
+                                .or('name.ilike.%sma%,name.ilike.%sman%,name.ilike.%smas%,name.ilike.%smk%,name.ilike.%smkn%,name.ilike.%smks%,name.ilike.%ma%,name.ilike.%man%,name.ilike.%mas%'),
+                            supabase
+                                .from('schools')
+                                .select('id', { count: 'exact', head: true })
+                                .in('regency_id', regencyIds)
+                                .or('name.ilike.%smp%,name.ilike.%smpn%,name.ilike.%smps%,name.ilike.%mts%,name.ilike.%mtsn%,name.ilike.%mtss%'),
+                            supabase
+                                .from('schools')
+                                .select('id', { count: 'exact', head: true })
+                                .in('regency_id', regencyIds)
+                                .or('name.ilike.%sd%,name.ilike.%sdn%,name.ilike.%sds%,name.ilike.%mi%,name.ilike.%min%,name.ilike.%mis%'),
+                            supabase
+                                .from('schools')
+                                .select('id', { count: 'exact', head: true })
+                                .in('regency_id', regencyIds)
+                                .or('name.ilike.%paud%,name.ilike.%tk%,name.ilike.%kb%,name.ilike.%tpa%,name.ilike.%sps%')
+                        ]);
+
+                        const initialStats = {
+                            Universitas: univRes.count || 0,
+                            SMA: smaRes.count || 0,
+                            SMP: smpRes.count || 0,
+                            SD: sdRes.count || 0,
+                            PAUD: paudRes.count || 0
+                        };
+                        setProvinceStats(initialStats);
+                        setStats(initialStats);
+                    }
                 }
             } catch (err) {
                 console.error('Error fetching initial province stats:', err);

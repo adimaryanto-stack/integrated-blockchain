@@ -31,7 +31,10 @@ export const institusiPendidikanData: InstitusiPendidikan[] = [];
 export const sumberDanaData: SumberDanaInstitusi[] = [];
 export const pengeluaranBulananData: PengeluaranBulananInstitusi[] = [];
 export const usersData: User[] = [];
-export const provinceSchoolStatsData: { province_id: string; jenjang: string; school_count: number }[] = [];
+// provinceSchoolStatsData: populated at runtime from database via initDbConnection
+// DO NOT add hardcoded data here — always sourced from local PostgreSQL
+export const provinceSchoolStatsData: any[] = [];
+
 
 export function updateTahunAnggaranData(newData: TahunAnggaran[]) {
   tahunAnggaranData.length = 0;
@@ -52,7 +55,19 @@ async function fetchPaginated(url: string, headers: HeadersInit): Promise<any[]>
   let allData: any[] = [];
   let offset = 0;
   const limit = 1000;
-  const maxRows = 2000;
+  
+  let maxRows = 2000;
+  if (url.includes('jenjang=eq.UNIVERSITAS')) {
+    maxRows = 10000;
+  } else if (url.includes('jenjang=eq.SMA')) {
+    maxRows = 30000;
+  } else if (url.includes('jenjang=eq.SMP')) {
+    maxRows = 50000;
+  } else if (url.includes('jenjang=eq.SD')) {
+    maxRows = 150000;
+  } else if (url.includes('jenjang=eq.PAUD')) {
+    maxRows = 200000;
+  }
 
   while (allData.length < maxRows) {
     const sep = url.includes('?') ? '&' : '?';
@@ -143,11 +158,16 @@ export async function initDbConnection(force = false) {
     usersData.length = 0;
     usersData.push(...userData.map(cleanRecord));
 
-    provinceSchoolStatsData.length = 0;
-    provinceSchoolStatsData.push(...schoolStatsData.map((s: any) => cleanRecord(s) as any));
+    if (schoolStatsData && schoolStatsData.length > 0) {
+      provinceSchoolStatsData.length = 0;
+      provinceSchoolStatsData.push(...schoolStatsData.map((s: any) => cleanRecord(s) as any));
+    }
 
     isInitialized = true;
     console.log('Successfully synchronized database with Supabase.');
+
+    // Notify all React components subscribed to dataVersion to re-render with fresh cache
+    useAppStore.getState().incrementVersion();
     return true;
   } catch (err) {
     console.error('Failed to load database from Supabase:', err);
@@ -356,9 +376,20 @@ export async function updateAlokasiKabupatenKota(id: string, field: string, valu
 }
 
 // Data fetching stubs returning elements from memory cache
-export function getKabkotaByProvinsi(provinsiId: string): AlokasiKabupatenKota[] {
+export function getKabkotaByProvinsi(provinsiId: string, tahunAnggaranId?: string | null): AlokasiKabupatenKota[] {
+  if (!tahunAnggaranId) {
+    return alokasiKabupatenKotaData.filter(
+      (item) => item.kabupaten_kota?.provinsi_id === provinsiId
+    );
+  }
+  // Filter by year: resolve alokasi_provinsi rows for this year+province, then match kabkota
+  const provAllocIds = new Set(
+    alokasiProvinsiData
+      .filter(p => String(p.tahun_anggaran_id) === String(tahunAnggaranId) && p.provinsi_id === provinsiId)
+      .map(p => p.id)
+  );
   return alokasiKabupatenKotaData.filter(
-    (item) => item.kabupaten_kota?.provinsi_id === provinsiId
+    (item) => item.alokasi_provinsi_id && provAllocIds.has(item.alokasi_provinsi_id)
   );
 }
 
@@ -395,15 +426,23 @@ export function getDashboardSummary(tahun: number = 2026): DashboardSummary {
     (p) => p.tahun_anggaran_id === targetTahun?.id
   );
 
-  const totalRealisasi = matchingProvData.reduce((s, p) => s + p.realisasi_total, 0);
+  const toBigIntHelper = (val: any): bigint => {
+    if (val === null || val === undefined) return 0n;
+    const s = String(val).split('.')[0].replace(/[^0-9-]/g, '');
+    if (!s || s === '-') return 0n;
+    try { return BigInt(s); } catch { return 0n; }
+  };
+
+  const bTotalNominal = toBigIntHelper(totalNominal);
+  const bTotalRealisasi = matchingProvData.reduce((s, p) => s + toBigIntHelper(p.realisasi_total), 0n);
 
   // Budget weight allocation per jenjang from total APBN budget
-  const defaultWeights: Record<Jenjang, number> = {
-    UNIVERSITAS: 0.35,
-    SMA: 0.25,
-    SMP: 0.20,
-    SD: 0.15,
-    PAUD: 0.05,
+  const defaultWeightsPct: Record<Jenjang, bigint> = {
+    UNIVERSITAS: 35n,
+    SMA: 25n,
+    SMP: 20n,
+    SD: 15n,
+    PAUD: 5n,
   };
 
   const JENJANG_LABELS_MAP: Record<Jenjang, string> = {
@@ -417,33 +456,42 @@ export function getDashboardSummary(tahun: number = 2026): DashboardSummary {
   const jenjangs: Jenjang[] = ['UNIVERSITAS', 'SMA', 'SMP', 'SD', 'PAUD'];
 
   const perJenjang = jenjangs.map((j) => {
-    const nominal = Math.round(totalNominal * defaultWeights[j]);
-    const realisasi = Math.round(totalRealisasi * defaultWeights[j]);
+    const bNominal = (bTotalNominal * defaultWeightsPct[j]) / 100n;
+    const bRealisasi = (bTotalRealisasi * defaultWeightsPct[j]) / 100n;
+    const pct = bNominal > 0n ? Number((bRealisasi * 1000n) / bNominal) / 10 : 0;
     return {
       jenjang: JENJANG_LABELS_MAP[j],
-      nominal,
-      realisasi,
-      persentase: nominal > 0 ? (realisasi / nominal) * 100 : 0,
+      nominal: bNominal.toString() as unknown as number,
+      realisasi: bRealisasi.toString() as unknown as number,
+      persentase: pct,
     };
   });
 
-  // Trend: use tahun_anggaran.total_anggaran for nominal per year
+  // Trend: use tahun_anggaran.total_anggaran for nominal per year — use BigInt to avoid precision loss
   const trenTahunan = tahunAnggaranData
     .filter((t) => t.status !== 'DRAFT')
     .map((t) => {
+      const bNominal = toBigIntHelper(t.total_anggaran);
       const yearProvData = alokasiProvinsiData.filter((p) => p.tahun_anggaran_id === t.id);
-      const realSum = yearProvData.reduce((s, p) => s + p.realisasi_total, 0);
+      const bRealSum = yearProvData.reduce((s, p) => s + toBigIntHelper(p.realisasi_total), 0n);
+      // Estimate 70% realisasi for years without real data
+      const bReal = bRealSum > 0n ? bRealSum : (bNominal * 7n / 10n);
       return {
-        tahun: t.tahun,
-        nominal: t.total_anggaran,
-        realisasi: realSum > 0 ? realSum : Math.round(t.total_anggaran * 0.7),
+        tahun: t.tahun as number,
+        nominal: Number(bNominal),
+        realisasi: Number(bReal),
       };
     });
 
+  const bTotalSelisih = bTotalNominal - bTotalRealisasi;
+  const totalRealisasi = bTotalRealisasi.toString() as unknown as number;
+  const persentasePenyerapan = bTotalNominal > 0n ? Number((bTotalRealisasi * 1000n) / bTotalNominal) / 10 : 0;
+
   return {
-    total_nominal: totalNominal,
+    total_nominal: bTotalNominal.toString() as unknown as number,
     total_realisasi: totalRealisasi,
-    persentase_penyerapan: totalNominal > 0 ? (totalRealisasi / totalNominal) * 100 : 0,
+    total_selisih: bTotalSelisih.toString() as unknown as number,
+    persentase_penyerapan: persentasePenyerapan,
     per_jenjang: perJenjang,
     tren_tahunan: trenTahunan,
   };
@@ -480,7 +528,7 @@ export async function getProfilInstitusi(id: string, tahun: number = 2026): Prom
       ...sd,
       nominal: Number(sd.nominal || 0),
       realisasi: Number(sd.realisasi || 0),
-      saldo_di_bank: Number(sd.saldo_di_bank || (Number(sd.nominal || 0) - Number(sd.realisasi || 0))),
+      saldo_di_bank: Number(sd.saldo_di_bank ?? (Number(sd.nominal || 0) - Number(sd.realisasi || 0))),
     })) : [
       {
         id: `sd-${institusi.id}`,
@@ -489,14 +537,41 @@ export async function getProfilInstitusi(id: string, tahun: number = 2026): Prom
         sumber_dana: 'APBN (DANA INDUK PENDIDIKAN)',
         nominal: institusi.nominal_alokasi,
         realisasi: institusi.realisasi_total,
-        saldo_di_bank: institusi.realisasi_total,
+        saldo_di_bank: institusi.nominal_alokasi - institusi.realisasi_total,
         persentase: institusi.persentase_penyerapan,
       }
     ];
 
     const resPb = await fetch(`${url}/rest/v1/pengeluaran_bulanan_institusi?institusi_id=eq.${id}&order=nomor.asc`, { headers });
     const pbData = await resPb.json();
-    const pengeluaran_bulanan = Array.isArray(pbData) ? pbData.map(cleanRecord) : [];
+    let pengeluaran_bulanan = Array.isArray(pbData) ? pbData.map(cleanRecord) : [];
+
+    if (pengeluaran_bulanan.length === 0) {
+      const monthNames = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      ];
+      const pcts = [0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.08, 0.08, 0.08, 0.06, 0.05, 0.05];
+      let sumDist = 0;
+      pengeluaran_bulanan = monthNames.map((bulan, i) => {
+        let nom = 0;
+        if (i === 11) {
+          nom = institusi.realisasi_total - sumDist;
+        } else {
+          nom = Math.round(institusi.realisasi_total * pcts[i]);
+          sumDist += nom;
+        }
+        return {
+          id: `pb-${institusi.id}-${i + 1}`,
+          institusi_id: institusi.id,
+          nomor: i + 1,
+          bulan,
+          nominal_pengeluaran: nom,
+          qty: 1,
+          sub_total: nom
+        };
+      });
+    }
 
     const totalNominalSumber = sumber_dana.reduce((s, d) => s + Number(d.nominal || 0), 0);
     const totalRealisasiSumber = sumber_dana.reduce((s, d) => s + Number(d.realisasi || 0), 0);
@@ -526,23 +601,24 @@ export async function fetchDbSchoolCounts(): Promise<Record<Jenjang, number>> {
     'Prefer': 'count=exact',
   };
 
-  const jenjangs: Jenjang[] = ['UNIVERSITAS', 'SMA', 'SMP', 'SD', 'PAUD'];
+  // Start with zeros — no hardcode fallback
   const counts: Record<Jenjang, number> = {
-    UNIVERSITAS: 4498,
-    SMA: 22407,
-    SMP: 41511,
-    SD: 136761,
-    PAUD: 162688,
+    UNIVERSITAS: 0,
+    SMA: 0,
+    SMP: 0,
+    SD: 0,
+    PAUD: 0,
   };
 
   try {
+    const jenjangs: Jenjang[] = ['UNIVERSITAS', 'SMA', 'SMP', 'SD', 'PAUD'];
     await Promise.all(
       jenjangs.map(async (j) => {
         const res = await fetch(`${url}/rest/v1/institusi_pendidikan?jenjang=eq.${j}&select=id&limit=1`, { headers });
         const cr = res.headers.get('content-range');
         if (cr) {
           const total = parseInt(cr.split('/')[1], 10);
-          if (!isNaN(total) && total > 0) {
+          if (!isNaN(total)) {
             counts[j] = total;
           }
         }
@@ -742,7 +818,16 @@ export function getJenjangBreakdownByKabkota(
   // Find parent province to divide province school stats proportionally if institusiPendidikanData has 0
   const kabkotaRecord = (alokasiKabupatenKotaData || []).find(k => k.kabupaten_kota_id === kabkotaId);
   const provId = kabkotaRecord?.kabupaten_kota?.provinsi_id;
-  const provStats = provId ? (provinceSchoolStatsData || []).find((s: any) => s.province_id === provId) : null;
+  const provRecord = (alokasiProvinsiData || []).find(p => p.provinsi_id === provId || p.provinsi?.id === provId);
+  const targetProvName = provRecord?.provinsi?.nama_provinsi;
+  const targetProvCode = provRecord?.provinsi?.kode_provinsi;
+
+  const provStats = provId ? (provinceSchoolStatsData || []).find((s: any) => {
+    if (s.province_id && (s.province_id === provId || s.province_id === targetProvCode)) return true;
+    if (s.province_code && (s.province_code === provId || s.province_code === targetProvCode)) return true;
+    if (s.province_name && targetProvName && s.province_name.toLowerCase() === targetProvName.toLowerCase()) return true;
+    return false;
+  }) : null;
   
   const provSchoolCounts: Record<Jenjang, number> = { UNIVERSITAS: 0, SMA: 0, SMP: 0, SD: 0, PAUD: 0 };
   if (provStats) {
@@ -904,7 +989,18 @@ export function getJenjangBreakdownByProvinsi(
   provinsiId: string,
   nominalAlokasi: number
 ): JenjangBreakdownProvinsi[] {
-  const provStatsList = (provinceSchoolStatsData || []).filter((s: any) => s.province_id === provinsiId);
+  const targetProvObj = alokasiProvinsiData.find(
+    p => p.provinsi_id === provinsiId || p.provinsi.id === provinsiId
+  );
+  const targetProvName = targetProvObj?.provinsi?.nama_provinsi;
+  const targetProvCode = targetProvObj?.provinsi?.kode_provinsi;
+
+  const provStatsList = (provinceSchoolStatsData || []).filter((s: any) => {
+    if (s.province_id && (s.province_id === provinsiId || s.province_id === targetProvCode)) return true;
+    if (s.province_code && (s.province_code === provinsiId || s.province_code === targetProvCode)) return true;
+    if (s.province_name && targetProvName && s.province_name.toLowerCase() === targetProvName.toLowerCase()) return true;
+    return false;
+  });
   const schoolCountsFromStats: Record<Jenjang, number> = {
     UNIVERSITAS: 0,
     SMA: 0,
@@ -1014,49 +1110,60 @@ export async function updateTahunAnggaran(id: string, updates: Partial<TahunAngg
         nilai_baru: typeof newVal === 'number' ? fmtRupiah(newVal) : String(newVal),
       });
 
-      // === CASCADE: APBN → 38 Provinsi → 514 Kab/Kota ===
+      // === CASCADE: APBN → 38 Provinsi → 514 Kab/Kota (Exact BigInt Precision) ===
       if (updates.total_anggaran !== undefined) {
-        const newTotalAPBN = updates.total_anggaran;
+        const toBigInt = (val: any): bigint => {
+          if (val === null || val === undefined) return 0n;
+          const s = String(val).split('.')[0].replace(/[^0-9-]/g, '');
+          if (!s || s === '-') return 0n;
+          try { return BigInt(s); } catch { return 0n; }
+        };
+
+        const roundToThousands = (val: bigint): bigint => {
+          const rem = val % 1000n;
+          if (rem === 0n) return val;
+          if (rem >= 500n) return val + (1000n - rem);
+          if (rem <= -500n) return val - (1000n + rem);
+          return val - rem;
+        };
+
+        const bNewTotalAPBN = toBigInt(updates.total_anggaran);
 
         // Fetch all provinces under this tahun_anggaran
         const provsRes = await fetch(`${url}/rest/v1/alokasi_provinsi?tahun_anggaran_id=eq.${id}&order=id.asc`, { headers });
         if (provsRes.ok) {
           const provs = await provsRes.json();
           if (Array.isArray(provs) && provs.length > 0) {
-            const oldTotalProv = provs.reduce((s: number, p: any) => s + (p.nominal_alokasi || 0), 0);
+            const provRealisasis = provs.map(p => toBigInt(p.realisasi_total));
+            const provNominals = provs.map(p => toBigInt(p.nominal_alokasi));
+            const provWeights = provs.map((_, i) => provRealisasis[i] > 0n ? provRealisasis[i] : (provNominals[i] > 0n ? provNominals[i] : 1n));
+            const bTotalWeight = provWeights.reduce((s, w) => s + w, 0n);
 
-            // Distribute proportionally to all provinces
             const provCount = provs.length;
-            let distributed = 0;
+            let bProvDistributed = 0n;
 
             for (let i = 0; i < provCount; i++) {
               const p = provs[i];
-              let newProvNominal: number;
+              let bNewProvNominal: bigint;
 
               if (i === provCount - 1) {
-                // Last province gets the remainder to ensure exact sum
-                newProvNominal = newTotalAPBN - distributed;
-              } else if (oldTotalProv > 0) {
-                // Proportional distribution based on old ratio
-                const ratio = (p.nominal_alokasi || 0) / oldTotalProv;
-                newProvNominal = Math.floor(newTotalAPBN * ratio);
+                bNewProvNominal = bNewTotalAPBN - bProvDistributed;
               } else {
-                // Equal distribution if old total was 0
-                newProvNominal = Math.floor(newTotalAPBN / provCount);
+                bNewProvNominal = roundToThousands((bNewTotalAPBN * provWeights[i]) / bTotalWeight);
               }
-              distributed += newProvNominal;
+              bProvDistributed += bNewProvNominal;
 
-              const provRealisasi = p.realisasi_total || 0;
-              const provSelisih = newProvNominal - provRealisasi;
-              const provPct = newProvNominal > 0 ? (provRealisasi / newProvNominal) * 100 : 0;
+              const bProvRealisasi = provRealisasis[i];
+              const bProvSelisih = bNewProvNominal - bProvRealisasi;
+              const provPct = bNewProvNominal > 0n ? Number((bProvRealisasi * 1000n) / bNewProvNominal) / 10 : 0;
 
-              // Update province in DB
+              // Update province in DB using string representation to preserve exact BigInt
               await fetch(`${url}/rest/v1/alokasi_provinsi?id=eq.${p.id}`, {
                 method: 'PATCH',
                 headers,
                 body: JSON.stringify({
-                  nominal_alokasi: newProvNominal,
-                  selisih: provSelisih,
+                  nominal_alokasi: bNewProvNominal.toString(),
+                  selisih: bProvSelisih.toString(),
                   persentase_penyerapan: provPct,
                   updated_at: new Date().toISOString().split('T')[0],
                 }),
@@ -1068,33 +1175,33 @@ export async function updateTahunAnggaran(id: string, updates: Partial<TahunAngg
                 const kabs = await kabsRes.json();
                 if (Array.isArray(kabs) && kabs.length > 0) {
                   const kabCount = kabs.length;
-                  const oldKabTotal = kabs.reduce((s: number, k: any) => s + (k.nominal_alokasi || 0), 0);
-                  let kabDistributed = 0;
+                  const kabRealisasis = kabs.map(k => toBigInt(k.realisasi_total));
+                  const kabNominals = kabs.map(k => toBigInt(k.nominal_alokasi));
+                  const kabWeights = kabs.map((_, j) => kabRealisasis[j] > 0n ? kabRealisasis[j] : (kabNominals[j] > 0n ? kabNominals[j] : 1n));
+                  const bTotalKabWeight = kabWeights.reduce((s, w) => s + w, 0n);
+                  let bKabDistributed = 0n;
 
                   for (let j = 0; j < kabCount; j++) {
                     const k = kabs[j];
-                    let kNominal: number;
+                    let bKNominal: bigint;
 
                     if (j === kabCount - 1) {
-                      kNominal = newProvNominal - kabDistributed;
-                    } else if (oldKabTotal > 0) {
-                      const kRatio = (k.nominal_alokasi || 0) / oldKabTotal;
-                      kNominal = Math.floor(newProvNominal * kRatio);
+                      bKNominal = bNewProvNominal - bKabDistributed;
                     } else {
-                      kNominal = Math.floor(newProvNominal / kabCount);
+                      bKNominal = roundToThousands((bNewProvNominal * kabWeights[j]) / bTotalKabWeight);
                     }
-                    kabDistributed += kNominal;
+                    bKabDistributed += bKNominal;
 
-                    const kRealisasi = k.realisasi_total || 0;
-                    const kSelisih = kNominal - kRealisasi;
-                    const kPct = kNominal > 0 ? Math.round((kRealisasi / kNominal) * 1000) / 10 : 0;
+                    const bKRealisasi = kabRealisasis[j];
+                    const bKSelisih = bKNominal - bKRealisasi;
+                    const kPct = bKNominal > 0n ? Number((bKRealisasi * 1000n) / bKNominal) / 10 : 0;
 
                     await fetch(`${url}/rest/v1/alokasi_kabupaten_kota?id=eq.${k.id}`, {
                       method: 'PATCH',
                       headers,
                       body: JSON.stringify({
-                        nominal_alokasi: kNominal,
-                        selisih: kSelisih,
+                        nominal_alokasi: bKNominal.toString(),
+                        selisih: bKSelisih.toString(),
                         persentase_penyerapan: kPct,
                         updated_at: new Date().toISOString().split('T')[0],
                       }),

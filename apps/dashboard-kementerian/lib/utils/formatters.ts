@@ -25,6 +25,22 @@ export function fmtTriliun(value: NumInput): string {
  * Format number to Rupiah currency format
  */
 export function fmtRupiah(value: NumInput): string {
+  if (value === null || value === undefined) return '0';
+  
+  // Try BigInt parsing first to preserve full 64-bit precision for large numbers (e.g. 18 digits)
+  try {
+    const cleanStr = String(value).split('.')[0].replace(/[^0-9-]/g, '');
+    if (cleanStr && cleanStr !== '-') {
+      const b = BigInt(cleanStr);
+      return new Intl.NumberFormat('id-ID', {
+        style: 'decimal',
+        maximumFractionDigits: 0,
+      }).format(b);
+    }
+  } catch {
+    // Fallback to standard Number formatting if BigInt fails
+  }
+
   const num = toNum(value);
   return new Intl.NumberFormat('id-ID', {
     style: 'decimal',

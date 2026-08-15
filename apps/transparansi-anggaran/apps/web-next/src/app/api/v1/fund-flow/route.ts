@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const yearParam = searchParams.get('year');
-    const targetYear = yearParam ? parseInt(yearParam) : 2025;
+    const targetYear = yearParam ? parseInt(yearParam) : 2026;
 
     const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
