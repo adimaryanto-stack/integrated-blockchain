@@ -60,7 +60,7 @@ export default function RencanaAnggaranPage() {
   // Form States
   const [formStatus, setFormStatus] = useState<'PLANNED' | 'REALIZED'>('PLANNED');
   const [formTanggal, setFormTanggal] = useState('2026-06-06');
-  const [formSchoolId, setFormSchoolId] = useState('inst-sd-0');
+  const [formSchoolId, setFormSchoolId] = useState('e45bdf94-41c6-4ee0-9864-8c3c7c4576f7');
   const [formKategori, setFormKategori] = useState<TransaksiGlobal['kategori']>('Operasional');
   const [formVendor, setFormVendor] = useState('');
   const [formSumberDana, setFormSumberDana] = useState('BOS Reguler');

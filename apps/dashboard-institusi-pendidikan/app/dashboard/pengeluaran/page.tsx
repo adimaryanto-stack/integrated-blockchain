@@ -35,72 +35,14 @@ export default function PengeluaranPage() {
   const { activeTahun, dbData, isSupabaseMode, addNotification, transaksiList, setTransaksiList } = useAppStore();
   const allInstitusi = useMemo(() => getAllInstitusi(), [dbData, isSupabaseMode]);
 
-  // Dynamically scale transaction values based on selected activeTahun
+  // Dynamically filter transactions for the active school (KB AL-IKHLAS)
   const transactionsWithActiveYear = useMemo(() => {
-    if (isSupabaseMode) {
-      return transaksiList.filter(t => t.institusiId === 'inst-sd-0');
+    const kbTrans = transaksiList.filter(t => t.institusiId === 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7' || t.namaInstitusi === 'KB AL-IKHLAS');
+    if (kbTrans.length > 0) {
+      return kbTrans;
     }
-
-    const mentengData = MENTENG_YEAR_DATA[activeTahun] || MENTENG_YEAR_DATA[2026];
-    const targetRealisasi = mentengData.realisasi;
-
-    // Separate project transactions (which are actuals and shouldn't be scaled)
-    const projectTransactions = transaksiList.filter(t => t.institusiId === 'inst-sd-0' && t.id.includes('tr-proj'));
-    const totalProjectNominal = projectTransactions.reduce((sum, t) => sum + t.nominal, 0);
-
-    // Scale only the base non-project transactions
-    const baseTransactions = transaksiList.filter(t => t.institusiId === 'inst-sd-0' && !t.id.includes('tr-proj'));
-    const baseRealisasi = 1_129_655_153;
-    const targetBaseRealisasi = Math.max(0, targetRealisasi - totalProjectNominal);
-    const scaleFactor = baseRealisasi > 0 ? targetBaseRealisasi / baseRealisasi : 1;
-
-    const scaledList = transaksiList.map((t) => {
-      if (t.institusiId !== 'inst-sd-0') return t;
-      if (t.id.includes('tr-proj')) {
-        // Do not scale project transactions
-        return t;
-      }
-
-      // Update date year
-      let newTanggal = t.tanggal;
-      const dateParts = t.tanggal.split(' ');
-      if (dateParts.length === 3) {
-        newTanggal = `${dateParts[0]} ${dateParts[1]} ${activeTahun}`;
-      }
-
-      // Scale nominal and round
-      const scaledNominal = Math.round(t.nominal * scaleFactor);
-      const scaledHargaSatuan = t.qty > 0 ? Math.round(scaledNominal / t.qty) : Math.round(t.hargaSatuan * scaleFactor);
-
-      return {
-        ...t,
-        tanggal: newTanggal,
-        nominal: scaledNominal,
-        hargaSatuan: scaledHargaSatuan,
-      };
-    });
-
-    // Distribute any rounding error to the last base SDN 01 Menteng transaction
-    const baseMentengTxIndices = scaledList
-      .map((t, idx) => (t.institusiId === 'inst-sd-0' && !t.id.includes('tr-proj') ? idx : -1))
-      .filter(idx => idx !== -1);
-
-    if (baseMentengTxIndices.length > 0) {
-      const sumOfBaseScaled = baseMentengTxIndices.reduce((sum, idx) => sum + scaledList[idx].nominal, 0);
-      const diff = targetBaseRealisasi - sumOfBaseScaled;
-      if (diff !== 0) {
-        const lastIdx = baseMentengTxIndices[baseMentengTxIndices.length - 1];
-        scaledList[lastIdx].nominal += diff;
-        if (scaledList[lastIdx].qty > 0) {
-          scaledList[lastIdx].hargaSatuan = Math.round(scaledList[lastIdx].nominal / scaledList[lastIdx].qty);
-        } else {
-          scaledList[lastIdx].hargaSatuan = scaledList[lastIdx].nominal;
-        }
-      }
-    }
-
-    return scaledList.filter(t => t.institusiId === 'inst-sd-0');
-  }, [transaksiList, activeTahun, isSupabaseMode]);
+    return transaksiList.filter(t => t.institusiId === 'inst-sd-0');
+  }, [transaksiList]);
 
 
   // States
