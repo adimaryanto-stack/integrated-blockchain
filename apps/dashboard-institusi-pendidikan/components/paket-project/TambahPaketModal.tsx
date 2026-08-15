@@ -84,9 +84,9 @@ export default function TambahPaketModal({ isOpen, onClose, editProjectId }: Tam
             addTransaksi({
               id: transactionId,
               tanggal: formattedDate,
-              institusiId: 'inst-sd-0',
-              namaInstitusi: 'SDN 01 Menteng',
-              jenjang: 'SD',
+              institusiId: 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7',
+              namaInstitusi: 'KB AL-IKHLAS',
+              jenjang: 'PAUD',
               kategori: 'Operasional',
               item: `${namaPaket} - ${exp.nama_item}`,
               qty: exp.jumlah,
@@ -106,7 +106,7 @@ export default function TambahPaketModal({ isOpen, onClose, editProjectId }: Tam
             try {
               const insertData = expenses.map((exp, idx) => ({
                 id: `tr-proj-${exp.id}`,
-                institusi_id: 'inst-sd-0',
+                institusi_id: 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7',
                 nomor_bulan: today.getMonth() + 1,
                 nomor: Math.floor(1000 + Math.random() * 9000) + idx,
                 nama_produk_jasa: `${namaPaket} - ${exp.nama_item}`,
