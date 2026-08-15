@@ -1,0 +1,63 @@
+const http = require('http');
+const { Pool } = require('pg');
+
+async function testAll() {
+  console.log('=== AUDITING ALL 7 PORTS & DATABASE CONNECTIONS ===\n');
+
+  // 1. Check PostgreSQL (Port 2025)
+  const pool = new Pool({ connectionString: 'postgresql://postgres@localhost:2025/postgres' });
+  const startDb = Date.now();
+  try {
+    const tableRes = await pool.query("SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public'");
+    const instRes = await pool.query("SELECT id, npsn, nama_institusi, alamat, nominal_alokasi, realisasi_total FROM public.institusi_pendidikan WHERE id = 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7'");
+    console.log('[Port 2025] PostgreSQL Database  : ONLINE (' + (Date.now() - startDb) + 'ms)');
+    console.log('            Public Tables Count  :', tableRes.rows[0].count);
+    console.log('            KB AL-IKHLAS DB Row  :', instRes.rows[0]);
+  } catch (e) {
+    console.log('[Port 2025] PostgreSQL Database  : ERROR', e.message);
+  }
+  await pool.end();
+
+  // Helper HTTP GET
+  const getHttp = (url) => new Promise(resolve => {
+    const start = Date.now();
+    http.get(url, res => {
+      let b = '';
+      res.on('data', c => b += c);
+      res.on('end', () => resolve({ status: res.statusCode, time: Date.now() - start, length: b.length, body: b }));
+    }).on('error', e => resolve({ status: 'ERROR', message: e.message }));
+  });
+
+  // 2. Check Proxy API Server (Port 2026)
+  const p2026 = await getHttp('http://localhost:2026/rest/v1/institusi_pendidikan?npsn=eq.69893669');
+  console.log('\n[Port 2026] PostgREST Proxy API  :', p2026.status, '(' + p2026.time + 'ms)', p2026.length + ' bytes');
+  if (p2026.status === 200) {
+    const parsed = JSON.parse(p2026.body);
+    console.log('            Response School      :', parsed[0]?.nama_institusi, '| Alamat:', parsed[0]?.alamat);
+  }
+
+  // 3. Check Port 2020 (Transparansi Publik)
+  const p2020 = await getHttp('http://localhost:2020/dashboard/69893669');
+  console.log('\n[Port 2020] Transparansi Publik  :', p2020.status, '(' + p2020.time + 'ms)', p2020.length + ' bytes');
+
+  // 4. Check Port 2021 (Dashboard Kementerian)
+  const p2021 = await getHttp('http://localhost:2021/dashboard');
+  console.log('\n[Port 2021] Dashboard Kementerian:', p2021.status, '(' + p2021.time + 'ms)', p2021.length + ' bytes');
+
+  // 5. Check Port 2022 (Dashboard Bank)
+  const p2022 = await getHttp('http://localhost:2022/dashboard');
+  console.log('\n[Port 2022] Dashboard Bank       :', p2022.status, '(' + p2022.time + 'ms)', p2022.length + ' bytes');
+
+  // 6. Check Port 2023 (Dashboard Auditor)
+  const p2023 = await getHttp('http://localhost:2023/dashboard/audit');
+  console.log('\n[Port 2023] Dashboard Auditor    :', p2023.status, '(' + p2023.time + 'ms)', p2023.length + ' bytes');
+
+  // 7. Check Port 2024 (Institusi Pendidikan)
+  const p2024_detail = await getHttp('http://localhost:2024/dashboard/profil-institusi/e45bdf94-41c6-4ee0-9864-8c3c7c4576f7');
+  console.log('\n[Port 2024] Institusi Pendidikan :', p2024_detail.status, '(' + p2024_detail.time + 'ms)', p2024_detail.length + ' bytes');
+  console.log('            Contains Full Address:', p2024_detail.body.includes('PAYA LUMPAT, Kel. Paya Lumpat, Kec. Samatiga, Kab. Aceh Barat'));
+
+  console.log('\n=== ALL PORTS VERIFICATION COMPLETE ===');
+}
+
+testAll();

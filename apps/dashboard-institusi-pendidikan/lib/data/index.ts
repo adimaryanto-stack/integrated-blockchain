@@ -634,6 +634,7 @@ export function getProfilInstitusi(id: string, tahun: number = 2026): ProfilInst
       provinsi_nama: 'Aceh',
       status_sekolah: 'SWASTA',
       nomor_rekening: '100.845.411.000',
+      alamat: 'PAYA LUMPAT, Kel. Paya Lumpat, Kec. Samatiga, Kab. Aceh Barat',
       nominal_alokasi: 234775639,
       realisasi_total: 197211537,
       selisih: 37564102,

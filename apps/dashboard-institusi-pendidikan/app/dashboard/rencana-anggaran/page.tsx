@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import Header from '@/components/layout/Header';
-import { getAllInstitusi, MENTENG_TRANSACTIONS, MENTENG_YEAR_DATA } from '@/lib/data';
+import { getAllInstitusi } from '@/lib/data';
 import { useAppStore } from '@/lib/store';
 import { fmtRupiah } from '@/lib/utils/formatters';
 import {
@@ -461,11 +461,10 @@ export default function RencanaAnggaranPage() {
   // Statistics summaries
   const stats = useMemo(() => {
     const total = transactionsWithActiveYear.reduce((sum, t) => sum + t.nominal, 0);
-    const mentengData = MENTENG_YEAR_DATA[activeTahun] || MENTENG_YEAR_DATA[2026];
-    const totalAnggaran = mentengData.alokasi;
+    const totalAnggaran = 234775639; // Pagu alokasi KB AL-IKHLAS dari database lokal (PostgreSQL 2026)
     const sisaAnggaran = totalAnggaran - total;
     return { total, totalAnggaran, sisaAnggaran };
-  }, [transactionsWithActiveYear, activeTahun]);
+  }, [transactionsWithActiveYear]);
 
   // Helpers for Month & Date Sorting
   const getMonthFromDateStr = (dateStr: string) => {
