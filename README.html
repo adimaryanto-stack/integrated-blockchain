@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Integrated Blockchain Anggaran Pendidikan - Dokumentasi & Panduan Interaktif</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card-bg: #1e293b;
+      --card-hover: #24344d;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --accent-glow: rgba(56, 189, 248, 0.15);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --code-bg: #0f172a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      line-height: 1.6;
+      padding: 0;
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 24px 80px 24px;
+    }
+
+    /* Top Navigation Banner */
+    .top-nav {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 16px 24px;
+    }
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .brand-title {
+      font-weight: 800;
+      font-size: 1.2rem;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-badge {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .nav-links {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .nav-link-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--card-bg);
+      color: var(--text-main);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      transition: all 0.2s ease;
+    }
+    .nav-link-btn:hover {
+      background: var(--accent);
+      color: #0b1120;
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+    .nav-link-btn.primary {
+      background: var(--accent);
+      color: #0b1120;
+      border-color: var(--accent);
+    }
+    .nav-link-btn.primary:hover {
+      background: #7dd3fc;
+    }
+
+    /* Hero Header */
+    .hero {
+      text-align: center;
+      padding: 60px 0 40px 0;
+    }
+    .hero h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #ffffff 40%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 800px;
+      margin: 0 auto 32px auto;
+    }
+
+    /* Non-Programmer Notice Banner */
+    .easy-banner {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 48px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .easy-banner-icon {
+      font-size: 2.5rem;
+      flex-shrink: 0;
+    }
+    .easy-banner-content h3 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    .easy-banner-content p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin: 0;
+    }
+
+    /* Section Styles */
+    .section-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .section-subtitle {
+      color: var(--text-muted);
+      font-size: 1rem;
+      margin-bottom: 28px;
+    }
+
+    /* 1-Click Install Cards (OS Tabs) */
+    .install-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      margin-bottom: 60px;
+    }
+    .install-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+    }
+    .install-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    .card-header-os {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .os-icon {
+      font-size: 1.8rem;
+    }
+    .os-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .os-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+    }
+    .step-list {
+      list-style: none;
+      margin-bottom: 20px;
+    }
+    .step-list li {
+      position: relative;
+      padding-left: 28px;
+      margin-bottom: 12px;
+      font-size: 0.9rem;
+      color: var(--text-main);
+    }
+    .step-list li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      top: 0;
+      color: var(--success);
+      font-weight: 800;
+    }
+    .code-box {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      color: #38bdf8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      margin-top: auto;
+    }
+    .code-box code {
+      white-space: nowrap;
+    }
+    .copy-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      font-weight: 600;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+    .copy-btn:hover {
+      color: #fff;
+      background: var(--accent);
+      color: #0b1120;
+    }
+
+    /* Dashboard Launcher Grid */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 20px;
+      margin-bottom: 60px;
+    }
+    .dash-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.2s ease;
+    }
+    .dash-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+    .dash-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .dash-port {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+    .dash-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .dash-desc {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      flex-grow: 1;
+    }
+    .dash-btn {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 10px 16px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+    .dash-btn:hover {
+      background: var(--accent);
+      color: #0b1120;
+      border-color: var(--accent);
+    }
+
+    /* Documentation Hub Cards */
+    .doc-hub-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 60px;
+    }
+    .doc-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-decoration: none;
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      transition: all 0.2s ease;
+    }
+    .doc-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      background: var(--card-hover);
+    }
+    .doc-card-icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+    }
+    .doc-card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    .doc-card-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Architecture Topology Table */
+    .table-container {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow-x: auto;
+      margin-bottom: 60px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+    th {
+      background: rgba(15, 23, 42, 0.7);
+      color: #fff;
+      font-weight: 700;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-main);
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      margin-right: 6px;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border);
+      text-align: center;
+      padding: 40px 0;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 2rem;
+      }
+      .nav-inner {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .easy-banner {
+        flex-direction: column;
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sticky Header Navigation -->
+  <header class="top-nav">
+    <div class="nav-inner">
+      <div class="brand-title">
+        <span>🏛️ Blockchain Anggaran</span>
+        <span class="brand-badge">8 PORTS READY</span>
+      </div>
+      <div class="nav-links">
+        <a href="PRD.md" class="nav-link-btn" title="Product Requirements Document">📄 Buka PRD</a>
+        <a href="MVP.md" class="nav-link-btn" title="Minimum Viable Product">🏆 Buka MVP</a>
+        <a href="deploy_guide.md" class="nav-link-btn primary" title="Panduan Deployment">🚀 Deploy Guide</a>
+        <a href="#topology" class="nav-link-btn" title="Topologi Port">🗺️ Topologi</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- Hero Section -->
+    <section class="hero">
+      <h1>Platform Tata Kelola & Transparansi Anggaran Pendidikan</h1>
+      <p>Sistem transparansi keuangan terintegrasi dengan database lokal mandiri 100% (Single Source of Truth PostgreSQL), mencakup 6 portal spesifik peran pengguna se-Indonesia.</p>
+    </section>
+
+    <!-- Banner Khusus Non-Programmer -->
+    <div class="easy-banner">
+      <div class="easy-banner-icon">💡</div>
+      <div class="easy-banner-content">
+        <h3>Anda Bukan Programmer? Tenang Saja!</h3>
+        <p>Sistem ini telah dilengkapi dengan <strong>otomasi 1-klik</strong>. Anda tidak perlu memahami coding rumit atau menulis query database. Cukup pilih sistem operasi laptop/server Anda di bawah ini dan ikuti petunjuknya.</p>
+      </div>
+    </div>
+
+    <!-- Section: Panduan Install Cepat (OS Selector) -->
+    <h2 class="section-title">⚡ Cara Menjalankan Sistem (Pilih Sistem Operasi)</h2>
+    <p class="section-subtitle">Pilih perangkat yang Anda gunakan untuk menjalankan sistem secara serentak:</p>
+
+    <div class="install-grid">
+      <!-- Windows -->
+      <div class="install-card">
+        <div>
+          <div class="card-header-os">
+            <span class="os-icon">🪟</span>
+            <div>
+              <div class="os-title">Windows Localhost</div>
+              <span class="os-badge">Paling Mudah (1-Klik)</span>
+            </div>
+          </div>
+          <ul class="step-list">
+            <li>Buka folder proyek ini di Windows Explorer.</li>
+            <li>Klik kanan pada file <strong><code>start-all.ps1</code></strong>.</li>
+            <li>Pilih menu <strong>"Run with PowerShell"</strong>.</li>
+            <li>Selesai! Seluruh 8 port akan menyala otomatis.</li>
+          </ul>
+        </div>
+        <div class="code-box">
+          <code>powershell -ExecutionPolicy Bypass -File start-all.ps1</code>
+          <button class="copy-btn" onclick="copyCode(this, 'powershell -ExecutionPolicy Bypass -File start-all.ps1')">Salin</button>
+        </div>
+      </div>
+
+      <!-- Linux VPS -->
+      <div class="install-card">
+        <div>
+          <div class="card-header-os">
+            <span class="os-icon">🐧</span>
+            <div>
+              <div class="os-title">Linux VPS (Ubuntu/Debian)</div>
+              <span class="os-badge">Server Production</span>
+            </div>
+          </div>
+          <ul class="step-list">
+            <li>Install Node.js, PostgreSQL, dan PM2.</li>
+            <li>Import database: <code>node scripts/setup-db.js</code></li>
+            <li>Jalankan skrip startup: <code>./start.sh</code></li>
+            <li>Seluruh portal aktif di background via PM2.</li>
+          </ul>
+        </div>
+        <div class="code-box">
+          <code>chmod +x start.sh && ./start.sh</code>
+          <button class="copy-btn" onclick="copyCode(this, 'chmod +x start.sh && ./start.sh')">Salin</button>
+        </div>
+      </div>
+
+      <!-- MacBook -->
+      <div class="install-card">
+        <div>
+          <div class="card-header-os">
+            <span class="os-icon">🍎</span>
+            <div>
+              <div class="os-title">MacBook (macOS)</div>
+              <span class="os-badge">Terminal Homebrew</span>
+            </div>
+          </div>
+          <ul class="step-list">
+            <li>Buka aplikasi <strong>Terminal</strong> di Mac Anda.</li>
+            <li>Install dependensi: <code>brew install node postgresql@16</code></li>
+            <li>Import database: <code>node scripts/setup-db.js</code></li>
+            <li>Jalankan sistem: <code>./start.sh</code></li>
+          </ul>
+        </div>
+        <div class="code-box">
+          <code>node scripts/setup-db.js && ./start.sh</code>
+          <button class="copy-btn" onclick="copyCode(this, 'node scripts/setup-db.js && ./start.sh')">Salin</button>
+        </div>
+      </div>
+
+      <!-- Docker -->
+      <div class="install-card">
+        <div>
+          <div class="card-header-os">
+            <span class="os-icon">🐳</span>
+            <div>
+              <div class="os-title">Docker Compose</div>
+              <span class="os-badge">Containerized</span>
+            </div>
+          </div>
+          <ul class="step-list">
+            <li>Pastikan Docker Desktop sudah terpasang.</li>
+            <li>Jalankan 1 perintah container di terminal.</li>
+            <li>Database & Proxy API akan otomatis aktif.</li>
+          </ul>
+        </div>
+        <div class="code-box">
+          <code>docker compose up -d</code>
+          <button class="copy-btn" onclick="copyCode(this, 'docker compose up -d')">Salin</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Akses Langsung ke 6 Dashboard -->
+    <h2 class="section-title">🚀 Akses Langsung Dashboard (Localhost)</h2>
+    <p class="section-subtitle">Klik tombol di bawah untuk membuka dashboard setelah sistem dinyalakan:</p>
+
+    <div class="dashboard-grid">
+      <!-- Port 2020 -->
+      <div class="dash-card">
+        <div class="dash-top">
+          <span class="dash-title">🌐 Portal Transparansi Publik</span>
+          <span class="dash-port">PORT 2020</span>
+        </div>
+        <p class="dash-desc">Portal keterbukaan anggaran untuk masyarakat luas. Menampilkan aliran dana APBN, APBD, dan CSR, grafik penyerapan, serta detail 367.865 sekolah.</p>
+        <a href="http://localhost:2020" target="_blank" class="dash-btn">Buka Portal Publik &rarr;</a>
+      </div>
+
+      <!-- Port 2021 -->
+      <div class="dash-card">
+        <div class="dash-top">
+          <span class="dash-title">🏛️ Dashboard Kementerian (APBN)</span>
+          <span class="dash-port">PORT 2021</span>
+        </div>
+        <p class="dash-desc">Dashboard eksekutif untuk Kementerian Keuangan dan Kemendikdasmen untuk memantau pagu nasional, transfer daerah, dan mandatori 20% pendidikan.</p>
+        <a href="http://localhost:2021/dashboard" target="_blank" class="dash-btn">Buka Dashboard Kementerian &rarr;</a>
+      </div>
+
+      <!-- Port 2022 -->
+      <div class="dash-card">
+        <div class="dash-top">
+          <span class="dash-title">🏦 Dashboard Bank Penyalur</span>
+          <span class="dash-port">PORT 2022</span>
+        </div>
+        <p class="dash-desc">Portal perbankan mitra (Bank Mandiri, BRI, BNI, BSI, Bank Lampung) untuk verifikasi rekening penampung, mutasi saldo, dan eksekusi transfer dana.</p>
+        <a href="http://localhost:2022/dashboard" target="_blank" class="dash-btn">Buka Dashboard Bank &rarr;</a>
+      </div>
+
+      <!-- Port 2023 -->
+      <div class="dash-card">
+        <div class="dash-top">
+          <span class="dash-title">🔍 Dashboard Auditor BPK / BPKP</span>
+          <span class="dash-port">PORT 2023</span>
+        </div>
+        <p class="dash-desc">Pusat pengawasan audit independen dengan deteksi anomali belanja berbasis AI, verifikasi bukti struk OCR, forum audit, dan export spreadsheet.</p>
+        <a href="http://localhost:2023/dashboard" target="_blank" class="dash-btn">Buka Dashboard Auditor &rarr;</a>
+      </div>
+
+      <!-- Port 2024 -->
+      <div class="dash-card">
+        <div class="dash-top">
+          <span class="dash-title">🏫 Dashboard Institusi Pendidikan</span>
+          <span class="dash-port">PORT 2024</span>
+        </div>
+        <p class="dash-desc">Portal manajemen anggaran internal bagi kepala sekolah/bendahara (contoh: KB AL-IKHLAS NPSN 69893669) untuk menyusun Rencana Anggaran (RAB) dan input belanja.</p>
+        <a href="http://localhost:2024/dashboard" target="_blank" class="dash-btn">Buka Dashboard Sekolah &rarr;</a>
+      </div>
+
+      <!-- Port 2027 -->
+      <div class="dash-card">
+        <div class="dash-top">
+          <span class="dash-title">🌾 Dashboard APBD Provinsi Lampung</span>
+          <span class="dash-port">PORT 2027</span>
+        </div>
+        <p class="dash-desc">Dashboard tata kelola anggaran daerah Provinsi Lampung dengan rekapitulasi 15 Kabupaten/Kota, 11.354 sekolah, mandatori pendidikan, dan export Excel.</p>
+        <a href="http://localhost:2027/dashboard" target="_blank" class="dash-btn">Buka Dashboard APBD Lampung &rarr;</a>
+      </div>
+    </div>
+
+    <!-- Section: Pusat Dokumentasi Lengkap (Hub) -->
+    <h2 class="section-title">📚 Pusat Dokumentasi Teknis & Panduan Lengkap</h2>
+    <p class="section-subtitle">Buka dokumen teknis lengkap untuk mendalami arsitektur, fitur, dan cara deployment ke domain/VPS:</p>
+
+    <div class="doc-hub-grid">
+      <a href="PRD.md" class="doc-card">
+        <div class="doc-card-icon">📋</div>
+        <div class="doc-card-title">PRD (Product Requirements)</div>
+        <div class="doc-card-desc">Spesifikasi kebutuhan produk, arsitektur data, alur bisnis dana, dan hak akses 6 portal.</div>
+      </a>
+
+      <a href="MVP.md" class="doc-card">
+        <div class="doc-card-icon">🏆</div>
+        <div class="doc-card-title">MVP & Laporan Verifikasi</div>
+        <div class="doc-card-desc">Daftar fitur yang telah selesai dibangun dan hasil uji koneksi 100% database PostgreSQL.</div>
+      </a>
+
+      <a href="deploy_guide.md" class="doc-card">
+        <div class="doc-card-icon">🚀</div>
+        <div class="doc-card-title">Panduan Deployment Lengkap</div>
+        <div class="doc-card-desc">Tutorial setup Nginx Reverse Proxy, Custom Subdomain, SSL HTTPS, dan PM2 di VPS.</div>
+      </a>
+
+      <a href="README.md" class="doc-card">
+        <div class="doc-card-icon">📖</div>
+        <div class="doc-card-title">README Markdown</div>
+        <div class="doc-card-desc">Dokumentasi format Markdown untuk GitHub repository dan panduan ringkas developer.</div>
+      </a>
+    </div>
+
+    <!-- Section: Arsitektur & Topologi Port -->
+    <h2 id="topology" class="section-title">🗺️ Topologi 8 Port & Database Relasional</h2>
+    <p class="section-subtitle">Struktur isolasi layanan, protokol komunikasi, dan sumber data:</p>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Port</th>
+            <th>Nama Layanan</th>
+            <th>Teknologi</th>
+            <th>Sumber Data</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>2020</strong></td>
+            <td>Portal Transparansi Publik</td>
+            <td>Next.js 14 (App Router)</td>
+            <td>PostgreSQL via Port 2026</td>
+            <td><span class="status-dot"></span>Online (200 OK)</td>
+          </tr>
+          <tr>
+            <td><strong>2021</strong></td>
+            <td>Dashboard Kementerian (APBN)</td>
+            <td>Next.js 15 (React 19)</td>
+            <td>PostgreSQL via Port 2026</td>
+            <td><span class="status-dot"></span>Online (200 OK)</td>
+          </tr>
+          <tr>
+            <td><strong>2022</strong></td>
+            <td>Dashboard Bank Penyalur</td>
+            <td>Next.js 15 (React 19)</td>
+            <td>PostgreSQL via Port 2026</td>
+            <td><span class="status-dot"></span>Online (200 OK)</td>
+          </tr>
+          <tr>
+            <td><strong>2023</strong></td>
+            <td>Dashboard Auditor BPK</td>
+            <td>Next.js 15 (React 19)</td>
+            <td>PostgreSQL via Port 2026</td>
+            <td><span class="status-dot"></span>Online (200 OK)</td>
+          </tr>
+          <tr>
+            <td><strong>2024</strong></td>
+            <td>Dashboard Institusi Pendidikan</td>
+            <td>Next.js 15 (React 19)</td>
+            <td>PostgreSQL via Port 2026</td>
+            <td><span class="status-dot"></span>Online (200 OK)</td>
+          </tr>
+          <tr>
+            <td><strong>2025</strong></td>
+            <td>Database PostgreSQL Engine</td>
+            <td>PostgreSQL 16 (Local)</td>
+            <td>35 Relational Tables</td>
+            <td><span class="status-dot"></span>Active (Port 2025)</td>
+          </tr>
+          <tr>
+            <td><strong>2026</strong></td>
+            <td>Proxy REST API Gateway</td>
+            <td>Node.js / Express Proxy</td>
+            <td>PostgreSQL Connection Pool</td>
+            <td><span class="status-dot"></span>Online (200 OK)</td>
+          </tr>
+          <tr>
+            <td><strong>2027</strong></td>
+            <td>Dashboard APBD Provinsi Lampung</td>
+            <td>Next.js 15 (React 19)</td>
+            <td>PostgreSQL via Port 2026</td>
+            <td><span class="status-dot"></span>Online (200 OK)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <footer>
+    <div class="container" style="padding: 0;">
+      <p>&copy; 2026 Platform Integrated Blockchain Anggaran Pendidikan Indonesia. Lisensi Open Source (MIT).</p>
+      <p style="margin-top: 8px; font-size: 0.8rem; color: #64748b;">Single Source of Truth: PostgreSQL 16 on Port 2025 | REST Proxy on Port 2026</p>
+    </div>
+  </footer>
+
+  <script>
+    function copyCode(btn, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        const originalText = btn.innerText;
+        btn.innerText = 'Disalin!';
+        btn.style.background = '#10b981';
+        btn.style.color = '#fff';
+        setTimeout(() => {
+          btn.innerText = originalText;
+          btn.style.background = '';
+          btn.style.color = '';
+        }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>
