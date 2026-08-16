@@ -57,6 +57,20 @@ docker compose up -d
 
 ---
 
+## 🛠️ Otomasi Environment (`.env.local`) — 100% Mandiri Tanpa Cloud Supabase!
+
+> 💡 **Apakah Perlu Akun Supabase? TIDAK!**
+> Sistem ini **100% Self-Hosted** menggunakan database PostgreSQL lokal kita sendiri. Variabel `NEXT_PUBLIC_SUPABASE_URL` terhubung ke **Proxy REST API Lokal (Port 2026)**.
+
+Untuk membuat seluruh file `.env.local` di ke-6 folder aplikasi sekaligus secara otomatis, jalankan:
+```bash
+# Untuk Localhost:
+node scripts/setup-env.js
+
+# Untuk VPS dengan IP / Domain:
+node scripts/setup-env.js http://IP_VPS_ANDA:2026
+```
+
 ## 🗺️ Peta 8 Port & Akses Dashboard
 
 | Port | Peran Pengguna / Dashboard | Direktori Aplikasi | Tautan Akses Cepat |

@@ -587,6 +587,26 @@
       </div>
     </div>
 
+    <!-- Section: PostgreSQL & .env Setup Note -->
+    <div style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 60px;">
+      <h3 style="color: #fff; font-size: 1.25rem; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+        <span>🐘</span> 100% Database Lokal Mandiri — Tanpa Akun Cloud Supabase!
+      </h3>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 16px;">
+        Sistem ini <strong>sepenuhnya mandiri (Self-Hosted)</strong> menggunakan PostgreSQL lokal (Port 2025) dan Proxy REST API (Port 2026). Anda <strong>TIDAK PERLU</strong> mendaftar atau membayar akun cloud Supabase. Untuk membuat file konfigurasi <code>.env.local</code> di seluruh 6 aplikasi dashboard sekaligus secara otomatis:
+      </p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
+        <div class="code-box">
+          <code>node scripts/setup-env.js</code>
+          <button class="copy-btn" onclick="copyCode(this, 'node scripts/setup-env.js')">Salin (Localhost)</button>
+        </div>
+        <div class="code-box">
+          <code>node scripts/setup-env.js http://IP_VPS:2026</code>
+          <button class="copy-btn" onclick="copyCode(this, 'node scripts/setup-env.js http://IP_VPS:2026')">Salin (VPS IP)</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Section: Akses Langsung ke 6 Dashboard -->
     <h2 class="section-title">🚀 Akses Langsung Dashboard (Localhost)</h2>
     <p class="section-subtitle">Klik tombol di bawah untuk membuka dashboard setelah sistem dinyalakan:</p>

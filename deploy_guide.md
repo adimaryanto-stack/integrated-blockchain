@@ -20,33 +20,75 @@
 
 ---
 
-## 🗄️ Bagian 1: Persiapan Database PostgreSQL (Port 2025)
+## 🗄️ Bagian 1: Cara Instalasi & Persiapan PostgreSQL di VPS Linux (Port 2025)
 
-Seluruh 35 tabel relasional dan master data 367.865 satuan pendidikan tersimpan dalam file terkompresi **`database_dump.sql.gz`** (48 MB).
+Sistem ini menggunakan basis data **PostgreSQL 16 lokal mandiri (Self-Hosted)**. Seluruh skema tabel (35 tabel relasional) dan data master 367.865 sekolah se-Indonesia tersimpan dalam file **`database_dump.sql.gz`** (48 MB).
 
-### 1.1 Restore Database di Linux VPS / macOS
+### 1.1 Cara Install PostgreSQL di VPS Ubuntu / Debian:
+Jalankan perintah berikut di terminal VPS Anda:
 ```bash
-# Jalankan skrip restore otomatis (Otomatis ekstrak dan import 35 tabel)
+# 1. Update paket dan install PostgreSQL
+sudo apt update && sudo apt install -y postgresql postgresql-contrib
+
+# 2. Nyalakan layanan PostgreSQL dan pastikan otomatis aktif saat server restart
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+
+# 3. Atur password user 'postgres' menjadi 'postgres'
+sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+sudo -u postgres psql -c "CREATE DATABASE postgres;" 2>/dev/null || true
+```
+
+### 1.2 (Opsional) Mengatur Port PostgreSQL ke 2025:
+Jika ingin menyesuaikan port PostgreSQL ke `2025` sesuai port bawaan sistem:
+```bash
+# Ubah port di file konfigurasi PostgreSQL
+sudo sed -i "s/port = 5432/port = 2025/g" /etc/postgresql/*/main/postgresql.conf
+sudo systemctl restart postgresql
+```
+*(Catatan: Jika Anda tetap ingin menggunakan port default `5432`, sistem tetap dapat berjalan normal dengan menyetel `DB_PORT=5432`)*.
+
+### 1.3 Restore Database Otomatis (1 Perintah):
+```bash
+# Ekstrak otomatis & import seluruh 35 tabel (hanya 30-60 detik)
 DB_PORT=2025 DB_PASSWORD=postgres node scripts/setup-db.js
 ```
-*(Jika PostgreSQL Anda berjalan di port default 5432, cukup ganti `DB_PORT=5432`)*.
+*Jika menggunakan port 5432, jalankan:* `DB_PORT=5432 DB_PASSWORD=postgres node scripts/setup-db.js`.
 
 ---
 
-## ⚙️ Bagian 2: Konfigurasi Environment Variable (`.env.local`)
+## ⚙️ Bagian 2: Penjelasan Environment Variable (`.env.local`) — Tanpa Supabase Cloud!
 
-Masing-masing dashboard terhubung ke database melalui **Proxy API Server (Port 2026)**.
+> ⚠️ **PENTING: Apakah Kita Butuh Akun Supabase Cloud? JAWABANNYA: TIDAK SAMA SEKALI!**
+>
+> Sistem ini **100% Self-Hosted & Mandiri**. Kita **TIDAK PERLU** mendaftar ke Supabase atau membayar layanan cloud pihak ketiga.
+> 
+> Variabel bernama `NEXT_PUBLIC_SUPABASE_URL` digunakan semata-mata karena aplikasi frontend menggunakan library SDK PostgREST standar untuk terhubung ke **Proxy API Server Lokal Kita Sendiri (Port 2026)**.
 
-Jika Anda mendeploy di VPS atau domain publik, buat atau perbarui file `.env.local` di setiap folder aplikasi:
+### 2.1 Di Mana Lokasi File `.env.local` Berada?
+File konfigurasi `.env.local` berada di dalam **masing-masing folder dari 6 aplikasi dashboard**:
+1. `apps/transparansi-anggaran/apps/web-next/.env.local`
+2. `apps/dashboard-kementerian/.env.local`
+3. `apps/dashboard-bank/.env.local`
+4. `apps/dashboard-auditor/.env.local`
+5. `apps/dashboard-institusi-pendidikan/.env.local`
+6. `apps/dashboard-apbd/.env.local`
+7. `proxy/.env` (Untuk backend proxy yang menyambungkan ke PostgreSQL)
 
-```env
-# Format jika menggunakan IP VPS:
-NEXT_PUBLIC_SUPABASE_URL=http://IP_VPS_ANDA:2026
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpweXR4bW54Ymljam1nc2dwcmJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2ODk1NzAsImV4cCI6MjA4ODI2NTU3MH0.BGQGztExtjrTr6XHrvQZ1A0njAAdkoBAp3APRfWsQNE
+### 2.2 Cara Otomatis Membuat Semua `.env.local` (Hanya 1 Detik!):
+Anda **tidak perlu** membuat atau mengedit file `.env.local` satu per satu secara manual. Cukup jalankan skrip otomatis bawaan sistem:
 
-# Format jika menggunakan Custom Domain (HTTPS):
-# NEXT_PUBLIC_SUPABASE_URL=https://api.domain.com
+```bash
+# Untuk Localhost (Default http://localhost:2026):
+node scripts/setup-env.js
+
+# Untuk VPS dengan IP Publik (Contoh IP: 103.123.45.67):
+node scripts/setup-env.js http://103.123.45.67:2026
+
+# Untuk Domain Publik dengan SSL HTTPS (Contoh: api.domain.com):
+node scripts/setup-env.js https://api.domain.com
 ```
+*Skrip ini akan otomatis menuliskan konfigurasi yang benar ke seluruh 6 aplikasi sekaligus.*
 
 ---
 
