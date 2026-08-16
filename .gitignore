@@ -10,6 +10,8 @@ postgrest_v11/
 pgsql_log.txt
 pgsql_log_txt
 *.log
+database_dump.sql
+!database_dump.sql.gz
 
 # Next.js build output
 .next/

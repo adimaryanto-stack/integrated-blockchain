@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL Database Engine (Port 2025)
+  postgres:
+    image: postgres:16-alpine
+    container_name: blockchain-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "2025:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database_dump.sql.gz:/docker-entrypoint-initdb.d/database_dump.sql.gz:ro
+
+  # 2. Local Proxy REST API Gateway (Port 2026)
+  proxy-api:
+    image: node:20-alpine
+    container_name: blockchain-proxy
+    restart: always
+    working_dir: /app
+    volumes:
+      - ./proxy:/app/proxy
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres
+      - PORT=2026
+    ports:
+      - "2026:2026"
+    depends_on:
+      - postgres
+    command: sh -c "cd proxy && npm install && node proxy.js"
+
+volumes:
+  pgdata:

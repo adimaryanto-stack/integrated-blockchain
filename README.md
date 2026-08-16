@@ -90,39 +90,68 @@ Seluruh dasbor diselaraskan dengan aturan baku siklus anggaran:
 
 ---
 
-## 🚀 Panduan Menjalankan Sistem Secara Serentak
+## 🚀 Panduan Instalasi & Menjalankan Sistem (VPS, macOS, & Windows)
 
-### 1. Inisialisasi Database & Proxy API
+> 📘 **Panduan lengkap & mendalam tersedia di: [deploy_guide.md](file:///d:/DaVinci/Web%20Development/integrated-blockchain/deploy_guide.md)**
+
+---
+
+### 🐧 Opsi 1: Instalasi Cepat di Linux VPS (Ubuntu / Debian)
+
 ```bash
-# Start PostgreSQL (Port 2025)
-./pgsql/bin/pg_ctl.exe -D "D:\DaVinci\Web Development\integrated-blockchain\pgsql\data" -l "pgsql/data/server.log" start
+# 1. Clone repository
+git clone https://github.com/adimaryanto-stack/integrated-blockchain.git
+cd integrated-blockchain
 
-# Start Proxy Gateway (Port 2026)
-node scripts/proxy-server.js
+# 2. Atur password postgres dan import database (Otomatis ekstrak gzip & import 35 tabel)
+sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+DB_PORT=5432 DB_PASSWORD=postgres node scripts/setup-db.js
+
+# 3. Jalankan seluruh sistem (Proxy API & 6 Dashboard)
+chmod +x start.sh
+./start.sh
 ```
 
-### 2. Jalankan Seluruh Dashboard Frontend
+---
+
+### 🍎 Opsi 2: Instalasi Cepat di MacBook (macOS)
+
 ```bash
-# Port 2020: Transparansi Publik
-npm run dev --prefix apps/transparansi-anggaran/apps/web-next -- -p 2020
+# 1. Install Node.js & PostgreSQL via Homebrew
+brew install node postgresql@16
+brew services start postgresql@16
 
-# Port 2021: Dashboard Kementerian
-npm run dev --prefix apps/dashboard-kementerian -- -p 2021
+# 2. Clone repository & Import database 35 tabel
+git clone https://github.com/adimaryanto-stack/integrated-blockchain.git
+cd integrated-blockchain
+DB_PORT=5432 DB_PASSWORD=postgres node scripts/setup-db.js
 
-# Port 2022: Dashboard Bank
-npm run dev --prefix apps/dashboard-bank -- -p 2022
-
-# Port 2023: Dashboard Auditor
-npm run dev --prefix apps/dashboard-auditor -- -p 2023
-
-# Port 2024: Dashboard Institusi Pendidikan
-npm run dev --prefix apps/dashboard-institusi-pendidikan -- -p 2024
-
-# Port 2027: Dashboard APBD Provinsi Lampung
-npm run dev --prefix apps/dashboard-apbd -- -p 2027
+# 3. Jalankan seluruh aplikasi
+chmod +x start.sh
+./start.sh
 ```
 
-### 3. Skrip Pemeriksaan Kesehatan (Health Check)
+---
+
+### 🐳 Opsi 3: Menjalankan Menggunakan Docker Compose (1 Perintah)
+
+```bash
+# Start PostgreSQL Database (Port 2025) & Proxy API (Port 2026)
+docker compose up -d
+```
+
+---
+
+### 🪟 Opsi 4: Menjalankan di Windows Localhost
+
+```powershell
+# Buka PowerShell di folder project dan jalankan script master
+powershell -ExecutionPolicy Bypass -File "start-all.ps1"
+```
+
+---
+
+### 🔍 Skrip Pemeriksaan Kesehatan (Health Check)
 ```bash
 node scripts/check_all_ports.js
 ```
