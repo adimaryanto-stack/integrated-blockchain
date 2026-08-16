@@ -1,210 +1,301 @@
 # 📖 Panduan Lengkap Instalasi & Deployment (Linux VPS, macOS, & Windows)
 ## Integrated Blockchain - Platform Transparansi Anggaran Pendidikan Indonesia
 
-> **Panduan praktis, mudah dipahami, dan bergaransi 100% berhasil untuk menjalankan seluruh ekosistem (Database PostgreSQL, Proxy REST API, dan 6 Dashboard Aplikasi) pada VPS Ubuntu/Debian, MacBook macOS, maupun Windows Localhost.**
+> **Panduan teknis langkah demi langkah untuk menjalankan masing-masing dari 6 dashboard aplikasi, database PostgreSQL, dan Proxy REST API gateway, serta menghubungkannya ke IP Publik, Custom Domain / Subdomain, dan SSL HTTPS.**
 
 ---
 
-## 📌 Peta 8 Port & Layanan
+## 📌 Peta 8 Port & Direktori Aplikasi
 
-| Port | Layanan / Aplikasi | Direktori | URL Akses |
-|:---:|---|---|---|
-| **2020** | **Portal Transparansi Publik** | `apps/transparansi-anggaran/apps/web-next` | `http://localhost:2020` |
-| **2021** | **Dashboard Kementerian (APBN)** | `apps/dashboard-kementerian` | `http://localhost:2021/dashboard` |
-| **2022** | **Dashboard Bank Penyalur** | `apps/dashboard-bank` | `http://localhost:2022/dashboard` |
-| **2023** | **Dashboard Auditor BPK** | `apps/dashboard-auditor` | `http://localhost:2023/dashboard` |
-| **2024** | **Dashboard Institusi Pendidikan** | `apps/dashboard-institusi-pendidikan` | `http://localhost:2024/dashboard` |
-| **2025** | **Database PostgreSQL 16** | `pgsql/data` / System Postgres | `postgresql://localhost:2025/postgres` |
-| **2026** | **Proxy REST API Gateway** | `proxy/proxy.js` | `http://localhost:2026` |
-| **2027** | **Dashboard APBD Provinsi Lampung** | `apps/dashboard-apbd` | `http://localhost:2027/dashboard` |
-
----
-
-## 🗄️ Database: Sumber Data Tunggal (Single Source of Truth)
-
-Seluruh skema tabel (35 tabel relasional), relasi foreign key, indeks performa B-Tree, dan data master 367.865 satuan pendidikan telah dikompresi ke dalam file **`database_dump.sql.gz`** (ukuran 48 MB).
-
-Skrip otomatis **`scripts/setup-db.js`** akan mendekompresi dan mengimpor seluruh data secara otomatis ke database PostgreSQL tujuan hanya dalam **1 kali eksekusi**.
+| No | Nama Layanan / Dashboard | Port | Direktori Sumber | Target Domain / Subdomain (Contoh) |
+|:---:|---|:---:|---|---|
+| **1** | **Portal Transparansi Publik** | `:2020` | `apps/transparansi-anggaran/apps/web-next` | `https://transparansi.domain.com` |
+| **2** | **Dashboard Kementerian (APBN)** | `:2021` | `apps/dashboard-kementerian` | `https://kementerian.domain.com` |
+| **3** | **Dashboard Bank Penyalur** | `:2022` | `apps/dashboard-bank` | `https://bank.domain.com` |
+| **4** | **Dashboard Auditor BPK** | `:2023` | `apps/dashboard-auditor` | `https://auditor.domain.com` |
+| **5** | **Dashboard Institusi Pendidikan** | `:2024` | `apps/dashboard-institusi-pendidikan` | `https://sekolah.domain.com` |
+| **6** | **Database PostgreSQL 16** | `:2025` | `pgsql/data` / PostgreSQL Server | `postgresql://127.0.0.1:2025/postgres` |
+| **7** | **Proxy REST API Server** | `:2026` | `proxy/proxy.js` | `https://api.domain.com` |
+| **8** | **Dashboard APBD Provinsi Lampung** | `:2027` | `apps/dashboard-apbd` | `https://apbd.domain.com` |
 
 ---
 
-## 🐧 METODE 1: Instalasi di Linux VPS (Ubuntu / Debian) — *Direkomendasikan*
+## 🗄️ Bagian 1: Persiapan Database PostgreSQL (Port 2025)
 
-### Langkah 1: Clone Repository & Persiapan OS
+Seluruh 35 tabel relasional dan master data 367.865 satuan pendidikan tersimpan dalam file terkompresi **`database_dump.sql.gz`** (48 MB).
+
+### 1.1 Restore Database di Linux VPS / macOS
 ```bash
-# 1. Update paket sistem & install dependensi dasar
-sudo apt update && sudo apt upgrade -y
-sudo apt install -y git curl build-essential postgresql postgresql-contrib
-
-# 2. Install Node.js v20 LTS
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
-
-# 3. Install Process Manager (PM2) global
-sudo npm install -g pm2
-
-# 4. Clone repository
-git clone https://github.com/adimaryanto-stack/integrated-blockchain.git
-cd integrated-blockchain
-```
-
-### Langkah 2: Konfigurasi Database PostgreSQL VPS (Port 2025)
-```bash
-# Masuk ke prompt PostgreSQL dan atur password user 'postgres'
-sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
-sudo -u postgres psql -c "CREATE DATABASE postgres;" 2>/dev/null || true
-
-# (Opsional) Jika ingin mengubah port default PostgreSQL ke 2025:
-sudo sed -i "s/port = 5432/port = 2025/g" /etc/postgresql/*/main/postgresql.conf
-sudo systemctl restart postgresql
-```
-
-### Langkah 3: Import Database Otomatis (1 Perintah)
-```bash
-# Jalankan skrip universal restorer (Otomatis ekstrak gzip & import 35 tabel)
+# Jalankan skrip restore otomatis (Otomatis ekstrak dan import 35 tabel)
 DB_PORT=2025 DB_PASSWORD=postgres node scripts/setup-db.js
 ```
-*Output: `✅ Database imported successfully! ALL 35 TABLES & 367,865 INSTITUTIONS READY!`*
+*(Jika PostgreSQL Anda berjalan di port default 5432, cukup ganti `DB_PORT=5432`)*.
 
-### Langkah 4: Jalankan Seluruh Sistem via PM2 (Background Daemon)
-```bash
-# Berikan izin eksekusi pada skrip startup
-chmod +x start.sh
+---
 
-# Jalankan start.sh (akan menginstal dependensi & menjalankan 8 port)
-./start.sh
-```
+## ⚙️ Bagian 2: Konfigurasi Environment Variable (`.env.local`)
 
-### Memantau & Mengelola Layanan di VPS
-```bash
-# Melihat status seluruh dashboard & proxy
-pm2 status
+Masing-masing dashboard terhubung ke database melalui **Proxy API Server (Port 2026)**.
 
-# Melihat log aplikasi secara realtime
-pm2 logs
+Jika Anda mendeploy di VPS atau domain publik, buat atau perbarui file `.env.local` di setiap folder aplikasi:
 
-# Restart seluruh aplikasi jika diperlukan
-pm2 restart all
+```env
+# Format jika menggunakan IP VPS:
+NEXT_PUBLIC_SUPABASE_URL=http://IP_VPS_ANDA:2026
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpweXR4bW54Ymljam1nc2dwcmJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2ODk1NzAsImV4cCI6MjA4ODI2NTU3MH0.BGQGztExtjrTr6XHrvQZ1A0njAAdkoBAp3APRfWsQNE
+
+# Format jika menggunakan Custom Domain (HTTPS):
+# NEXT_PUBLIC_SUPABASE_URL=https://api.domain.com
 ```
 
 ---
 
-## 🍎 METODE 2: Instalasi di MacBook (macOS Intel / Apple Silicon M1/M2/M3)
+## 🚀 Bagian 3: Menjalankan Masing-Masing Dashboard Secara Mandiri
 
-### Langkah 1: Persiapan Terminal macOS via Homebrew
-Buka aplikasi **Terminal** di MacBook Anda:
+Anda dapat menjalankan setiap dashboard secara terpisah di terminal atau server yang berbeda:
+
+### 1. Menjalankan Backend Proxy REST API (Port 2026)
 ```bash
-# 1. Install Node.js dan PostgreSQL 16 melalui Homebrew
-brew install node postgresql@16
-
-# 2. Jalankan service PostgreSQL
-brew services start postgresql@16
-
-# 3. Pastikan user postgres dan database postgres tersedia
-psql postgres -c "CREATE ROLE postgres WITH SUPERUSER LOGIN PASSWORD 'postgres';" 2>/dev/null || true
-psql postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+cd proxy
+npm install
+node proxy.js
+# Atau dengan PM2:
+pm2 start proxy.js --name "blockchain-proxy-2026"
 ```
 
-### Langkah 2: Clone Repository & Restore Database
+### 2. Menjalankan Portal Transparansi Publik (Port 2020)
 ```bash
-# 1. Clone repository
-git clone https://github.com/adimaryanto-stack/integrated-blockchain.git
-cd integrated-blockchain
-
-# 2. Install dependensi proxy API
-cd proxy && npm install && cd ..
-
-# 3. Import 35 tabel database secara instan
-DB_PORT=5432 DB_PASSWORD=postgres node scripts/setup-db.js
+cd apps/transparansi-anggaran/apps/web-next
+npm install
+npm run build
+# Jalankan mode production di port 2020:
+npx next start -p 2020
+# Atau dengan PM2:
+pm2 start npx --name "app-2020-transparansi" -- next start -p 2020
 ```
 
-### Langkah 3: Jalankan Ekosistem
+### 3. Menjalankan Dashboard Kementerian (Port 2021)
 ```bash
-# Opsi A: Jalankan script otomatis
-chmod +x start.sh
-./start.sh
-
-# Opsi B: Jalankan manual di tab terminal terpisah
-# Terminal 1: Proxy API Server (Port 2026)
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres node proxy/proxy.js
-
-# Terminal 2: Dashboard Transparansi Publik (Port 2020)
-cd apps/transparansi-anggaran/apps/web-next && npm install && npm run dev
-
-# Terminal 3: Dashboard APBD Lampung (Port 2027)
-cd apps/dashboard-apbd && npm install && npm run dev
+cd apps/dashboard-kementerian
+npm install
+npm run build
+npx next start -p 2021
+# Atau dengan PM2:
+pm2 start npx --name "app-2021-kementerian" -- next start -p 2021
 ```
 
-Buka peramban di MacBook: **[http://localhost:2020](http://localhost:2020)** dan **[http://localhost:2027](http://localhost:2027)**.
-
----
-
-## 🐳 METODE 3: Deployment Menggunakan Docker & Docker Compose (1 Perintah)
-
-Jika Anda memiliki **Docker Desktop** atau **Docker Engine**:
-
+### 4. Menjalankan Dashboard Bank Penyalur (Port 2022)
 ```bash
-# Clone repository
-git clone https://github.com/adimaryanto-stack/integrated-blockchain.git
-cd integrated-blockchain
-
-# Jalankan Database PostgreSQL (Port 2025) & Proxy API (Port 2026) dalam container
-docker compose up -d
-```
-*Docker akan otomatis membuat database, menjalankan PostgreSQL pada port 2025, dan mengaktifkan REST Proxy API pada port 2026.*
-
-Kemudian jalankan dashboard yang Anda inginkan:
-```bash
-# Contoh menjalankan Dashboard APBD Lampung
-cd apps/dashboard-apbd && npm install && npm run dev
+cd apps/dashboard-bank
+npm install
+npm run build
+npx next start -p 2022
+# Atau dengan PM2:
+pm2 start npx --name "app-2022-bank" -- next start -p 2022
 ```
 
----
+### 5. Menjalankan Dashboard Auditor BPK (Port 2023)
+```bash
+cd apps/dashboard-auditor
+npm install
+npm run build
+npx next start -p 2023
+# Atau dengan PM2:
+pm2 start npx --name "app-2023-auditor" -- next start -p 2023
+```
 
-## 🪟 METODE 4: Instalasi di Windows (Localhost)
+### 6. Menjalankan Dashboard Institusi Pendidikan (Port 2024)
+```bash
+cd apps/dashboard-institusi-pendidikan
+npm install
+npm run build
+npx next start -p 2024
+# Atau dengan PM2:
+pm2 start npx --name "app-2024-institusi" -- next start -p 2024
+```
 
-Di Windows, sistem sudah dilengkapi dengan *bundled portable* PostgreSQL 16 di folder `pgsql/bin`.
-
-```powershell
-# 1. Buka PowerShell di folder project
-cd "d:\DaVinci\Web Development\integrated-blockchain"
-
-# 2. Jalankan skrip master startup (Otomatis start DB 2025, Proxy 2026, dan 6 Dashboard)
-powershell -ExecutionPolicy Bypass -File "start-all.ps1"
+### 7. Menjalankan Dashboard APBD Provinsi Lampung (Port 2027)
+```bash
+cd apps/dashboard-apbd
+npm install
+npm run build
+npx next start -p 2027
+# Atau dengan PM2:
+pm2 start npx --name "app-2027-apbd-lampung" -- next start -p 2027
 ```
 
 ---
 
-## 🔍 Skrip Pemeriksaan Kesehatan (Health Check)
+## 🌐 Bagian 4: Menghubungkan ke Domain / Subdomain dengan Nginx Reverse Proxy
 
-Untuk memverifikasi bahwa seluruh 8 port beroperasi dengan normal:
+Untuk membuat masing-masing dashboard dapat diakses melalui domain cantik (contoh: `transparansi.domain.com`, `apbd.domain.com`) tanpa menyebutkan port:
+
+### Langkah 1: Buat Konfigurasi Nginx
+Buat file konfigurasi baru di VPS Anda:
+```bash
+sudo nano /etc/nginx/sites-available/blockchain-dashboards.conf
+```
+
+Tempelkan konfigurasi berikut (Ganti `domain.com` dengan nama domain Anda):
+
+```nginx
+# 1. Portal Transparansi Publik (Port 2020)
+server {
+    server_name transparansi.domain.com;
+    location / {
+        proxy_pass http://127.0.0.1:2020;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# 2. Dashboard Kementerian (Port 2021)
+server {
+    server_name kementerian.domain.com;
+    location / {
+        proxy_pass http://127.0.0.1:2021;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# 3. Dashboard Bank Penyalur (Port 2022)
+server {
+    server_name bank.domain.com;
+    location / {
+        proxy_pass http://127.0.0.1:2022;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# 4. Dashboard Auditor BPK (Port 2023)
+server {
+    server_name auditor.domain.com;
+    location / {
+        proxy_pass http://127.0.0.1:2023;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# 5. Dashboard Institusi Pendidikan (Port 2024)
+server {
+    server_name sekolah.domain.com;
+    location / {
+        proxy_pass http://127.0.0.1:2024;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# 6. Proxy DB REST API (Port 2026)
+server {
+    server_name api.domain.com;
+    location / {
+        proxy_pass http://127.0.0.1:2026;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# 7. Dashboard APBD Provinsi Lampung (Port 2027)
+server {
+    server_name apbd.domain.com;
+    location / {
+        proxy_pass http://127.0.0.1:2027;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+### Langkah 2: Aktifkan Konfigurasi & Restart Nginx
+```bash
+sudo ln -s /etc/nginx/sites-available/blockchain-dashboards.conf /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+---
+
+## 🔒 Bagian 5: Pasang SSL HTTPS Gratis (Certbot Let's Encrypt)
+
+Untuk mengaktifkan gembok hijau HTTPS pada seluruh subdomain dalam 1 perintah:
+
+```bash
+# Install Certbot untuk Nginx
+sudo apt install -y certbot python3-certbot-nginx
+
+# Pasang SSL gratis otomatis ke seluruh subdomain
+sudo certbot --nginx -d transparansi.domain.com -d kementerian.domain.com -d bank.domain.com -d auditor.domain.com -d sekolah.domain.com -d api.domain.com -d apbd.domain.com
+```
+
+Certbot akan otomatis memperbarui sertifikat SSL setiap 90 hari.
+
+---
+
+## 🛡️ Bagian 6: Konfigurasi Firewall (UFW)
+
+Pastikan port web publik terbuka:
+```bash
+sudo ufw allow 80/tcp    # HTTP
+sudo ufw allow 443/tcp   # HTTPS
+sudo ufw allow 22/tcp    # SSH
+sudo ufw enable
+```
+
+---
+
+## 💡 Manajemen Proses Otomatis (PM2 Autostart saat Server Reboot)
+
+Agar semua dashboard otomatis menyala saat VPS restart atau reboot:
+```bash
+# Simpan daftar proses PM2 aktif
+pm2 save
+
+# Daftarkan PM2 ke systemd startup service
+pm2 startup
+```
+
+---
+
+## 🔍 Skrip Pemeriksaan Kesehatan Sistem (Health Check)
 ```bash
 node scripts/check_all_ports.js
 ```
-
-*Contoh Output:*
-```text
-=== HEALTH CHECK FOR ALL 8 PORTS ===
-Port 2025 (PostgreSQL DB Engine) : ONLINE (Latency: 15ms | Tables: 35)
-Port 2026 (Proxy API Server)     : ONLINE (200 OK | Latency: 8ms)
-Port 2020 (Transparansi Publik)  : ONLINE (200 OK | Latency: 42ms)
-Port 2021 (Dashboard Kementerian): ONLINE (200 OK | Latency: 45ms)
-Port 2022 (Dashboard Bank)       : ONLINE (200 OK | Latency: 58ms)
-Port 2023 (Dashboard Auditor)    : ONLINE (200 OK | Latency: 64ms)
-Port 2024 (Institusi Pendidikan) : ONLINE (200 OK | Latency: 58ms)
-Port 2027 (Dashboard APBD Prov)  : ONLINE (200 OK | Latency: 48ms)
-```
-
----
-
-## ❓ FAQ & Troubleshooting
-
-1. **Bagaimana jika port PostgreSQL saya adalah 5432, bukan 2025?**
-   - Proxy API mendukung environment variable `DATABASE_URL`. Cukup jalankan proxy dengan:
-     ```bash
-     DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres node proxy/proxy.js
-     ```
-2. **Apakah database dump sudah mencakup seluruh data sekolah se-Indonesia?**
-   - **Ya.** `database_dump.sql.gz` mencakup master data 38 provinsi, 514 kabupaten/kota, 367.865 institusi pendidikan (Universitas, SMA, SMP, SD, PAUD), data multi-sumber dana (APBN, APBD, CSR), rekening koran bank, serta log audit deteksi anomali.
-3. **Mengapa tahun 2027 menampilkan angka pengeluaran Rp 0?**
-   - Tahun anggaran 2027 adalah tahun anggaran perencanaan (draft). Belanja bernilai Rp 0, dan saldo rekening bank merupakan sisa akumulasi kas tahun 2026 (*Carry-Forward*).

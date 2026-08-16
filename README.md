@@ -151,6 +151,21 @@ powershell -ExecutionPolicy Bypass -File "start-all.ps1"
 
 ---
 
+### 🌐 Opsi 5: Menjalankan Dashboard Tertentu & Konfigurasi Domain / Subdomain
+
+Jika Anda ingin mendeploy atau menjalankan dashboard tertentu ke **Domain / Subdomain / IP terpisah**:
+- **Transparansi Publik (`:2020`)**: `cd apps/transparansi-anggaran/apps/web-next && npm run build && npx next start -p 2020`
+- **Dashboard Kementerian (`:2021`)**: `cd apps/dashboard-kementerian && npm run build && npx next start -p 2021`
+- **Dashboard Bank (`:2022`)**: `cd apps/dashboard-bank && npm run build && npx next start -p 2022`
+- **Dashboard Auditor (`:2023`)**: `cd apps/dashboard-auditor && npm run build && npx next start -p 2023`
+- **Dashboard Institusi (`:2024`)**: `cd apps/dashboard-institusi-pendidikan && npm run build && npx next start -p 2024`
+- **Dashboard APBD Lampung (`:2027`)**: `cd apps/dashboard-apbd && npm run build && npx next start -p 2027`
+- **Proxy REST API Gateway (`:2026`)**: `cd proxy && node proxy.js`
+
+> 📖 **Panduan lengkap konfigurasi Nginx Reverse Proxy, Custom Subdomain, dan SSL HTTPS gratis (Certbot Let's Encrypt) tersedia di [deploy_guide.md](file:///d:/DaVinci/Web%20Development/integrated-blockchain/deploy_guide.md).**
+
+---
+
 ### 🔍 Skrip Pemeriksaan Kesehatan (Health Check)
 ```bash
 node scripts/check_all_ports.js
