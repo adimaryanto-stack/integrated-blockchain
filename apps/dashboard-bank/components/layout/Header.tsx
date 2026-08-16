@@ -27,13 +27,20 @@ export default function Header({ title, subtitle }: HeaderProps) {
   const { activeTahun, setActiveTahun, toggleSidebar } = useAppStore();
   const [activeTahunList, setActiveTahunList] = useState<TahunAnggaran[]>([]);
 
+  const fetchYears = async () => {
+    try {
+      const res = await getTahunAnggaran();
+      const sorted = [...res].sort((a, b) => a.tahun - b.tahun);
+      setActiveTahunList(sorted);
+    } catch (err) {
+      console.error('[Bank Header] Error fetching years:', err);
+    }
+  };
+
   useEffect(() => {
-    getTahunAnggaran()
-      .then(res => {
-        const sorted = [...res].sort((a, b) => a.tahun - b.tahun);
-        setActiveTahunList(sorted.filter(t => t.status !== 'DRAFT'));
-      })
-      .catch(console.error);
+    fetchYears();
+    window.addEventListener('focus', fetchYears);
+    return () => window.removeEventListener('focus', fetchYears);
   }, []);
 
   // Notification States

@@ -35,14 +35,14 @@ export default function PengeluaranPage() {
   const { activeTahun, dbData, isSupabaseMode, addNotification, transaksiList, setTransaksiList } = useAppStore();
   const allInstitusi = useMemo(() => getAllInstitusi(), [dbData, isSupabaseMode]);
 
-  // Dynamically filter transactions for the active school (KB AL-IKHLAS)
+  // Dynamically filter transactions for the active school (KB AL-IKHLAS) and active year
   const transactionsWithActiveYear = useMemo(() => {
-    const kbTrans = transaksiList.filter(t => t.institusiId === 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7' || t.namaInstitusi === 'KB AL-IKHLAS');
-    if (kbTrans.length > 0) {
-      return kbTrans;
-    }
-    return transaksiList.filter(t => t.institusiId === 'inst-sd-0');
-  }, [transaksiList]);
+    return transaksiList.filter(t => {
+      const isMatchInst = t.institusiId === 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7' || t.namaInstitusi === 'KB AL-IKHLAS' || t.institusiId === 'inst-sd-0';
+      const isMatchYear = t.tanggal ? t.tanggal.includes(activeTahun.toString()) : false;
+      return isMatchInst && isMatchYear;
+    });
+  }, [transaksiList, activeTahun]);
 
 
   // States

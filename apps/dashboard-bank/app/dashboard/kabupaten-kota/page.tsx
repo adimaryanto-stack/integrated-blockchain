@@ -179,7 +179,7 @@ export default function KabupatenKotaPage() {
 
   return (
     <div className="min-h-screen">
-      <Header title="Penyaluran Area" subtitle={`Dana alokasi & cair per area kabupaten/kota — ${selectedProvName} Tahun ${activeTahun}`} />
+      <Header title="Pagu Kabupaten/Kota" subtitle={`Dana alokasi & cair per area kabupaten/kota — ${selectedProvName} Tahun ${activeTahun}`} />
 
       <div className="p-6">
         {/* Toolbar */}

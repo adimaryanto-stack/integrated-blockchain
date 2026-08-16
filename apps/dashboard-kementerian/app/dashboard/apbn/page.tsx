@@ -144,7 +144,7 @@ export default function APBNPage() {
 
     setIsSubmitting(true);
     try {
-      const success = await createTahunAnggaran(Number(newTahun), Number(rawTotal));
+      const success = await createTahunAnggaran(Number(newTahun), rawTotal);
       if (success) {
         setData([...tahunAnggaranData]);
         setShowAddModal(false);

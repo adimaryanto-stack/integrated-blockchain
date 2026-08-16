@@ -46,13 +46,42 @@ function seededValues(count: number, min: number, max: number, seed: number): nu
   return result;
 }
 
-// === TAHUN ANGGARAN (2026 ONLY) ===
+// === TAHUN ANGGARAN (2020–2026) ===
 export let tahunAnggaranData: TahunAnggaran[] = [
+  { id: '1', tahun: 2020, total_anggaran: 505_000_000_000_000, status: 'CLOSED', created_at: '2020-01-01' },
+  { id: '2', tahun: 2021, total_anggaran: 541_700_000_000_000, status: 'CLOSED', created_at: '2021-01-01' },
+  { id: '3', tahun: 2022, total_anggaran: 608_300_000_000_000, status: 'CLOSED', created_at: '2022-01-01' },
+  { id: '4', tahun: 2023, total_anggaran: 660_800_000_000_000, status: 'CLOSED', created_at: '2023-01-01' },
+  { id: '5', tahun: 2024, total_anggaran: 705_400_000_000_000, status: 'CLOSED', created_at: '2024-01-01' },
+  { id: '6', tahun: 2025, total_anggaran: 738_600_000_000_000, status: 'CLOSED', created_at: '2025-01-01' },
   { id: '7', tahun: 2026, total_anggaran: 769_100_000_000_000, status: 'ACTIVE', created_at: '2026-01-01' },
 ];
 
 export function updateTahunAnggaranData(newData: TahunAnggaran[]) {
-  tahunAnggaranData = newData;
+  if (!newData || newData.length === 0) return;
+  const updated = tahunAnggaranData.map(base => {
+    const dbEntry = newData.find(d => d.tahun === base.tahun);
+    return dbEntry ? { ...base, ...dbEntry } : base;
+  });
+  newData.forEach(d => {
+    if (!updated.find(u => u.tahun === d.tahun)) {
+      updated.push(d);
+    }
+  });
+  updated.sort((a, b) => a.tahun - b.tahun);
+  tahunAnggaranData = updated;
+}
+
+export function getBaseTahun(): TahunAnggaran {
+  return (
+    tahunAnggaranData.find(t => t.tahun === 2026) ||
+    tahunAnggaranData[tahunAnggaranData.length - 1] ||
+    { id: '7', tahun: 2026, total_anggaran: 769_100_000_000_000, status: 'ACTIVE', created_at: '2026-01-01' }
+  );
+}
+
+export function getTahunOrBase(tahun: number): TahunAnggaran {
+  return tahunAnggaranData.find(t => t.tahun === tahun) || getBaseTahun();
 }
 
 // === 38 PROVINSI ===
@@ -624,6 +653,13 @@ function generatePengeluaranBulanan(institusi: InstitusiPendidikan): Pengeluaran
 
 export function getProfilInstitusi(id: string, tahun: number = 2026): ProfilInstitusi | null {
   if (id === 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7' || id === 'inst-paud-69893669') {
+    const isZeroYear = (tahun === 2027);
+    const nominalAlokasi = isZeroYear ? 0 : 234775639;
+    const realisasiTotal = isZeroYear ? 0 : 197211537;
+    const sisaSaldo2026 = 37564102;
+    const selisihTotal = isZeroYear ? 0 : sisaSaldo2026;
+    const persentaseTotal = isZeroYear ? 0 : 84.0;
+
     const instKb: InstitusiPendidikan = {
       id: 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7',
       npsn: '69893669',
@@ -635,14 +671,24 @@ export function getProfilInstitusi(id: string, tahun: number = 2026): ProfilInst
       status_sekolah: 'SWASTA',
       nomor_rekening: '100.845.411.000',
       alamat: 'PAYA LUMPAT, Kel. Paya Lumpat, Kec. Samatiga, Kab. Aceh Barat',
-      nominal_alokasi: 234775639,
-      realisasi_total: 197211537,
-      selisih: 37564102,
-      persentase_penyerapan: 84.0,
-      updated_at: '2026-08-15'
+      nominal_alokasi: nominalAlokasi,
+      realisasi_total: realisasiTotal,
+      selisih: selisihTotal,
+      persentase_penyerapan: persentaseTotal,
+      updated_at: isZeroYear ? '2027-01-01' : '2026-08-15'
     };
 
-    const sumberDanaKb: SumberDanaInstitusi[] = [
+    const sumberDanaKb: SumberDanaInstitusi[] = isZeroYear ? [
+      {
+        id: 'sd-kb-carry-forward',
+        institusi_id: instKb.id,
+        nama_sumber: `Sisa Saldo Kas Bank Tahun 2026 (Carry Forward)`,
+        tahun_anggaran: '2027',
+        nominal: sisaSaldo2026,
+        realisasi: 0,
+        saldo_di_bank: sisaSaldo2026
+      }
+    ] : [
       {
         id: 'sd-kb-01',
         institusi_id: instKb.id,
@@ -675,7 +721,7 @@ export function getProfilInstitusi(id: string, tahun: number = 2026): ProfilInst
     const pcts = [0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.08, 0.08, 0.08, 0.06, 0.05, 0.05];
     let sumD = 0;
     const pengeluaranKb: PengeluaranBulananInstitusi[] = bulanNames.map((bulan, i) => {
-      const nom = (i === 11) ? (197211537 - sumD) : Math.round(197211537 * pcts[i]);
+      const nom = isZeroYear ? 0 : ((i === 11) ? (197211537 - sumD) : Math.round(197211537 * pcts[i]));
       sumD += nom;
       return {
         id: `pb-kb-${i + 1}`,
@@ -683,7 +729,7 @@ export function getProfilInstitusi(id: string, tahun: number = 2026): ProfilInst
         nomor: i + 1,
         bulan,
         nominal_pengeluaran: nom,
-        qty: 1,
+        qty: isZeroYear ? 0 : 1,
         sub_total: nom
       };
     });
@@ -692,7 +738,7 @@ export function getProfilInstitusi(id: string, tahun: number = 2026): ProfilInst
       institusi: instKb,
       sumber_dana: sumberDanaKb,
       pengeluaran_bulanan: pengeluaranKb,
-      saldo_surplus_defisit: 37564102
+      saldo_surplus_defisit: isZeroYear ? sisaSaldo2026 : selisihTotal
     };
   }
 

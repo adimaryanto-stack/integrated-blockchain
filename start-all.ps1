@@ -3,12 +3,12 @@ $PGSQL_BIN = "$ROOT\pgsql\bin"
 $PGSQL_DATA = "$ROOT\pgsql\data"
 
 Write-Host "==================================================================" -ForegroundColor Cyan
-Write-Host " Blockchain Anggaran - Startup Script & Port Health Verifier" -ForegroundColor Cyan
+Write-Host " Blockchain Anggaran - Startup Script & 8-Port Health Verifier" -ForegroundColor Cyan
 Write-Host "==================================================================" -ForegroundColor Cyan
 
-# --- 0. Clean up lingering node processes on ports 2020-2026 if any ---
-Write-Host "`n[0/4] Membersihkan port 2020-2026..." -ForegroundColor Yellow
-$targetPorts = @(2020, 2021, 2022, 2023, 2024, 2026)
+# --- 0. Clean up lingering node / postgres processes on ports 2020-2027 if any ---
+Write-Host "`n[0/4] Membersihkan port 2020-2027..." -ForegroundColor Yellow
+$targetPorts = @(2020, 2021, 2022, 2023, 2024, 2026, 2027)
 foreach ($p in $targetPorts) {
     $conns = Get-NetTCPConnection -LocalPort $p -ErrorAction SilentlyContinue | Where-Object { $_.State -eq 'Listen' }
     foreach ($c in $conns) {
@@ -30,7 +30,7 @@ if ($pgStatus -like "*server is running*") {
     }
     & "$PGSQL_BIN\pg_ctl.exe" start -D $PGSQL_DATA -o "-p 2025" -l "$ROOT\pgsql_log.txt"
     Start-Sleep 3
-    $test = & "$PGSQL_BIN\psql.exe" -U postgres -h 127.0.0.1 -p 2025 -c "SELECT 1" 2>&1
+    $test = & "$PGSQL_BIN\psql.exe" -U postgres -h 127.0.0.1 -p 2025 -d postgres -c "SELECT 1" 2>&1
     if ($LASTEXITCODE -eq 0) {
         Write-Host "      PostgreSQL berhasil dimulai di port 2025." -ForegroundColor Green
     } else {
@@ -46,25 +46,26 @@ Write-Host "      Proxy server dimulai (PID: $($proxyJob.Id))" -ForegroundColor 
 
 Start-Sleep 2
 
-# --- 3. Start All Dashboard Applications ---
-Write-Host "`n[3/4] Memulai semua dashboard..." -ForegroundColor Yellow
+# --- 3. Start All 6 Dashboard Applications ---
+Write-Host "`n[3/4] Memulai semua 6 dashboard..." -ForegroundColor Yellow
 
 $apps = @(
-    @{ name = "Transparansi Publik";     port = 2020; path = "$ROOT\apps\transparansi-anggaran\apps\web-next" },
-    @{ name = "Dashboard Kementerian";   port = 2021; path = "$ROOT\apps\dashboard-kementerian" },
-    @{ name = "Dashboard Bank";          port = 2022; path = "$ROOT\apps\dashboard-bank" },
-    @{ name = "Dashboard Auditor";       port = 2023; path = "$ROOT\apps\dashboard-auditor" },
-    @{ name = "Institusi Pendidikan";    port = 2024; path = "$ROOT\apps\dashboard-institusi-pendidikan" }
+    @{ name = "Transparansi Publik";     port = 2020; path = "$ROOT\apps\transparansi-anggaran\apps\web-next"; cmd = "/c npm run dev" },
+    @{ name = "Dashboard Kementerian";   port = 2021; path = "$ROOT\apps\dashboard-kementerian";              cmd = "/c npx next dev -p 2021" },
+    @{ name = "Dashboard Bank";          port = 2022; path = "$ROOT\apps\dashboard-bank";                     cmd = "/c npx next dev -p 2022" },
+    @{ name = "Dashboard Auditor";       port = 2023; path = "$ROOT\apps\dashboard-auditor";                  cmd = "/c npm run dev" },
+    @{ name = "Institusi Pendidikan";    port = 2024; path = "$ROOT\apps\dashboard-institusi-pendidikan";     cmd = "/c npx next dev -p 2024" },
+    @{ name = "Dashboard APBD Lampung";  port = 2027; path = "$ROOT\apps\dashboard-apbd";                     cmd = "/c npm run dev" }
 )
 
 foreach ($app in $apps) {
     Write-Host "      Memulai $($app.name) pada port $($app.port)..."
-    Start-Process -FilePath "cmd.exe" -ArgumentList "/c npm run dev -- --port $($app.port)" -WorkingDirectory $app.path -WindowStyle Minimized
+    Start-Process -FilePath "cmd.exe" -ArgumentList "$($app.cmd)" -WorkingDirectory $app.path -WindowStyle Minimized
     Start-Sleep 1
 }
 
 # --- 4. Verifikasi Kesehatan Seluruh Port (Health Check Loop) ---
-Write-Host "`n[4/4] Memverifikasi status kesehatan seluruh port..." -ForegroundColor Yellow
+Write-Host "`n[4/4] Memverifikasi status kesehatan seluruh 8 port..." -ForegroundColor Yellow
 $allPortsList = @(
     @{ name = "Transparansi Publik";     port = 2020; url = "http://localhost:2020" },
     @{ name = "Dashboard Kementerian";   port = 2021; url = "http://localhost:2021/dashboard" },
@@ -72,10 +73,11 @@ $allPortsList = @(
     @{ name = "Dashboard Auditor";       port = 2023; url = "http://localhost:2023/dashboard" },
     @{ name = "Institusi Pendidikan";    port = 2024; url = "http://localhost:2024/dashboard" },
     @{ name = "Database PostgreSQL";     port = 2025; url = "postgresql://localhost:2025" },
-    @{ name = "Proxy DB API Server";     port = 2026; url = "http://localhost:2026" }
+    @{ name = "Proxy DB API Server";     port = 2026; url = "http://localhost:2026" },
+    @{ name = "Dashboard APBD Lampung";  port = 2027; url = "http://localhost:2027/dashboard" }
 )
 
-$maxWaitSeconds = 30
+$maxWaitSeconds = 45
 $elapsed = 0
 
 while ($elapsed -lt $maxWaitSeconds) {
@@ -93,16 +95,16 @@ while ($elapsed -lt $maxWaitSeconds) {
 }
 
 Write-Host "`n==================================================================" -ForegroundColor Cyan
-Write-Host " STATUS SELURUH SERVER DAN PORT:" -ForegroundColor Cyan
+Write-Host " STATUS SELURUH 8 SERVER DAN PORT:" -ForegroundColor Cyan
 Write-Host "==================================================================" -ForegroundColor Cyan
 
 foreach ($item in $allPortsList) {
     $conn = Get-NetTCPConnection -LocalPort $item.port -State Listen -ErrorAction SilentlyContinue
     if ($conn) {
         $pidNum = $conn.OwningProcess[0]
-        Write-Host ("  {0,-25} (Port {1}) : ONLINE [PID {2}] -> {3}" -f $item.name, $item.port, $pidNum, $item.url) -ForegroundColor Green
+        Write-Host ("  {0,-26} (Port {1}) : ONLINE [PID {2}] -> {3}" -f $item.name, $item.port, $pidNum, $item.url) -ForegroundColor Green
     } else {
-        Write-Host ("  {0,-25} (Port {1}) : OFFLINE" -f $item.name, $item.port) -ForegroundColor Red
+        Write-Host ("  {0,-26} (Port {1}) : OFFLINE" -f $item.name, $item.port) -ForegroundColor Red
     }
 }
 

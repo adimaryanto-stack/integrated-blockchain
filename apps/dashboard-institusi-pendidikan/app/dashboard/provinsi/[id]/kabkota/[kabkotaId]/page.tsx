@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import PctBadge from '@/components/ui/PctBadge';
 import { useAppStore } from '@/lib/store';
-import { alokasiProvinsiData, getKabkotaByProvinsi, getJenjangBreakdownByKabkota, getInstitusiByKabkota, tahunAnggaranData } from '@/lib/data';
+import { alokasiProvinsiData, getKabkotaByProvinsi, getJenjangBreakdownByKabkota, getInstitusiByKabkota, tahunAnggaranData, getBaseTahun, getTahunOrBase } from '@/lib/data';
 import { fmtRupiah } from '@/lib/utils/formatters';
 import { AlokasiProvinsi, AlokasiKabupatenKota, InstitusiPendidikan } from '@/types';
 import { ArrowLeft, Banknote, Download, School, Sparkles } from 'lucide-react';
@@ -23,9 +23,9 @@ export default function KabkotaDetailPage() {
     const baseData = alokasiProvinsiData.find(p => p.provinsi_id === id);
     if (!baseData) return null;
     
-    const targetTahun = tahunAnggaranData.find(t => t.tahun === activeTahun) || tahunAnggaranData[6];
-    const baseTahun = tahunAnggaranData[6];
-    const scale = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
+    const targetTahun = getTahunOrBase(activeTahun);
+    const baseTahun = getBaseTahun();
+    const scale = baseTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
     const seed = (activeTahun % 7) || 1;
     const shift = 0.95 + (seed * 0.012);
 
@@ -45,9 +45,9 @@ export default function KabkotaDetailPage() {
     const baseData = getKabkotaByProvinsi(id).find(k => k.kabupaten_kota_id === kabkotaId);
     if (!baseData) return null;
     
-    const targetTahun = tahunAnggaranData.find(t => t.tahun === activeTahun) || tahunAnggaranData[6];
-    const baseTahun = tahunAnggaranData[6];
-    const scale = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
+    const targetTahun = getTahunOrBase(activeTahun);
+    const baseTahun = getBaseTahun();
+    const scale = baseTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
     const seed = (activeTahun % 7) || 1;
     const shift = 0.95 + (seed * 0.012);
 

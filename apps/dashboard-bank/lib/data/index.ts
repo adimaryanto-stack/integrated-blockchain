@@ -232,21 +232,42 @@ export async function getAlokasiProvinsi(tahun: number): Promise<AlokasiProvinsi
     .eq('tahun_anggaran_id', yearRow.id);
   
   if (error) throw error;
-  return (data || []).map((row: any) => {
-    const nominal = Number(row.nominal_alokasi || 0);
-    const realisasi = Number(row.realisasi_total || 0);
-    return {
-      id: row.id,
-      tahun_anggaran_id: row.tahun_anggaran_id,
-      provinsi_id: row.provinsi_id,
-      provinsi: row.provinsi || { id: row.provinsi_id, kode_provinsi: '', nama_provinsi: 'Provinsi' },
-      nominal_alokasi: nominal,
-      realisasi_total: realisasi,
-      selisih: nominal - realisasi,
-      persentase_penyerapan: nominal > 0 ? (realisasi / nominal) * 100 : 0,
-      updated_at: row.updated_at || '',
-    };
-  });
+
+  if (data && data.length > 0) {
+    return data.map((row: any) => {
+      const nominal = Number(row.nominal_alokasi || 0);
+      const realisasi = Number(row.realisasi_total || 0);
+      return {
+        id: row.id,
+        tahun_anggaran_id: row.tahun_anggaran_id,
+        provinsi_id: row.provinsi_id,
+        provinsi: row.provinsi || { id: row.provinsi_id, kode_provinsi: '', nama_provinsi: 'Provinsi' },
+        nominal_alokasi: nominal,
+        realisasi_total: realisasi,
+        selisih: nominal - realisasi,
+        persentase_penyerapan: nominal > 0 ? (realisasi / nominal) * 100 : 0,
+        updated_at: row.updated_at || '',
+      };
+    });
+  }
+
+  // Fallback: ambil 38 master provinsi dari DB dengan nominal Rp 0
+  const { data: masterProvs } = await supabase
+    .from('provinsi')
+    .select('*')
+    .order('nama_provinsi', { ascending: true });
+
+  return (masterProvs || []).map((prov: any) => ({
+    id: `prov-draft-${prov.id}-${yearRow.id}`,
+    tahun_anggaran_id: yearRow.id,
+    provinsi_id: prov.id,
+    provinsi: prov,
+    nominal_alokasi: 0,
+    realisasi_total: 0,
+    selisih: 0,
+    persentase_penyerapan: 0,
+    updated_at: new Date().toISOString().split('T')[0],
+  }));
 }
 
 export async function getKabkotaByProvinsi(
@@ -747,20 +768,41 @@ export async function getJenjangBreakdownByProvinsi(
   const numNominal = Number(nominalAlokasi) || 0;
 
   const jenjangs = [
-    { label: 'Universitas (Strata 1)', key: 'UNIVERSITAS', weight: 0.35, porsi: 35.0,
+    { label: 'Universitas (Strata 1)',                  key: 'univ', weight: 0.35, porsi: 35.0,
       patterns: ['%universitas%', '%institut%', '%politeknik%', '%akademi%', '%sekolah tinggi%'] },
-    { label: 'Sekolah Menengah Atas (SMA/SMK)', key: 'SMA', weight: 0.25, porsi: 25.0,
+    { label: 'Sekolah Menengah Atas (SMA/SMK)',          key: 'sma',  weight: 0.25, porsi: 25.0,
       patterns: ['%sma%', '%sman%', '%smas%', '%smk%', '%smkn%', '%smks%', '%ma%', '%man%', '%mas%'] },
-    { label: 'Sekolah Menengah Pertama (SMP/Sederajat)', key: 'SMP', weight: 0.20, porsi: 20.0,
+    { label: 'Sekolah Menengah Pertama (SMP/Sederajat)', key: 'smp',  weight: 0.20, porsi: 20.0,
       patterns: ['%smp%', '%smpn%', '%smps%', '%mts%', '%mtsn%', '%mtss%'] },
-    { label: 'Sekolah Dasar (SD/Sederajat)', key: 'SD', weight: 0.15, porsi: 15.0,
+    { label: 'Sekolah Dasar (SD/Sederajat)',             key: 'sd',   weight: 0.15, porsi: 15.0,
       patterns: ['%sd%', '%sdn%', '%sds%', '%mi%', '%min%', '%mis%'] },
-    { label: 'Pendidikan Anak Usia Dini (PAUD/TK/KB)', key: 'PAUD', weight: 0.05, porsi: 5.0,
+    { label: 'Pendidikan Anak Usia Dini (PAUD/TK/KB)',  key: 'paud', weight: 0.05, porsi: 5.0,
       patterns: ['%paud%', '%tk%', '%kb%', '%tpa%', '%sps%'] },
   ];
 
+  // ── PRIMARY: province_school_stats (konsisten dengan port 2021 & 2023) ──
   try {
-    // Step 1: Get regency IDs for this province
+    const { data: stats, error: statsErr } = await supabase
+      .from('province_school_stats')
+      .select('univ, sma, smp, sd, paud')
+      .eq('province_id', provinsiId)
+      .single();
+
+    if (stats && !statsErr) {
+      return jenjangs.map((j, i) => ({
+        nomor: i + 1,
+        jenjang: j.label,
+        jumlah_sekolah: Number((stats as any)[j.key]) || 0,
+        nominal_keseluruhan: Math.round(numNominal * j.weight),
+        porsi_anggaran: j.porsi,
+      }));
+    }
+  } catch (_) {
+    // fall through to secondary method
+  }
+
+  // ── SECONDARY: hitung dari tabel schools (fallback jika province_school_stats kosong) ──
+  try {
     const { data: regencies } = await supabase
       .from('regencies')
       .select('id')
@@ -769,11 +811,8 @@ export async function getJenjangBreakdownByProvinsi(
     const regencyIds = (regencies || []).map((r: any) => r.id);
 
     if (regencyIds.length > 0) {
-      // Step 2: Count schools per jenjang (same methodology as port 2020)
       const countPromises = jenjangs.map(async (j) => {
         const orFilter = j.patterns.map(p => `name.ilike.${p}`).join(',');
-        // Count in chunks to avoid URL limits
-        let total = 0;
         const chunkSize = 50;
         const allIds = new Set<string>();
         for (let i = 0; i < regencyIds.length; i += chunkSize) {
@@ -789,7 +828,6 @@ export async function getJenjangBreakdownByProvinsi(
       });
 
       const counts = await Promise.all(countPromises);
-
       return jenjangs.map((j, i) => ({
         nomor: i + 1,
         jenjang: j.label,
@@ -802,7 +840,7 @@ export async function getJenjangBreakdownByProvinsi(
     console.error('[getJenjangBreakdownByProvinsi] schools query failed:', err);
   }
 
-  // Fallback: use weight-based allocation with 0 counts
+  // ── LAST RESORT: 0 counts, hardcoded weights ──
   return jenjangs.map((j, i) => ({
     nomor: i + 1,
     jenjang: j.label,

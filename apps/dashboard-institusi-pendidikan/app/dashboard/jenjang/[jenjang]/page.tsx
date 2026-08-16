@@ -109,16 +109,33 @@ export default function JenjangPage() {
         const { data: list, error } = await query;
         if (error) throw error;
 
-        const mapped = (list || []).map((item: any) => ({
-          ...item,
-          nominal_alokasi: Number(item.nominal_alokasi || 0),
-          realisasi_total: Number(item.realisasi_total || 0),
-          selisih: Number(item.nominal_alokasi || 0) - Number(item.realisasi_total || 0),
-          persentase_penyerapan:
-            Number(item.nominal_alokasi) > 0
-              ? Math.round((Number(item.realisasi_total) / Number(item.nominal_alokasi)) * 1000) / 10
-              : 0,
-        }));
+        const { data: yearRow } = await supabase
+          .from('tahun_anggaran')
+          .select('id')
+          .eq('tahun', activeTahun)
+          .maybeSingle();
+
+        const { count: allocCount } = await supabase
+          .from('alokasi_provinsi')
+          .select('*', { count: 'exact', head: true })
+          .eq('tahun_anggaran_id', yearRow?.id || '');
+
+        const hasAllocationsForYear = (allocCount || 0) > 0;
+
+        const mapped = (list || []).map((item: any) => {
+          const nominal = hasAllocationsForYear ? Number(item.nominal_alokasi || 0) : 0;
+          const realisasi = hasAllocationsForYear ? Number(item.realisasi_total || 0) : 0;
+          return {
+            ...item,
+            nominal_alokasi: nominal,
+            realisasi_total: realisasi,
+            selisih: nominal - realisasi,
+            persentase_penyerapan:
+              nominal > 0
+                ? Math.round((realisasi / nominal) * 1000) / 10
+                : 0,
+          };
+        });
 
         if (isMounted) {
           setData(mapped);
@@ -132,7 +149,7 @@ export default function JenjangPage() {
 
     fetch();
     return () => { isMounted = false; };
-  }, [config.jenjang, selectedProvinsiNama, selectedKabKotaName, selectedStatus, debouncedSearch]);
+  }, [config.jenjang, selectedProvinsiNama, selectedKabKotaName, selectedStatus, debouncedSearch, activeTahun]);
 
   const filtered = useMemo(() => data, [data]);
 

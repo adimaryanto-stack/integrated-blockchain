@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import { useAppStore } from '@/lib/store';
@@ -10,8 +10,19 @@ import { fmtRupiah } from '@/lib/utils/formatters';
 import { TahunAnggaran } from '@/types';
 
 export default function APBNPage() {
-  const { setActiveTahun } = useAppStore();
-  const [data] = useState<TahunAnggaran[]>(tahunAnggaranData);
+  const { setActiveTahun, isSupabaseMode, dbData } = useAppStore();
+  const data: TahunAnggaran[] = useMemo(() => {
+    if (isSupabaseMode && dbData?.tahun_anggaran && dbData.tahun_anggaran.length > 0) {
+      return dbData.tahun_anggaran.map((t: any) => ({
+        id: t.id,
+        tahun: Number(t.tahun),
+        total_anggaran: Number(t.total_anggaran || 0),
+        status: t.status,
+        created_at: t.created_at || '',
+      }));
+    }
+    return tahunAnggaranData;
+  }, [isSupabaseMode, dbData?.tahun_anggaran]);
 
   return (
     <div className="min-h-screen">

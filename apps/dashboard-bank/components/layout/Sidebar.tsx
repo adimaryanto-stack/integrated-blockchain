@@ -69,18 +69,18 @@ export default function Sidebar() {
           </Link>
 
           <Link href="/dashboard/apbn" className={`sidebar-item ${isActive('/dashboard/apbn') ? 'active' : ''}`}>
-            <DollarSign size={18} />
-            <span>Kelola Pagu Pusat</span>
+            <span style={{ fontSize: '11px', fontWeight: 800, minWidth: 18, textAlign: 'center', letterSpacing: '-0.5px', opacity: 0.85 }}>Rp.</span>
+            <span>Kelola Pagu APBN</span>
           </Link>
 
           <Link href="/dashboard/provinsi" className={`sidebar-item ${isActive('/dashboard/provinsi') ? 'active' : ''}`}>
             <MapPin size={18} />
-            <span>Penyaluran Wilayah</span>
+            <span>Pagu Provinsi</span>
           </Link>
 
           <Link href="/dashboard/kabupaten-kota" className={`sidebar-item ${isActive('/dashboard/kabupaten-kota') ? 'active' : ''}`}>
             <Building2 size={18} />
-            <span>Penyaluran Area</span>
+            <span>Pagu Kabupaten/Kota</span>
           </Link>
 
           {/* Jenjang Accordion */}

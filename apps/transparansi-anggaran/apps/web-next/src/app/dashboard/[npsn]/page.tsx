@@ -84,25 +84,20 @@ export default function SchoolDashboardPage() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [selectedTransaction]);
 
-    // Fetch available years from 'tahun_anggaran'
+    // Fetch available years from 'tahun_anggaran' in real-time
     useEffect(() => {
         const fetchYears = async () => {
             try {
                 const { data, error: yearsError } = await supabase
                     .from('tahun_anggaran')
-                    .select('tahun')
+                    .select('tahun, status')
                     .order('tahun', { ascending: false });
 
                 if (!yearsError && data) {
-                    const yearsList = data.map((d: any) => d.tahun);
+                    const yearsList = data.map((d: any) => Number(d.tahun)).filter((y: number) => !isNaN(y));
                     if (yearsList.length > 0) {
                         setAvailableYears(yearsList);
-                        // Default to 2026 if present, otherwise default to latest year
-                        if (yearsList.includes(2026)) {
-                            setSelectedYear(2026);
-                        } else {
-                            setSelectedYear(yearsList[0]);
-                        }
+                        setSelectedYear(prev => (yearsList.includes(prev) ? prev : yearsList[0]));
                     }
                 }
             } catch (err) {
@@ -110,6 +105,8 @@ export default function SchoolDashboardPage() {
             }
         };
         fetchYears();
+        window.addEventListener('focus', fetchYears);
+        return () => window.removeEventListener('focus', fetchYears);
     }, [npsn]);
 
     useEffect(() => {
@@ -151,117 +148,127 @@ export default function SchoolDashboardPage() {
                             location: instData.alamat || `${instData.kabupaten_kota_nama}, ${instData.provinsi_nama}`
                         };
                     } else {
-                        // Auto-scrape school dynamically from the Kemendikbud reference portal in real-time
-                        try {
-                            const scrapeRes = await fetch(`/api/v1/scrape-school?npsn=${npsn}`);
-                            const scrapeData = await scrapeRes.json();
-                            if (scrapeData.success && scrapeData.school) {
-                                school = scrapeData.school;
-                            } else {
-                                throw new Error(scrapeData.error || 'Scrape failed');
-                            }
-                        } catch (scrapeErr) {
-                            console.warn('Real-time scrape failed, falling back to local creation:', scrapeErr);
-                            // Fallback to local profile creation if scraping fails or is blocked
-                            const nameParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('name') : null;
-                            const defaultName = nameParam || `Institusi Pendidikan (NPSN: ${npsn})`;
+                        const nameParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('name') : null;
+                        const defaultName = nameParam || `Institusi Pendidikan (NPSN: ${npsn})`;
 
-                            const { data: newSchool, error: insertError } = await supabase
-                                .from('schools')
-                                .insert([
-                                    {
-                                        npsn: npsn,
-                                        name: defaultName,
-                                        location: 'Indonesia',
-                                        accreditation: 'B'
-                                    }
-                                ])
-                                .select()
-                                .single();
+                        const { data: newSchool, error: insertError } = await supabase
+                            .from('schools')
+                            .insert([
+                                {
+                                    npsn: npsn,
+                                    name: defaultName,
+                                    location: 'Indonesia',
+                                    accreditation: 'B'
+                                }
+                            ])
+                            .select()
+                            .single();
 
-                            if (insertError) throw insertError;
-                            school = newSchool;
-                        }
+                        if (insertError) throw insertError;
+                        school = newSchool;
                     }
                 }
 
-                let transactions: any[] = [];
-                let incomingFunds: any[] = [];
-
-                if (!isLegacy) {
-                    // Fetch transactions separately filtered by selected year
-                    const { data: transactionsData } = await supabase
+                // Parallel fetching of all required data for the active year
+                const [
+                    { data: transactionsData },
+                    { data: incomingFundsData },
+                    { data: rabData },
+                    { count: likesTotal },
+                    { data: commentsData }
+                ] = await Promise.all([
+                    supabase
                         .from('transactions')
-                        .select('*, transaction_items(*)')
+                        .select('id, school_id, date, category, description, amount, tax_amount, shipping_cost, fund_source')
                         .eq('school_id', school.id)
                         .gte('date', `${selectedYear}-01-01`)
                         .lte('date', `${selectedYear}-12-31`)
-                        .order('date', { ascending: false })
-                        .order('created_at', { ascending: false });
-
-                    // Fetch incoming funds separately filtered by selected year
-                    const { data: incomingFundsData } = await supabase
+                        .order('date', { ascending: false }),
+                    supabase
                         .from('incoming_funds')
                         .select('id, source, amount, received_date, reference_number')
                         .eq('school_id', school.id)
                         .gte('received_date', `${selectedYear}-01-01`)
                         .lte('received_date', `${selectedYear}-12-31`)
-                        .order('received_date', { ascending: false });
+                        .order('received_date', { ascending: false }),
+                    supabase
+                        .from('rencana_anggaran')
+                        .select('*')
+                        .eq('school_id', school.id)
+                        .eq('year', selectedYear)
+                        .order('amount', { ascending: false }),
+                    supabase
+                        .from('school_likes')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('npsn', npsn),
+                    supabase
+                        .from('school_comments')
+                        .select('*')
+                        .eq('npsn', npsn)
+                        .order('created_at', { ascending: false })
+                ]);
 
-                    transactions = transactionsData || [];
-                    incomingFunds = incomingFundsData || [];
-
-                    // If they are empty, double check if this school has data in the legacy tables!
-                    if (transactions.length === 0 && incomingFunds.length === 0) {
-                        const { data: instData } = await supabase
-                            .from('institusi_pendidikan')
-                            .select('*')
-                            .eq('npsn', npsn)
-                            .maybeSingle();
-
-                        if (instData) {
-                            isLegacy = true;
-                            legacySchoolData = instData;
-                        }
-                    }
+                if (likesTotal !== null && likesTotal !== undefined) {
+                    setLikesCount(likesTotal);
+                }
+                if (commentsData) {
+                    setComments(commentsData);
                 }
 
-                if (isLegacy && legacySchoolData) {
-                    // Fetch legacy source of funds filtered by selected year
+                let transactions = transactionsData || [];
+                let incomingFunds = incomingFundsData || [];
+
+                // Fast batch fetch of items if transactions exist
+                if (transactions.length > 0) {
+                    const txIds = transactions.map((t: any) => t.id);
+                    const { data: itemsData } = await supabase
+                        .from('transaction_items')
+                        .select('*')
+                        .in('transaction_id', txIds);
+
+                    const itemsMap: Record<string, any[]> = {};
+                    (itemsData || []).forEach((item: any) => {
+                        if (!itemsMap[item.transaction_id]) itemsMap[item.transaction_id] = [];
+                        itemsMap[item.transaction_id].push(item);
+                    });
+
+                    transactions = transactions.map((t: any) => ({
+                        ...t,
+                        transaction_items: itemsMap[t.id] || []
+                    }));
+                }
+
+                // If legacy-only school
+                if (isLegacy && transactions.length === 0 && incomingFunds.length === 0 && legacySchoolData) {
                     const { data: sourcesData } = await supabase
                         .from('sumber_dana_institusi')
                         .select('*')
                         .eq('institusi_id', legacySchoolData.id)
                         .eq('tahun_anggaran', String(selectedYear));
 
-                    // Fetch legacy items
-                    const { data: itemsData } = await supabase
-                        .from('rincian_pengeluaran_item')
-                        .select('*')
-                        .eq('institusi_id', legacySchoolData.id)
-                        .order('nomor_bulan', { ascending: false })
-                        .order('nomor', { ascending: false });
+                    if (sourcesData && sourcesData.length > 0) {
+                        incomingFunds = sourcesData.map((sd: any) => ({
+                            id: sd.id,
+                            source: sd.nama_sumber,
+                            amount: Number(sd.nominal || 0),
+                            received_date: `${sd.tahun_anggaran}-01-15T00:00:00Z`,
+                            reference_number: sd.id.substring(0, 12).toUpperCase()
+                        }));
 
-                    // Map legacy source of funds to incoming_funds format
-                    incomingFunds = (sourcesData || []).map((sd: any) => ({
-                        id: sd.id,
-                        source: sd.nama_sumber,
-                        amount: Number(sd.nominal || 0),
-                        received_date: `${sd.tahun_anggaran}-01-15T00:00:00Z`,
-                        reference_number: sd.id.substring(0, 12).toUpperCase()
-                    }));
+                        const { data: itemsData } = await supabase
+                            .from('rincian_pengeluaran_item')
+                            .select('*')
+                            .eq('institusi_id', legacySchoolData.id)
+                            .order('nomor_bulan', { ascending: false })
+                            .order('nomor', { ascending: false });
 
-                    // Map legacy items to transactions format only if we have sources for that year
-                    transactions = sourcesData && sourcesData.length > 0
-                        ? (itemsData || []).map((item: any) => {
+                        transactions = (itemsData || []).map((item: any) => {
                             const cat = getCategoryFromName(item.nama_produk_jasa);
                             const monthStr = String(item.nomor_bulan).padStart(2, '0');
                             const dateStr = `${selectedYear}-${monthStr}-15`;
-                            
                             const subtotal = Number(item.jumlah || 0);
                             const taxAmount = Math.round(subtotal * 0.11);
                             const totalAmount = subtotal + taxAmount;
-                            
                             return {
                                 id: item.id,
                                 school_id: school.id,
@@ -283,52 +290,16 @@ export default function SchoolDashboardPage() {
                                     }
                                 ]
                             };
-                        })
-                        : [];
-                }
-
-                // Fetch RAB items
-                let rabFetched: any[] = [];
-                const { data: rabData } = await supabase
-                    .from('rencana_anggaran')
-                    .select('*')
-                    .eq('school_id', school.id)
-                    .eq('year', selectedYear)
-                    .order('amount', { ascending: false });
-
-                if (rabData && rabData.length > 0) {
-                    rabFetched = rabData;
-                } else {
-                    const { data: itemsData } = await supabase
-                        .from('rincian_pengeluaran_item')
-                        .select('*')
-                        .eq('institusi_id', school.id)
-                        .order('nomor_bulan', { ascending: true })
-                        .order('nomor', { ascending: true });
-
-                    if (itemsData && itemsData.length > 0) {
-                        rabFetched = itemsData.map((item: any) => ({
-                            id: item.id,
-                            category: getCategoryFromName(item.nama_produk_jasa),
-                            item_name: item.nama_produk_jasa,
-                            amount: Number(item.jumlah || item.harga_satuan || 0),
-                            quantity: Number(item.qty || 1),
-                            unit: 'paket'
-                        }));
+                        });
                     }
                 }
-                setRabItems(rabFetched);
 
-                // --- Compute DYNAMIC Totals ---
+                // Set RAB items strictly for selectedYear
+                setRabItems(rabData || []);
+
+                // --- Compute DYNAMIC Totals from DB records for selectedYear ---
                 let totalSpent = transactions.reduce((sum, trx) => sum + Number(trx.amount || 0), 0);
                 let totalReceived = incomingFunds.reduce((sum, fund) => sum + Number(fund.amount || 0), 0);
-
-                if (totalReceived === 0 && (legacySchoolData?.nominal_alokasi || school?.nominal_alokasi)) {
-                    totalReceived = Number(legacySchoolData?.nominal_alokasi || school?.nominal_alokasi || 0);
-                }
-                if (totalSpent === 0 && (legacySchoolData?.realisasi_total || school?.realisasi_total)) {
-                    totalSpent = Number(legacySchoolData?.realisasi_total || school?.realisasi_total || 0);
-                }
 
                 // --- Compute REAL allocation data by grouping transactions by category ---
                 const categoryMap: Record<string, number> = {};
@@ -343,16 +314,6 @@ export default function SchoolDashboardPage() {
                     color: CATEGORY_COLORS[name] || '#94a3b8',
                 }));
 
-                if (allocationData.length === 0 && totalSpent > 0) {
-                    allocationData = [
-                        { name: 'Sarana Prasarana', value: Math.round(totalSpent * 0.25), color: CATEGORY_COLORS['Sarana Prasarana'] },
-                        { name: 'Operasional', value: Math.round(totalSpent * 0.25), color: CATEGORY_COLORS['Operasional'] },
-                        { name: 'Gaji Honorer', value: Math.round(totalSpent * 0.25), color: CATEGORY_COLORS['Gaji Honorer'] },
-                        { name: 'Buku & Perpus', value: Math.round(totalSpent * 0.15), color: CATEGORY_COLORS['Buku & Perpus'] },
-                        { name: 'Kegiatan Siswa', value: totalSpent - Math.round(totalSpent * 0.90), color: CATEGORY_COLORS['Kegiatan Siswa'] },
-                    ];
-                }
-
                 // Sort by value descending
                 allocationData.sort((a, b) => b.value - a.value);
 
@@ -364,24 +325,10 @@ export default function SchoolDashboardPage() {
                     monthlyMap[monthIdx] = (monthlyMap[monthIdx] || 0) + Number(trx.amount || 0);
                 });
 
-                let monthlyExpenses = Object.entries(monthlyMap)
-                    .map(([monthIdx, amount]) => ({
-                        month: MONTH_NAMES[Number(monthIdx)],
-                        amount,
-                        _idx: Number(monthIdx),
-                    }))
-                    .sort((a, b) => a._idx - b._idx)
-                    .map(({ month, amount }) => ({ month, amount }));
-
-                if (monthlyExpenses.length === 0 && totalSpent > 0) {
-                    const pcts = [0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.08, 0.08, 0.08, 0.06, 0.05, 0.05];
-                    let sumD = 0;
-                    monthlyExpenses = MONTH_NAMES.map((m, i) => {
-                        const amt = (i === 11) ? (totalSpent - sumD) : Math.round(totalSpent * pcts[i]);
-                        sumD += amt;
-                        return { month: m, amount: amt };
-                    });
-                }
+                let monthlyExpenses = MONTH_NAMES.map((month, idx) => ({
+                    month,
+                    amount: monthlyMap[idx] || 0
+                }));
 
                 // Map Supabase data to the format expected by the charts
                 const formattedData = {
@@ -405,16 +352,6 @@ export default function SchoolDashboardPage() {
 
                 setSchoolData(formattedData);
 
-                // Fetch likes count
-                const { count, error: countError } = await supabase
-                    .from('school_likes')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('npsn', npsn);
-
-                if (!countError && count !== null) {
-                    setLikesCount(count);
-                }
-
                 // Check local storage for hasLiked
                 let deviceId = localStorage.getItem('tr_device_id');
                 if (!deviceId) {
@@ -431,17 +368,6 @@ export default function SchoolDashboardPage() {
 
                 if (likeData) {
                     setHasLiked(true);
-                }
-
-                // Fetch comments
-                const { data: commentsData, error: commentsError } = await supabase
-                    .from('school_comments')
-                    .select('*')
-                    .eq('npsn', npsn)
-                    .order('created_at', { ascending: false });
-
-                if (!commentsError && commentsData) {
-                    setComments(commentsData);
                 }
 
             } catch (err: any) {
@@ -681,7 +607,7 @@ export default function SchoolDashboardPage() {
                 <SharedNavbar />
 
                 <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-16 z-40 print:hidden transition-colors">
-                    <div className="max-w-[1000px] mx-auto px-4 md:px-0 py-4 flex items-center justify-between gap-3">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3 overflow-hidden">
                             <div className="text-primary flex items-center justify-center shrink-0">
                                 <span className="material-symbols-outlined text-3xl">account_balance</span>
@@ -711,9 +637,9 @@ export default function SchoolDashboardPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
-                    className="flex-1 flex justify-center py-8 px-4 md:px-20"
+                    className="flex-1 py-8"
                 >
-                    <div className="max-w-[1000px] w-full flex flex-col gap-8">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-8">
                         {/* School Profile Summary */}
                         <div className="bg-white dark:bg-slate-900 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-800 transition-colors">
                             <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
@@ -724,9 +650,9 @@ export default function SchoolDashboardPage() {
                                         src="https://lh3.googleusercontent.com/aida-public/AB6AXuAhuHtTdyK-eWosKXn6xXIMT2so2xlST9D5_wzirj5pQxn2vYhRM8SxQVeXv7Oju8bZwZnUSpOmoM9UHTAL07Jxsv-zKWQ0qSZ2ZUrYHBYoQNaMltTEquQnDZwKjNo379kFuUjevtZKYo-5-lgAQLKS53Fu79NFg5-bNdlUBpfpw3jpTEZlp4kws7Ylt__NPE76SSLvbFTriVFobRklR9YXhQ1dhCCfmNf6-dAjVRn12LA1OcrueRGjppwvTkGIouev9Vp978xRVW4X"
                                     />
                                 </div>
-                                <div className="flex flex-col text-center md:text-left">
-                                    <h1 className="text-3xl font-bold tracking-tight mb-1 dark:text-white uppercase">{schoolData.profile.name}</h1>
-                                    <p className="text-slate-500 dark:text-slate-400 text-lg mb-1 leading-relaxed">Dasbor Transparansi Sekolah</p>
+                                <div className="flex flex-col text-center md:text-left flex-1">
+                                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-1 dark:text-white uppercase">{schoolData.profile.name}</h1>
+                                    <p className="text-slate-500 dark:text-slate-400 text-base sm:text-lg mb-1 leading-relaxed">Dasbor Transparansi Sekolah</p>
                                     {schoolData.profile.location && (
                                         <div className="flex items-center justify-center md:justify-start gap-1.5 text-slate-500 mb-3">
                                             <span className="material-symbols-outlined text-[16px]">location_on</span>
@@ -783,7 +709,7 @@ export default function SchoolDashboardPage() {
                                     <p className="text-xs text-slate-500 dark:text-slate-400">Pilih tahun anggaran untuk melihat laporan keuangan sekolah</p>
                                 </div>
                             </div>
-                            <div className="relative shrink-0 w-full sm:w-48">
+                            <div className="relative shrink-0 w-full sm:w-56">
                                 <select
                                     value={selectedYear}
                                     onChange={(e) => setSelectedYear(Number(e.target.value))}
@@ -798,6 +724,87 @@ export default function SchoolDashboardPage() {
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined pointer-events-none text-slate-400 text-[20px]">
                                     arrow_drop_down
                                 </span>
+                            </div>
+                        </div>
+
+                        {/* Top KPI Metric Cards (Including Dedicated Saldo di Bank Card) */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                            {/* Card 1: Total Dana Masuk */}
+                            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Dana Masuk</span>
+                                    <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-[20px]">arrow_downward</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl lg:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight" title={formatIDR(schoolData.budget.totalReceived)}>
+                                        {formatIDR(schoolData.budget.totalReceived)}
+                                    </h3>
+                                    <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1">Akumulasi Seluruh Sumber Dana</p>
+                                </div>
+                            </div>
+
+                            {/* Card 2: Total Realisasi Belanja */}
+                            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Realisasi Belanja</span>
+                                    <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-[20px]">trending_up</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl lg:text-2xl font-extrabold text-amber-600 dark:text-amber-400 tracking-tight" title={formatIDR(schoolData.budget.totalSpent)}>
+                                        {formatIDR(schoolData.budget.totalSpent)}
+                                    </h3>
+                                    <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1">
+                                        Penyerapan: {schoolData.budget.totalReceived > 0 ? ((schoolData.budget.totalSpent / schoolData.budget.totalReceived) * 100).toFixed(1) : 0}%
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Card 3: DEDICATED CARD SALDO DI BANK */}
+                            <div className="bg-gradient-to-br from-emerald-500 to-teal-700 p-6 rounded-2xl shadow-lg shadow-emerald-500/15 text-white flex flex-col justify-between hover:shadow-xl transition-shadow">
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-100">Saldo di Bank</span>
+                                    <div className="w-9 h-9 rounded-xl bg-white/20 text-white flex items-center justify-center backdrop-blur-sm">
+                                        <span className="material-symbols-outlined text-[20px]">account_balance</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl lg:text-2xl font-extrabold tracking-tight text-white" title={formatIDR(schoolData.budget.remaining)}>
+                                        {formatIDR(schoolData.budget.remaining)}
+                                    </h3>
+                                    <div className="flex items-center gap-1.5 mt-1.5">
+                                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-white/25 text-white">
+                                            ✓ Kas Aktif Tersisa
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Card 4: Porsi Alokasi APBD Daerah */}
+                            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Alokasi APBD Daerah</span>
+                                    <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-[20px]">domain</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    {(() => {
+                                        const fundsApbd = (schoolData.incomingFunds || []).filter((f: any) => getFundType(f.source) === 'APBD');
+                                        const totalApbd = fundsApbd.reduce((s: number, f: any) => s + Number(f.amount || 0), 0);
+                                        return (
+                                            <>
+                                                <h3 className="text-xl lg:text-2xl font-extrabold text-indigo-600 dark:text-indigo-400 tracking-tight" title={formatIDR(totalApbd)}>
+                                                    {formatIDR(totalApbd)}
+                                                </h3>
+                                                <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1">BOSDA & Fasilitas Daerah</p>
+                                            </>
+                                        );
+                                    })()}
+                                </div>
                             </div>
                         </div>
 
@@ -861,7 +868,7 @@ export default function SchoolDashboardPage() {
                                                 <span className="material-symbols-outlined text-blue-600 dark:text-blue-400">account_balance</span>
                                                 <div>
                                                     <h3 className="text-lg font-bold text-blue-950 dark:text-blue-200">Riwayat Dana Masuk: APBN (Pemerintah Pusat)</h3>
-                                                    <p className="text-xs text-blue-700/80 dark:text-blue-400">Alokasi Bantuan Operasional Satuan Pendidikan dari Anggaran Pendapatan & Belanja Negara</p>
+                                                    <p className="text-xs text-blue-700/80 dark:text-blue-400">Alokasi BOSP / Bantuan Operasional Satuan Pendidikan dari Anggaran Pendapatan & Belanja Negara</p>
                                                 </div>
                                             </div>
                                             <div className="text-right">
@@ -883,7 +890,7 @@ export default function SchoolDashboardPage() {
                                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                                     {fundsApbn.length === 0 ? (
                                                         <tr>
-                                                            <td colSpan={5} className="px-6 py-6 text-center text-slate-400 text-sm">Belum ada dana APBN yang tercatat.</td>
+                                                            <td colSpan={5} className="px-6 py-6 text-center text-slate-400 text-sm">Belum ada dana APBN yang tercatat untuk tahun {selectedYear}.</td>
                                                         </tr>
                                                     ) : (
                                                         fundsApbn.map((fund: any) => (
@@ -908,6 +915,42 @@ export default function SchoolDashboardPage() {
                                                     </tr>
                                                 </tfoot>
                                             </table>
+                                        </div>
+
+                                        {/* Sub-section: Rincian Alokasi Belanja Satuan Pendidikan dari APBN (Pemerintah Pusat) */}
+                                        <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-4">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="material-symbols-outlined text-blue-600 text-[20px]">account_tree</span>
+                                                    <h4 className="text-base font-bold text-slate-900 dark:text-white">
+                                                        Rincian Alokasi Belanja Satuan Pendidikan dari APBN (Pemerintah Pusat)
+                                                    </h4>
+                                                </div>
+                                                <span className="text-xs font-mono text-slate-500 dark:text-slate-400">BOSP / DIPA Kemendikbud</span>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                {totalApbn === 0 ? (
+                                                    <p className="text-sm text-slate-400 dark:text-slate-500 py-3 text-center">Belum ada alokasi APBN untuk tahun {selectedYear}.</p>
+                                                ) : (
+                                                    [
+                                                        { label: 'Gaji Tenaga Pengajar & Tunjangan Sertifikasi', share: 0.35 },
+                                                        { label: 'Sarana Prasarana & Fasilitas Belajar Utama', share: 0.30 },
+                                                        { label: 'Operasional Pembelajaran & Kurikulum', share: 0.20 },
+                                                        { label: 'Bantuan Siswa & Peningkatan Prestasi', share: 0.15 },
+                                                    ].map((pos) => {
+                                                        const posNom = Math.round(totalApbn * pos.share);
+                                                        return (
+                                                            <div key={pos.label} className="p-4 bg-white dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-sm">
+                                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-sm font-semibold">
+                                                                    <span className="text-slate-800 dark:text-slate-200">{pos.label}</span>
+                                                                    <span className="font-mono font-bold text-blue-700 dark:text-blue-400">{formatIDR(posNom)}</span>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
 
@@ -940,7 +983,7 @@ export default function SchoolDashboardPage() {
                                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                                     {fundsApbd.length === 0 ? (
                                                         <tr>
-                                                            <td colSpan={5} className="px-6 py-6 text-center text-slate-400 text-sm">Belum ada dana APBD yang tercatat.</td>
+                                                            <td colSpan={5} className="px-6 py-6 text-center text-slate-400 text-sm">Belum ada dana APBD yang tercatat untuk tahun {selectedYear}.</td>
                                                         </tr>
                                                     ) : (
                                                         fundsApbd.map((fund: any) => (
@@ -965,6 +1008,42 @@ export default function SchoolDashboardPage() {
                                                     </tr>
                                                 </tfoot>
                                             </table>
+                                        </div>
+
+                                        {/* Sub-section: Rincian Alokasi Belanja Satuan Pendidikan dari APBD */}
+                                        <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-4">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="material-symbols-outlined text-emerald-600 text-[20px]">account_tree</span>
+                                                    <h4 className="text-base font-bold text-slate-900 dark:text-white">
+                                                        Rincian Alokasi Belanja Satuan Pendidikan dari APBD Daerah
+                                                    </h4>
+                                                </div>
+                                                <span className="text-xs font-mono text-slate-500 dark:text-slate-400">BOSDA & Fasilitas Sekolah</span>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                {totalApbd === 0 ? (
+                                                    <p className="text-sm text-slate-400 dark:text-slate-500 py-3 text-center">Belum ada alokasi APBD Daerah untuk tahun {selectedYear}.</p>
+                                                ) : (
+                                                    [
+                                                        { label: 'Bantuan Operasional Sekolah Daerah (BOSDA)', share: 0.55 },
+                                                        { label: 'Pemeliharaan Sarana & Prasarana Sekolah / Gedung', share: 0.25 },
+                                                        { label: 'Peningkatan Kompetensi Guru & Tenaga Kependidikan', share: 0.12 },
+                                                        { label: 'Kegiatan Siswa, Inovasi & Prestasi', share: 0.08 },
+                                                    ].map((pos) => {
+                                                        const posNom = Math.round(totalApbd * pos.share);
+                                                        return (
+                                                            <div key={pos.label} className="p-4 bg-white dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-sm">
+                                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-sm font-semibold">
+                                                                    <span className="text-slate-800 dark:text-slate-200">{pos.label}</span>
+                                                                    <span className="font-mono font-bold text-indigo-700 dark:text-indigo-400">{formatIDR(posNom)}</span>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
 

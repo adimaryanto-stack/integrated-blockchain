@@ -11,6 +11,7 @@ import {
   alokasiProvinsiData, 
   alokasiKabupatenKotaData, 
   provinceSchoolStatsData,
+  tahunAnggaranData,
   fetchKecamatanForKabkota 
 } from '@/lib/data';
 import { useAppStore } from '@/lib/store';
@@ -28,7 +29,7 @@ const jenjangOptions: { value: '' | Jenjang; label: string }[] = [
 ];
 
 export default function ProfilInstitusiPage() {
-  const { dataVersion } = useAppStore();
+  const { activeTahun, dataVersion } = useAppStore();
   const [institusiList, setInstitusiList] = useState<InstitusiPendidikan[]>(getAllInstitusi());
   const [totalItems, setTotalItems] = useState<number>(0);
   const [loadingInstitusi, setLoadingInstitusi] = useState(true);
@@ -73,6 +74,7 @@ export default function ProfilInstitusiPage() {
       kabkotaId: selectedKabkotaId,
       kecamatan: selectedKecamatan,
       search: search,
+      tahun: activeTahun,
     })
       .then((res) => {
         if (isMounted) {
@@ -89,7 +91,7 @@ export default function ProfilInstitusiPage() {
     return () => {
       isMounted = false;
     };
-  }, [currentPage, selectedJenjang, selectedProvinsiId, selectedKabkotaId, selectedKecamatan, search]);
+  }, [currentPage, selectedJenjang, selectedProvinsiId, selectedKabkotaId, selectedKecamatan, search, activeTahun, dataVersion]);
 
   // Cascading Filter Handlers
   const handleProvinsiChange = (provId: string) => {
@@ -205,15 +207,19 @@ export default function ProfilInstitusiPage() {
       }
     });
 
+    const targetTahun = tahunAnggaranData.find(t => Number(t.tahun) === Number(activeTahun));
+    const matchingProv = alokasiProvinsiData.filter(p => String(p.tahun_anggaran_id) === String(targetTahun?.id));
+    const hasAllocationsForYear = matchingProv.length > 0;
+
     return categories.map(cat => {
-      const totalCount = dbSchoolCounts[cat.type] || 0;
+      const totalCount = hasAllocationsForYear ? (dbSchoolCounts[cat.type] || 0) : 0;
       let filteredCount = totalCount;
 
       if (hasFilter) {
         if (selectedJenjang) {
           filteredCount = selectedJenjang === cat.type ? totalItems : 0;
         } else if (selectedProvinsiId && provStatsList.length > 0) {
-          filteredCount = provCounts[cat.type] || 0;
+          filteredCount = hasAllocationsForYear ? (provCounts[cat.type] || 0) : 0;
         } else {
           filteredCount = totalItems;
         }
@@ -225,7 +231,7 @@ export default function ProfilInstitusiPage() {
         filteredCount
       };
     });
-  }, [dbSchoolCounts, totalItems, search, selectedJenjang, selectedProvinsiId, selectedKabkotaId, selectedKecamatan, dataVersion]);
+  }, [dbSchoolCounts, totalItems, search, selectedJenjang, selectedProvinsiId, selectedKabkotaId, selectedKecamatan, activeTahun, dataVersion]);
 
   // Sorted Provinsi Options (A-Z)
   const sortedProvinsiOptions = useMemo(() => {

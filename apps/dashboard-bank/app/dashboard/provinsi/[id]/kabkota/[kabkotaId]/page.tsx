@@ -411,7 +411,7 @@ export default function KabkotaDetailPage() {
   return (
     <div className="min-h-screen">
       <Header
-        title={`Penyaluran Area: ${kabkotaData.kabupaten_kota.nama_kabupaten_kota}`}
+        title={`Pagu Kabupaten/Kota: ${kabkotaData.kabupaten_kota.nama_kabupaten_kota}`}
         subtitle={`Provinsi ${provData.provinsi.nama_provinsi} — Status Pencairan Rekening Sekolah Tahun ${activeTahun}`}
       />
 
@@ -419,7 +419,7 @@ export default function KabkotaDetailPage() {
         {/* Navigation & Actions */}
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2 text-sm text-text-muted">
-            <Link href="/dashboard/provinsi" className="hover:text-accent hover:underline">Penyaluran Wilayah</Link>
+            <Link href="/dashboard/provinsi" className="hover:text-accent hover:underline">Pagu Provinsi</Link>
             <span>➔</span>
             <Link href={`/dashboard/provinsi/${id}`} className="hover:text-accent hover:underline">{provData.provinsi.nama_provinsi}</Link>
 

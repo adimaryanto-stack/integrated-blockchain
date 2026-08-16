@@ -4,7 +4,7 @@ const { Pool } = require('pg');
 async function testHttp(port, path = '/') {
   return new Promise((resolve) => {
     const start = Date.now();
-    const req = http.get(`http://localhost:${port}${path}`, { timeout: 8000 }, (res) => {
+    const req = http.get(`http://localhost:${port}${path}`, { timeout: 20000 }, (res) => {
       let body = '';
       res.on('data', chunk => body += chunk);
       res.on('end', () => {
@@ -24,8 +24,8 @@ async function testHttp(port, path = '/') {
 
 async function testPostgres() {
   const pool = new Pool({
-    connectionString: 'postgresql://postgres@localhost:2025/postgres',
-    connectionTimeoutMillis: 3000
+    connectionString: 'postgresql://postgres@127.0.0.1:2025/postgres',
+    connectionTimeoutMillis: 5000
   });
   const start = Date.now();
   try {
@@ -50,6 +50,7 @@ async function run() {
     { port: 2022, name: 'Dashboard Bank', path: '/dashboard' },
     { port: 2023, name: 'Dashboard Auditor', path: '/dashboard' },
     { port: 2024, name: 'Institusi Pendidikan', path: '/dashboard' },
+    { port: 2027, name: 'Dashboard APBD Provinsi', path: '/dashboard' },
   ];
 
   for (const ep of endpoints) {

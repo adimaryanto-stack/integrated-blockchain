@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import PctBadge from '@/components/ui/PctBadge';
 import { useAppStore } from '@/lib/store';
-import { alokasiProvinsiData, getKabkotaByProvinsi, getJenjangBreakdownByProvinsi, tahunAnggaranData } from '@/lib/data';
+import { alokasiProvinsiData, getKabkotaByProvinsi, getJenjangBreakdownByProvinsi, tahunAnggaranData, getBaseTahun, getTahunOrBase } from '@/lib/data';
 import { fmtRupiah, fmtTriliun } from '@/lib/utils/formatters';
 import { AlokasiProvinsi, AlokasiKabupatenKota, JenjangBreakdownProvinsi } from '@/types';
 import { ArrowLeft, Banknote, Download, Sparkles } from 'lucide-react';
@@ -19,9 +19,9 @@ export default function ProvinsiDetailPage() {
 
   // Find target province data scaled dynamically
   const provData = useMemo(() => {
-    const targetTahun = tahunAnggaranData.find(t => t.tahun === activeTahun) || tahunAnggaranData[6];
-    const baseTahun = tahunAnggaranData[6];
-    const scale = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
+    const targetTahun = getTahunOrBase(activeTahun);
+    const baseTahun = getBaseTahun();
+    const scale = baseTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
     const seed = (activeTahun % 7) || 1;
     const shift = 0.95 + (seed * 0.012);
 
@@ -43,9 +43,9 @@ export default function ProvinsiDetailPage() {
   // Scaled Kabkota list
   const scaledKabkotaList = useMemo(() => {
     const list = getKabkotaByProvinsi(id);
-    const targetTahun = tahunAnggaranData.find(t => t.tahun === activeTahun) || tahunAnggaranData[6];
-    const baseTahun = tahunAnggaranData[6];
-    const scale = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
+    const targetTahun = getTahunOrBase(activeTahun);
+    const baseTahun = getBaseTahun();
+    const scale = baseTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
     const seed = (activeTahun % 7) || 1;
     const shift = 0.95 + (seed * 0.012);
 

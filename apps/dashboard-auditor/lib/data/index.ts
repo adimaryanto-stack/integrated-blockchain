@@ -45,13 +45,29 @@ function seededValues(count: number, min: number, max: number, seed: number): nu
   return result;
 }
 
-// === TAHUN ANGGARAN (2026 ONLY) ===
+// === TAHUN ANGGARAN ===
 export let tahunAnggaranData: TahunAnggaran[] = [
-  { id: '7', tahun: 2026, total_anggaran: 769_100_000_000_000, status: 'ACTIVE', created_at: '2026-01-01' },
+  { id: '1', tahun: 2026, total_anggaran: 769_100_000_000_000, status: 'ACTIVE', created_at: '2026-01-01' },
+  { id: '2', tahun: 2027, total_anggaran: 0, status: 'DRAFT', created_at: '2027-01-01' },
 ];
 
 export function updateTahunAnggaranData(newData: TahunAnggaran[]) {
-  tahunAnggaranData = newData;
+  if (!newData || newData.length === 0) return;
+  tahunAnggaranData = [...newData].sort((a, b) => a.tahun - b.tahun);
+}
+
+/** Returns the base/latest year entry (2026 or last in array) used for scaling. */
+export function getBaseTahun(): TahunAnggaran {
+  return (
+    tahunAnggaranData.find(t => t.tahun === 2026) ||
+    tahunAnggaranData[tahunAnggaranData.length - 1] ||
+    { id: '7', tahun: 2026, total_anggaran: 769_100_000_000_000, status: 'ACTIVE', created_at: '2026-01-01' }
+  );
+}
+
+/** Returns the entry for the given year, falling back to the base year. */
+export function getTahunOrBase(tahun: number): TahunAnggaran {
+  return tahunAnggaranData.find(t => t.tahun === tahun) || getBaseTahun();
 }
 
 // === 38 PROVINSI ===

@@ -91,11 +91,11 @@ export default function RencanaAnggaranPage() {
   }, []);
 
   const transactionsWithActiveYear = useMemo(() => {
-    const kbRencana = rencanaList.filter(t => t.institusiId === 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7' || t.namaInstitusi === 'KB AL-IKHLAS');
-    if (kbRencana.length > 0) {
-      return kbRencana;
-    }
-    return rencanaList.filter(t => t.tanggal.includes(activeTahun.toString()));
+    return rencanaList.filter(t => {
+      const isMatchInst = t.institusiId === 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7' || t.namaInstitusi === 'KB AL-IKHLAS' || t.institusiId === 'inst-sd-0';
+      const isMatchYear = t.tanggal ? t.tanggal.includes(activeTahun.toString()) : false;
+      return isMatchInst && isMatchYear;
+    });
   }, [rencanaList, activeTahun]);
 
   // States
@@ -461,10 +461,11 @@ export default function RencanaAnggaranPage() {
   // Statistics summaries
   const stats = useMemo(() => {
     const total = transactionsWithActiveYear.reduce((sum, t) => sum + t.nominal, 0);
-    const totalAnggaran = 234775639; // Pagu alokasi KB AL-IKHLAS dari database lokal (PostgreSQL 2026)
-    const sisaAnggaran = totalAnggaran - total;
-    return { total, totalAnggaran, sisaAnggaran };
-  }, [transactionsWithActiveYear]);
+    const isZeroYear = (activeTahun === 2027);
+    const totalAnggaran = isZeroYear ? 0 : 234775639;
+    const sisaAnggaran = isZeroYear ? 37564102 : (totalAnggaran - total);
+    return { total, totalAnggaran, sisaAnggaran, isZeroYear };
+  }, [transactionsWithActiveYear, activeTahun]);
 
   // Helpers for Month & Date Sorting
   const getMonthFromDateStr = (dateStr: string) => {
@@ -554,7 +555,9 @@ export default function RencanaAnggaranPage() {
           <div className="metric-card accent-blue">
             <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block mb-1">Total Anggaran {activeTahun}</span>
             <p className="text-xl font-extrabold text-blue-600">{fmtRupiah(stats.totalAnggaran)}</p>
-            <span className="text-[10px] text-text-muted mt-2 block">Pagu anggaran yang tersedia</span>
+            <span className="text-[10px] text-text-muted mt-2 block">
+              {stats.isZeroYear ? 'Belum ada alokasi baru 2027' : 'Pagu anggaran yang tersedia'}
+            </span>
           </div>
           <div className="metric-card accent-indigo">
             <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block mb-1">Total Rencana (RAB)</span>
@@ -567,7 +570,7 @@ export default function RencanaAnggaranPage() {
               {stats.sisaAnggaran < 0 ? 'DEFISIT ' : 'SISA '}{fmtRupiah(Math.abs(stats.sisaAnggaran))}
             </p>
             <span className={`text-[10px] font-medium mt-2 block ${stats.sisaAnggaran < 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
-              {stats.sisaAnggaran < 0 ? 'Rencana melebihi pagu anggaran!' : 'Anggaran masih aman'}
+              {stats.isZeroYear ? 'Sisa saldo kas bank tahun 2026' : stats.sisaAnggaran < 0 ? 'Rencana melebihi pagu anggaran!' : 'Anggaran masih aman'}
             </span>
           </div>
         </div>

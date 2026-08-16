@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import PctBadge from '@/components/ui/PctBadge';
 import { useAppStore } from '@/lib/store';
-import { alokasiProvinsiData, getKabkotaByProvinsi, getJenjangBreakdownByKabkota, getInstitusiByKabkota, tahunAnggaranData } from '@/lib/data';
+import { alokasiProvinsiData, getKabkotaByProvinsi, getJenjangBreakdownByKabkota, getInstitusiByKabkota, tahunAnggaranData, getBaseTahun, getTahunOrBase } from '@/lib/data';
 import { fmtRupiah } from '@/lib/utils/formatters';
 import { AlokasiProvinsi, AlokasiKabupatenKota, InstitusiPendidikan, JenjangBreakdownProvinsi } from '@/types';
 import { ArrowLeft, Banknote, ChevronLeft, ChevronRight, Download, Filter, School, Search, Sparkles } from 'lucide-react';
@@ -22,76 +22,105 @@ export default function KabkotaDetailPage() {
   const kabkotaId = params.kabkotaId as string; // kabupaten_kota_id e.g. k-p-1-0
   const { activeTahun, isSupabaseMode, dbData, setDbData } = useAppStore();
 
-  // Find target province & kabkota data scaled dynamically
-  const provData = useMemo(() => {
-    const baseData = alokasiProvinsiData.find(p => p.provinsi_id === id);
-    if (!baseData) return null;
-    
+  const activeTahunObj = useMemo(() => {
     if (isSupabaseMode && dbData) {
-      const dbAlokasiProv = dbData.alokasi_provinsi.find((p: any) => p.provinsi_id === id);
+      return dbData.tahun_anggaran?.find((t: any) => Number(t.tahun) === Number(activeTahun));
+    }
+    return tahunAnggaranData.find(t => Number(t.tahun) === Number(activeTahun));
+  }, [activeTahun, isSupabaseMode, dbData]);
+
+  // Find target province & kabkota data from DB for active tahun
+  const provData = useMemo(() => {
+    if (isSupabaseMode && dbData) {
+      const dbAlokasiProv = dbData.alokasi_provinsi?.find(
+        (p: any) => p.provinsi_id === id && String(p.tahun_anggaran_id) === String(activeTahunObj?.id)
+      );
+      const prov = dbData.provinsi?.find((p: any) => p.id === id);
       if (dbAlokasiProv) {
         return {
-          ...baseData,
-          nominal_alokasi: Number(dbAlokasiProv.nominal_alokasi),
-          realisasi_total: Number(dbAlokasiProv.realisasi_total),
-          selisih: Number(dbAlokasiProv.selisih),
-          persentase_penyerapan: Number(dbAlokasiProv.persentase_penyerapan)
+          ...dbAlokasiProv,
+          provinsi: prov || dbAlokasiProv.provinsi || { id, kode_provinsi: '', nama_provinsi: 'Provinsi' },
+          nominal_alokasi: Number(dbAlokasiProv.nominal_alokasi || 0),
+          realisasi_total: Number(dbAlokasiProv.realisasi_total || 0),
+          selisih: Number(dbAlokasiProv.nominal_alokasi || 0) - Number(dbAlokasiProv.realisasi_total || 0),
+          persentase_penyerapan: Number(dbAlokasiProv.nominal_alokasi) > 0 ? (Number(dbAlokasiProv.realisasi_total) / Number(dbAlokasiProv.nominal_alokasi)) * 100 : 0
         };
+      }
+      if (prov) {
+        return {
+          id: `prov-draft-${id}-${activeTahun}`,
+          tahun_anggaran_id: activeTahunObj?.id || '',
+          provinsi_id: id,
+          nominal_alokasi: 0,
+          realisasi_total: 0,
+          selisih: 0,
+          persentase_penyerapan: 0,
+          updated_at: new Date().toISOString().split('T')[0],
+          provinsi: prov
+        } as AlokasiProvinsi;
       }
     }
 
-    const targetTahun = tahunAnggaranData.find(t => t.tahun === activeTahun) || tahunAnggaranData[6];
-    const baseTahun = tahunAnggaranData[6];
-    const scale = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
-    const seed = (activeTahun % 7) || 1;
-    const shift = 0.95 + (seed * 0.012);
+    const found = alokasiProvinsiData.find(p => p.provinsi_id === id && String(p.tahun_anggaran_id) === String(activeTahunObj?.id));
+    if (found) return found;
 
-    const nominal = Math.round(baseData.nominal_alokasi * scale);
-    const realisasi = Math.min(nominal, Math.round(baseData.realisasi_total * scale * shift));
-
+    const baseData = alokasiProvinsiData.find(p => p.provinsi_id === id);
+    if (!baseData) return null;
     return {
       ...baseData,
-      nominal_alokasi: nominal,
-      realisasi_total: realisasi,
-      selisih: nominal - realisasi,
-      persentase_penyerapan: nominal > 0 ? (realisasi / nominal) * 100 : 0,
+      id: `prov-draft-${id}-${activeTahun}`,
+      tahun_anggaran_id: activeTahunObj?.id || '',
+      nominal_alokasi: 0,
+      realisasi_total: 0,
+      selisih: 0,
+      persentase_penyerapan: 0,
     };
-  }, [id, activeTahun, isSupabaseMode, dbData]);
+  }, [id, activeTahunObj, isSupabaseMode, dbData]);
 
   const kabkotaData = useMemo(() => {
-    const baseData = getKabkotaByProvinsi(id).find(k => k.kabupaten_kota_id === kabkotaId);
-    if (!baseData) return null;
-    
+    if (!provData) return null;
+
     if (isSupabaseMode && dbData) {
-      const dbAlokasiKab = dbData.alokasi_kabupaten_kota.find((k: any) => k.kabupaten_kota_id === kabkotaId);
+      const dbAlokasiKab = dbData.alokasi_kabupaten_kota?.find(
+        (k: any) => k.kabupaten_kota_id === kabkotaId && k.alokasi_provinsi_id === provData.id
+      );
+      const kk = dbData.kabupaten_kota?.find((k: any) => k.id === kabkotaId);
       if (dbAlokasiKab) {
         return {
-          ...baseData,
-          nominal_alokasi: Number(dbAlokasiKab.nominal_alokasi),
-          realisasi_total: Number(dbAlokasiKab.realisasi_total),
-          selisih: Number(dbAlokasiKab.selisih),
-          persentase_penyerapan: Number(dbAlokasiKab.persentase_penyerapan)
+          ...dbAlokasiKab,
+          kabupaten_kota: kk || dbAlokasiKab.kabupaten_kota || { id: kabkotaId, provinsi_id: id, kode_kabupaten_kota: '', nama_kabupaten_kota: 'Kab/Kota', tipe: 'KABUPATEN' },
+          nominal_alokasi: Number(dbAlokasiKab.nominal_alokasi || 0),
+          realisasi_total: Number(dbAlokasiKab.realisasi_total || 0),
+          selisih: Number(dbAlokasiKab.nominal_alokasi || 0) - Number(dbAlokasiKab.realisasi_total || 0),
+          persentase_penyerapan: Number(dbAlokasiKab.nominal_alokasi) > 0 ? (Number(dbAlokasiKab.realisasi_total) / Number(dbAlokasiKab.nominal_alokasi)) * 100 : 0
         };
+      }
+      if (kk) {
+        return {
+          id: `akk-draft-${kabkotaId}-${activeTahun}`,
+          alokasi_provinsi_id: provData.id,
+          kabupaten_kota_id: kabkotaId,
+          kabupaten_kota: kk,
+          provinsi_nama: provData.provinsi.nama_provinsi,
+          nominal_alokasi: 0,
+          realisasi_total: 0,
+          selisih: 0,
+          persentase_penyerapan: 0,
+          updated_at: new Date().toISOString().split('T')[0],
+        } as AlokasiKabupatenKota;
       }
     }
 
-    const targetTahun = tahunAnggaranData.find(t => t.tahun === activeTahun) || tahunAnggaranData[6];
-    const baseTahun = tahunAnggaranData[6];
-    const scale = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
-    const seed = (activeTahun % 7) || 1;
-    const shift = 0.95 + (seed * 0.012);
-
-    const nominal = Math.round(baseData.nominal_alokasi * scale);
-    const realisasi = Math.min(nominal, Math.round(baseData.realisasi_total * scale * shift));
-
+    const baseData = getKabkotaByProvinsi(id).find(k => k.kabupaten_kota_id === kabkotaId);
+    if (!baseData) return null;
     return {
       ...baseData,
-      nominal_alokasi: nominal,
-      realisasi_total: realisasi,
-      selisih: nominal - realisasi,
-      persentase_penyerapan: nominal > 0 ? Math.round((realisasi / nominal) * 1000) / 10 : 0
+      nominal_alokasi: 0,
+      realisasi_total: 0,
+      selisih: 0,
+      persentase_penyerapan: 0
     };
-  }, [id, kabkotaId, activeTahun, isSupabaseMode, dbData]);
+  }, [id, kabkotaId, provData, activeTahunObj, isSupabaseMode, dbData]);
 
   const scaledSchoolList = useMemo(() => {
     if (!kabkotaData || !provData) return [];
@@ -102,17 +131,15 @@ export default function KabkotaDetailPage() {
       kabkotaData.nominal_alokasi
     );
 
-    if (isSupabaseMode && dbData) {
-      return list.map(item => ({
-        ...item,
-        nominal_alokasi: Number(item.nominal_alokasi),
-        realisasi_total: Number(item.realisasi_total),
-        selisih: Number(item.nominal_alokasi) - Number(item.realisasi_total),
-        persentase_penyerapan: Number(item.nominal_alokasi) > 0 
-          ? Math.round((Number(item.realisasi_total) / Number(item.nominal_alokasi)) * 1000) / 10 
-          : 0
-      }));
-    }
+    return list.map(item => ({
+      ...item,
+      nominal_alokasi: Number(item.nominal_alokasi || 0),
+      realisasi_total: Number(item.realisasi_total || 0),
+      selisih: Number(item.nominal_alokasi || 0) - Number(item.realisasi_total || 0),
+      persentase_penyerapan: Number(item.nominal_alokasi) > 0 
+        ? Math.round((Number(item.realisasi_total) / Number(item.nominal_alokasi)) * 1000) / 10 
+        : 0
+    }));
 
     return list;
   }, [kabkotaId, kabkotaData, provData, isSupabaseMode, dbData]);

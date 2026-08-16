@@ -227,59 +227,13 @@ export default function DashboardDbLoader({
           setIsSupabaseMode(false);
           setIsLoadingDb(false);
         }, 3000);
-        return;
+      } finally {
+        setIsLoadingDb(false);
       }
-
-      setIsLoadingDb(false);
     }
 
     loadDatabase();
   }, []);
-
-  if (isLoadingDb) {
-    return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-xl transition-all duration-500">
-        <div className="relative flex flex-col items-center max-w-md p-8 text-center space-y-6">
-          <div className="absolute -top-12 -left-12 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
-
-          {initFailed ? (
-            <>
-              <div className="relative p-4 bg-rose-500/10 border border-rose-500/30 text-rose-500 rounded-full animate-bounce">
-                <CloudAlert size={40} />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-bold text-white">Koneksi Database Lokal Gagal</h3>
-                <p className="text-xs text-slate-400 break-all px-4">{failReason}</p>
-                <p className="text-xs text-indigo-400 font-semibold mt-4">Mengalihkan ke Mode Data Lokal...</p>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="relative">
-                <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-xl scale-125 animate-pulse" />
-                <div className="relative p-6 bg-slate-900 border border-slate-800 text-indigo-500 rounded-3xl shadow-2xl flex items-center justify-center">
-                  <Database size={44} className="animate-pulse" />
-                  <Loader2 size={24} className="absolute text-emerald-400 animate-spin -top-1 -right-1" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-emerald-400 uppercase tracking-widest">
-                  <Sparkles size={12} />
-                  <span>Database Lokal Aktif</span>
-                </div>
-                <h3 className="text-md font-bold text-white tracking-wide">{loaderText}</h3>
-                <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
-                  Menyinkronkan data anggaran pendidikan dari database PostgreSQL lokal (port 2025/2026)
-                </p>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  }
 
   return <>{children}</>;
 }

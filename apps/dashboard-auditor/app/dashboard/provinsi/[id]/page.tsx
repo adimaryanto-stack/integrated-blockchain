@@ -6,14 +6,13 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import PctBadge from '@/components/ui/PctBadge';
 import { useAppStore } from '@/lib/store';
-import { alokasiProvinsiData, getKabkotaByProvinsi, getJenjangBreakdownByProvinsi } from '@/lib/data';
+import { alokasiProvinsiData, getKabkotaByProvinsi, getJenjangBreakdownByProvinsi, tahunAnggaranData } from '@/lib/data';
 import { fmtRupiah, fmtTriliun } from '@/lib/utils/formatters';
 import { AlokasiProvinsi, AlokasiKabupatenKota, JenjangBreakdownProvinsi } from '@/types';
 import { ArrowLeft, Banknote, Download, Sparkles } from 'lucide-react';
-
 import { supabase } from '@/lib/supabase';
-import EditableCell from '@/components/spreadsheet/EditableCell';
 import { rollupKabKotaChange } from '@/lib/utils/dbSync';
+import { exportToExcel, getPctColorHex } from '@/lib/utils/excelExport';
 
 export default function ProvinsiDetailPage() {
   const params = useParams();
@@ -21,18 +20,116 @@ export default function ProvinsiDetailPage() {
   const id = params.id as string; // provinsi_id e.g. p-1
   const { activeTahun, isSupabaseMode, dbData, setDbData } = useAppStore();
 
-  // Use real Supabase data directly — no scaling
-  const provData = useMemo(() => {
-    return alokasiProvinsiData.find(p => p.provinsi_id === id) || null;
-  }, [id]);
+  const activeTahunObj = useMemo(() => {
+    if (isSupabaseMode && dbData) {
+      return dbData.tahun_anggaran?.find((t: any) => Number(t.tahun) === Number(activeTahun));
+    }
+    return tahunAnggaranData.find(t => Number(t.tahun) === Number(activeTahun));
+  }, [activeTahun, isSupabaseMode, dbData]);
 
-  // Real Kabkota list from Supabase
+  // Use real Supabase data directly — filter by active tahun_anggaran_id
+  const provData = useMemo(() => {
+    if (isSupabaseMode && dbData) {
+      const found = dbData.alokasi_provinsi?.find(
+        (p: any) => p.provinsi_id === id && String(p.tahun_anggaran_id) === String(activeTahunObj?.id)
+      );
+      if (found) {
+        const prov = dbData.provinsi?.find((p: any) => p.id === id);
+        return {
+          ...found,
+          provinsi: prov || found.provinsi || { id, kode_provinsi: '', nama_provinsi: 'Provinsi' },
+          nominal_alokasi: Number(found.nominal_alokasi || 0),
+          realisasi_total: Number(found.realisasi_total || 0),
+          selisih: Number(found.nominal_alokasi || 0) - Number(found.realisasi_total || 0),
+          persentase_penyerapan: Number(found.nominal_alokasi) > 0 ? (Number(found.realisasi_total) / Number(found.nominal_alokasi)) * 100 : 0
+        };
+      }
+      // If year has no allocation in DB, return 0 structure so province still renders
+      const prov = dbData.provinsi?.find((p: any) => p.id === id);
+      if (prov) {
+        return {
+          id: `prov-draft-${id}-${activeTahun}`,
+          tahun_anggaran_id: activeTahunObj?.id || '',
+          provinsi_id: id,
+          nominal_alokasi: 0,
+          realisasi_total: 0,
+          selisih: 0,
+          persentase_penyerapan: 0,
+          updated_at: new Date().toISOString().split('T')[0],
+          provinsi: prov
+        } as AlokasiProvinsi;
+      }
+    }
+
+    const found = alokasiProvinsiData.find(p => p.provinsi_id === id && String(p.tahun_anggaran_id) === String(activeTahunObj?.id));
+    if (found) return found;
+
+    // Fallback: master province with 0
+    const masterProv = alokasiProvinsiData.find(p => p.provinsi_id === id);
+    if (masterProv) {
+      return {
+        ...masterProv,
+        id: `prov-draft-${id}-${activeTahun}`,
+        tahun_anggaran_id: activeTahunObj?.id || '',
+        nominal_alokasi: 0,
+        realisasi_total: 0,
+        selisih: 0,
+        persentase_penyerapan: 0,
+      };
+    }
+    return null;
+  }, [id, activeTahunObj, isSupabaseMode, dbData]);
+
+  // Real Kabkota list from Supabase filtered by active tahun
   const realKabkotaList = useMemo(() => {
+    if (!provData) return [];
+
+    if (isSupabaseMode && dbData) {
+      const yearKabkotas = (dbData.alokasi_kabupaten_kota || []).filter((akk: any) => {
+        return akk.alokasi_provinsi_id === provData.id;
+      });
+
+      if (yearKabkotas.length > 0) {
+        return yearKabkotas.map((akk: any) => {
+          const kk = dbData.kabupaten_kota?.find((k: any) => k.id === akk.kabupaten_kota_id);
+          const nominal = Number(akk.nominal_alokasi || 0);
+          const realisasi = Number(akk.realisasi_total || 0);
+          return {
+            id: akk.id,
+            alokasi_provinsi_id: akk.alokasi_provinsi_id,
+            kabupaten_kota_id: akk.kabupaten_kota_id,
+            kabupaten_kota: kk || akk.kabupaten_kota || { id: akk.kabupaten_kota_id, provinsi_id: id, kode_kabupaten_kota: '', nama_kabupaten_kota: 'Kab/Kota', tipe: 'KABUPATEN' },
+            provinsi_nama: provData.provinsi.nama_provinsi,
+            nominal_alokasi: nominal,
+            realisasi_total: realisasi,
+            selisih: nominal - realisasi,
+            persentase_penyerapan: nominal > 0 ? (realisasi / nominal) * 100 : 0,
+            updated_at: akk.updated_at || '',
+          } as AlokasiKabupatenKota;
+        }).sort((a: any, b: any) => a.kabupaten_kota.nama_kabupaten_kota.localeCompare(b.kabupaten_kota.nama_kabupaten_kota, 'id'));
+      }
+
+      // If no year-specific allocations exist, get master kabupaten_kota list with 0 allocations
+      const masterKabs = (dbData.kabupaten_kota || []).filter((k: any) => k.provinsi_id === id);
+      return masterKabs.map((k: any) => ({
+        id: `akk-draft-${k.id}-${activeTahun}`,
+        alokasi_provinsi_id: provData.id,
+        kabupaten_kota_id: k.id,
+        kabupaten_kota: k,
+        provinsi_nama: provData.provinsi.nama_provinsi,
+        nominal_alokasi: 0,
+        realisasi_total: 0,
+        selisih: 0,
+        persentase_penyerapan: 0,
+        updated_at: new Date().toISOString().split('T')[0],
+      } as AlokasiKabupatenKota)).sort((a: any, b: any) => a.kabupaten_kota.nama_kabupaten_kota.localeCompare(b.kabupaten_kota.nama_kabupaten_kota, 'id'));
+    }
+
     const list = getKabkotaByProvinsi(id);
     return [...list].sort((a, b) =>
       a.kabupaten_kota.nama_kabupaten_kota.localeCompare(b.kabupaten_kota.nama_kabupaten_kota, 'id')
     );
-  }, [id]);
+  }, [id, provData, activeTahunObj, isSupabaseMode, dbData]);
 
   // States
   const [prevRealKabkotaList, setPrevRealKabkotaList] = useState(realKabkotaList);
@@ -116,6 +213,180 @@ export default function ProvinsiDetailPage() {
     loadJenjangBreakdown();
   }, [id, totals.nominal]);
 
+  const [editingCell, setEditingCell] = useState<{ id: string; field: 'nominal_alokasi' | 'realisasi_total' } | null>(null);
+  const [editValue, setEditValue] = useState('');
+
+  const startEdit = (id: string, field: 'nominal_alokasi' | 'realisasi_total', currentValue: number) => {
+    setEditingCell({ id, field });
+    setEditValue(currentValue.toString());
+  };
+
+  const commitEdit = async () => {
+    if (!editingCell) return;
+    const parsed = parseInt(editValue.replace(/[^0-9]/g, ''), 10);
+    if (!isNaN(parsed) && parsed >= 0) {
+      const rowId = editingCell.id;
+      const field = editingCell.field;
+
+      setKabkotaList(prev => prev.map(item => {
+        if (item.id !== rowId) return item;
+        const nominal = field === 'nominal_alokasi' ? parsed : item.nominal_alokasi;
+        const realisasi = field === 'realisasi_total' ? parsed : item.realisasi_total;
+        return {
+          ...item,
+          [field]: parsed,
+          selisih: nominal - realisasi,
+          persentase_penyerapan: nominal > 0 ? Math.round((realisasi / nominal) * 1000) / 10 : 0
+        };
+      }));
+
+      if (isSupabaseMode && dbData) {
+        const updates = field === 'nominal_alokasi'
+          ? { nominal_alokasi: parsed }
+          : { realisasi_total: parsed };
+        await rollupKabKotaChange(dbData, setDbData, rowId, updates);
+      }
+    }
+    setEditingCell(null);
+  };
+
+  const handleExport = async () => {
+    if (!provData) return;
+    const summaryHeaders = [
+      'Nomor', 'Tahun Anggaran', 'Nominal (Rp)', 'Realisasi (Rp)', 'Nominal Selisih (Rp)', 'Persentase penyerapan (%)'
+    ];
+    const summaryColorHex = getPctColorHex(totals.persentase);
+    const summaryRows = [
+      [
+        { value: 1, align: 'center' },
+        { value: activeTahun, align: 'center' },
+        { value: totals.nominal, isCurrency: true },
+        { value: totals.realisasi, isCurrency: true },
+        { value: { formula: 'C2-D2' }, isCurrency: true, textColor: '991B1B' },
+        { 
+          value: { formula: 'IF(C2>0, D2/C2, 0)' }, 
+          isPercent: true, 
+          bgColor: summaryColorHex.bg, 
+          textColor: summaryColorHex.text,
+          bold: true,
+          align: 'center'
+        }
+      ]
+    ];
+
+    const jenjangHeaders = [
+      'Nomor', 'Jenjang Pendidikan', 'Jumlah Sekolah', 'Nominal Keseluruhan (Rp)', 'Porsi Anggaran (%)'
+    ];
+    const jenjangRows = jenjangBreakdown.map((row, idx) => {
+      const rowNum = idx + 2;
+      return [
+        { value: row.nomor, align: 'center' },
+        { value: row.jenjang },
+        { value: row.jumlah_sekolah, align: 'center' },
+        { value: row.nominal_keseluruhan, isCurrency: true },
+        { value: { formula: `D${rowNum}/SUM(D$2:D$6)` }, isPercent: true, align: 'center', bold: true }
+      ];
+    });
+
+    const kabkotaHeaders = [
+      'Nomor', 'Nama Kabupaten/Kota', 'Nominal Anggaran (Rp)', 'Realisasi (Rp)', 'Nominal Selisih (Rp)', 'Persentase penyerapan (%)'
+    ];
+    const kabkotaRows = kabkotaList.map((row, idx) => {
+      const rowNum = idx + 2;
+      const colorHex = getPctColorHex(row.persentase_penyerapan);
+      return [
+        { value: idx + 1, align: 'center' },
+        { value: row.kabupaten_kota.nama_kabupaten_kota },
+        { value: row.nominal_alokasi, isCurrency: true },
+        { value: row.realisasi_total, isCurrency: true },
+        { value: { formula: `C${rowNum}-D${rowNum}` }, isCurrency: true, textColor: '991B1B' },
+        { 
+          value: { formula: `IF(C${rowNum}>0, D${rowNum}/C${rowNum}, 0)` }, 
+          isPercent: true, 
+          bgColor: colorHex.bg, 
+          textColor: colorHex.text,
+          bold: true,
+          align: 'center'
+        }
+      ];
+    });
+
+    const totalRowIndex = kabkotaList.length + 2;
+    const totalColorHex = getPctColorHex(totals.persentase);
+    const totalsRow = [
+      { value: '', bold: true },
+      { value: 'TOTAL / REALISASI', bold: true },
+      { value: { formula: `SUM(C2:C${totalRowIndex-1})` }, isCurrency: true, bold: true },
+      { value: { formula: `SUM(D2:D${totalRowIndex-1})` }, isCurrency: true, bold: true },
+      { value: { formula: `C${totalRowIndex}-D${totalRowIndex}` }, isCurrency: true, bold: true, textColor: '991B1B' },
+      { 
+        value: { formula: `IF(C${totalRowIndex}>0, D${totalRowIndex}/C${totalRowIndex}, 0)` }, 
+        isPercent: true, 
+        bold: true, 
+        bgColor: totalColorHex.bg,
+        textColor: totalColorHex.text,
+        align: 'center'
+      }
+    ];
+
+    await exportToExcel(`Laporan_Provinsi_${provData.provinsi.nama_provinsi}_${activeTahun}.xlsx`, [
+      {
+        name: 'Summary',
+        headers: summaryHeaders,
+        rows: summaryRows,
+        columnWidths: [8, 18, 22, 22, 22, 25]
+      },
+      {
+        name: 'Porsi Jenjang',
+        headers: jenjangHeaders,
+        rows: jenjangRows,
+        columnWidths: [8, 28, 16, 25, 20]
+      },
+      {
+        name: 'Dinas Kabupaten-Kota',
+        headers: kabkotaHeaders,
+        rows: [...kabkotaRows, totalsRow],
+        columnWidths: [8, 28, 22, 22, 22, 25]
+      }
+    ]);
+  };
+
+  const renderEditableCell = (row: AlokasiKabupatenKota, field: 'nominal_alokasi' | 'realisasi_total') => {
+    const value = row[field];
+    const isEditing = editingCell?.id === row.id && editingCell?.field === field;
+
+    if (isEditing) {
+      return (
+        <td className="sheet-cell sheet-cell-editing text-right">
+          <input
+            autoFocus
+            type="text"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={commitEdit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === 'Tab') {
+                e.preventDefault();
+                commitEdit();
+              }
+              if (e.key === 'Escape') setEditingCell(null);
+            }}
+            className="w-full bg-transparent outline-none text-right font-mono text-sm pr-1"
+          />
+        </td>
+      );
+    }
+
+    return (
+      <td
+        className="sheet-cell sheet-cell-editable text-right font-mono cursor-pointer hover:bg-slate-50 transition-colors"
+        onClick={() => startEdit(row.id, field, value)}
+      >
+        {fmtRupiah(value)}
+      </td>
+    );
+  };
+
   if (!provData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -130,42 +401,6 @@ export default function ProvinsiDetailPage() {
       </div>
     );
   }
-
-  const handleCellSave = async (rowId: string, field: 'nominal_alokasi' | 'realisasi_total', newValue: number) => {
-    setKabkotaList(prev => prev.map(item => {
-      if (item.id === rowId) {
-        const nominal = field === 'nominal_alokasi' ? newValue : item.nominal_alokasi;
-        const realisasi = field === 'realisasi_total' ? newValue : item.realisasi_total;
-        return {
-          ...item,
-          [field]: newValue,
-          selisih: nominal - realisasi,
-          persentase_penyerapan: nominal > 0 ? Math.round((realisasi / nominal) * 1000) / 10 : 0
-        };
-      }
-      return item;
-    }));
-
-    if (isSupabaseMode && dbData) {
-      const updates = field === 'nominal_alokasi'
-        ? { nominal_alokasi: newValue }
-        : { realisasi_total: newValue };
-
-      await rollupKabKotaChange(dbData, setDbData, rowId, updates);
-    }
-  };
-
-  const renderEditableCell = (row: AlokasiKabupatenKota, field: 'nominal_alokasi' | 'realisasi_total') => {
-    const value = row[field];
-    return (
-      <td className="sheet-cell p-0">
-        <EditableCell
-          value={value}
-          onSave={(newValue) => handleCellSave(row.id, field, newValue)}
-        />
-      </td>
-    );
-  };
 
   return (
     <div className="min-h-screen">
@@ -183,9 +418,7 @@ export default function ProvinsiDetailPage() {
           </button>
           
           <button 
-            onClick={() => {
-              alert('Fungsi ekspor Google Sheets berhasil disimulasikan! Menghasilkan berkas Excel...');
-            }} 
+            onClick={handleExport} 
             className="btn btn-secondary text-sm flex items-center gap-2"
           >
             <Download size={16} />
@@ -342,13 +575,18 @@ export default function ProvinsiDetailPage() {
                     {fmtRupiah(totals.selisih)}
                   </td>
                   <td className="sheet-cell text-center font-bold bg-emerald-500 text-white font-mono text-sm">
-                    {totals.persentase.toFixed(2).replace('.', ',')}%
+                    {(Number(totals.persentase) || 0).toFixed(2).replace('.', ',')}%
                   </td>
                 </tr>
               </tfoot>
             </table>
           </div>
         </div>
+
+        <p className="text-xs text-text-muted flex items-center gap-1">
+          <span>✏️</span>
+          <span>Klik langsung pada kolom <strong>Nominal Anggaran</strong> atau <strong>Realisasi</strong> untuk mengubah data • Tekan <strong>Enter</strong> untuk menyimpan</span>
+        </p>
       </div>
     </div>
   );

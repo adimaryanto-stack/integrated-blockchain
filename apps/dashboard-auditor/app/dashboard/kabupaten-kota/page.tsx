@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import PctBadge from '@/components/ui/PctBadge';
 import { useAppStore } from '@/lib/store';
-import { alokasiProvinsiData, getKabkotaByProvinsi, tahunAnggaranData } from '@/lib/data';
+import { alokasiProvinsiData, getKabkotaByProvinsi, tahunAnggaranData, getBaseTahun, getTahunOrBase } from '@/lib/data';
 import { fmtRupiah, fmtTriliun } from '@/lib/utils/formatters';
 import { AlokasiKabupatenKota } from '@/types';
 import { Search, Download } from 'lucide-react';
@@ -57,40 +57,67 @@ export default function KabupatenKotaPage() {
     }
   }, [provinsiList]);
 
+  const activeTahunObj = useMemo(() => {
+    if (isSupabaseMode && dbData) {
+      return dbData.tahun_anggaran?.find((t: any) => Number(t.tahun) === Number(activeTahun));
+    }
+    return tahunAnggaranData.find(t => Number(t.tahun) === Number(activeTahun));
+  }, [activeTahun, isSupabaseMode, dbData]);
+
   const rawData = useMemo(() => {
     if (!selectedProvinsi) return [];
-    const list = getKabkotaByProvinsi(selectedProvinsi);
 
     if (isSupabaseMode && dbData) {
-      return list.map(item => ({
-        ...item,
-        nominal_alokasi: Number(item.nominal_alokasi),
-        realisasi_total: Number(item.realisasi_total),
-        selisih: Number(item.nominal_alokasi) - Number(item.realisasi_total),
-        persentase_penyerapan: Number(item.nominal_alokasi) > 0 
-          ? Math.round((Number(item.realisasi_total) / Number(item.nominal_alokasi)) * 1000) / 10 
-          : 0
-      }));
+      const activeProvAlloc = dbData.alokasi_provinsi?.find(
+        (ap: any) => ap.provinsi_id === selectedProvinsi && String(ap.tahun_anggaran_id) === String(activeTahunObj?.id)
+      );
+
+      if (activeProvAlloc) {
+        const yearKabkotas = (dbData.alokasi_kabupaten_kota || []).filter(
+          (akk: any) => akk.alokasi_provinsi_id === activeProvAlloc.id
+        );
+
+        if (yearKabkotas.length > 0) {
+          return yearKabkotas.map((akk: any) => {
+            const kk = dbData.kabupaten_kota?.find((k: any) => k.id === akk.kabupaten_kota_id);
+            const nominal = Number(akk.nominal_alokasi || 0);
+            const realisasi = Number(akk.realisasi_total || 0);
+            return {
+              id: akk.id,
+              alokasi_provinsi_id: akk.alokasi_provinsi_id,
+              kabupaten_kota_id: akk.kabupaten_kota_id,
+              kabupaten_kota: kk || akk.kabupaten_kota || { id: akk.kabupaten_kota_id, provinsi_id: selectedProvinsi, kode_kabupaten_kota: '', nama_kabupaten_kota: 'Kab/Kota', tipe: 'KABUPATEN' },
+              provinsi_nama: activeProvAlloc.provinsi?.nama_provinsi || '',
+              nominal_alokasi: nominal,
+              realisasi_total: realisasi,
+              selisih: nominal - realisasi,
+              persentase_penyerapan: nominal > 0 ? (realisasi / nominal) * 100 : 0,
+              updated_at: akk.updated_at || '',
+            } as AlokasiKabupatenKota;
+          });
+        }
+      }
+
+      // If no year-specific allocation in DB, return 0 allocation for each master kabupaten_kota
+      const masterKabs = (dbData.kabupaten_kota || []).filter((k: any) => k.provinsi_id === selectedProvinsi);
+      const prov = dbData.provinsi?.find((p: any) => p.id === selectedProvinsi);
+      return masterKabs.map((k: any) => ({
+        id: `akk-draft-${k.id}-${activeTahun}`,
+        alokasi_provinsi_id: `prov-draft-${selectedProvinsi}-${activeTahun}`,
+        kabupaten_kota_id: k.id,
+        kabupaten_kota: k,
+        provinsi_nama: prov?.nama_provinsi || 'Provinsi',
+        nominal_alokasi: 0,
+        realisasi_total: 0,
+        selisih: 0,
+        persentase_penyerapan: 0,
+        updated_at: new Date().toISOString().split('T')[0],
+      } as AlokasiKabupatenKota));
     }
 
-    const targetTahun = tahunAnggaranData.find(t => t.tahun === activeTahun) || tahunAnggaranData[6];
-    const baseTahun = tahunAnggaranData[6];
-    const scale = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
-    const seed = (activeTahun % 7) || 1;
-    const shift = 0.95 + (seed * 0.012);
-
-    return list.map(item => {
-      const nominal = Math.round(item.nominal_alokasi * scale);
-      const realisasi = Math.min(nominal, Math.round(item.realisasi_total * scale * shift));
-      return {
-        ...item,
-        nominal_alokasi: nominal,
-        realisasi_total: realisasi,
-        selisih: nominal - realisasi,
-        persentase_penyerapan: nominal > 0 ? Math.round((realisasi / nominal) * 1000) / 10 : 0
-      };
-    });
-  }, [selectedProvinsi, activeTahun, isSupabaseMode, dbData]);
+    const list = getKabkotaByProvinsi(selectedProvinsi);
+    return list;
+  }, [selectedProvinsi, activeTahunObj, isSupabaseMode, dbData]);
 
   const [localData, setLocalData] = useState<AlokasiKabupatenKota[]>(rawData);
 

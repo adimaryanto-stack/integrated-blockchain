@@ -132,7 +132,7 @@ export default function APBNPage() {
 
   return (
     <div className="min-h-screen">
-      <Header title="Kelola Pagu Pusat" subtitle="Kelola pagu dana pendidikan pusat per tahun anggaran" />
+      <Header title="Kelola Pagu APBN" subtitle="Kelola pagu dana pendidikan pusat (APBN) per tahun anggaran" />
 
       <div className="p-6">
         {/* Toolbar */}

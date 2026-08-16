@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import PctBadge from '@/components/ui/PctBadge';
 import { useAppStore } from '@/lib/store';
-import { alokasiProvinsiData, tahunAnggaranData } from '@/lib/data';
+import { alokasiProvinsiData, tahunAnggaranData, masterProvinsiData } from '@/lib/data';
 import { fmtRupiah, fmtTriliun } from '@/lib/utils/formatters';
 import { exportToExcel, getPctColorHex } from '@/lib/utils/excelExport';
 import { AlokasiProvinsi } from '@/types';
@@ -19,16 +19,34 @@ export default function ProvinsiPage() {
 
   const realProvinsiData = useMemo(() => {
     if (!activeTahunObj) return [];
-    return alokasiProvinsiData.filter(p => String(p.tahun_anggaran_id) === String(activeTahunObj.id));
+    const yearAllocations = alokasiProvinsiData.filter(p => String(p.tahun_anggaran_id) === String(activeTahunObj.id));
+    if (yearAllocations.length > 0) {
+      return yearAllocations;
+    }
+
+    // Jika tahun belum memiliki alokasi di DB (misal 2027), tampilkan master 38 provinsi dengan nominal Rp 0
+    const masterList = masterProvinsiData.length > 0
+      ? masterProvinsiData
+      : Array.from(new Map(alokasiProvinsiData.map(p => [p.provinsi_id, p.provinsi])).values());
+
+    return masterList.map(prov => ({
+      id: `prov-draft-${prov.id}-${activeTahunObj.id}`,
+      tahun_anggaran_id: activeTahunObj.id,
+      provinsi_id: prov.id,
+      provinsi: prov,
+      nominal_alokasi: 0,
+      realisasi_total: 0,
+      selisih: 0,
+      persentase_penyerapan: 0,
+      updated_at: new Date().toISOString().split('T')[0],
+    } as AlokasiProvinsi));
   }, [activeTahunObj, dataVersion]);
 
-  const [prevRealData, setPrevRealData] = useState(realProvinsiData);
   const [data, setData] = useState<AlokasiProvinsi[]>(realProvinsiData);
 
-  if (realProvinsiData !== prevRealData) {
-    setPrevRealData(realProvinsiData);
+  useEffect(() => {
     setData(realProvinsiData);
-  }
+  }, [realProvinsiData]);
 
   const [search, setSearch] = useState('');
   const [editingCell, setEditingCell] = useState<{ id: string; field: 'nominal' | 'realisasi' } | null>(null);

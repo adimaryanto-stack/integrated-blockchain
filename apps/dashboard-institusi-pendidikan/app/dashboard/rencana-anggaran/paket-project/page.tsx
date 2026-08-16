@@ -10,15 +10,20 @@ import { Plus, Search, FolderKanban, ArrowRight, Eye, Settings, Briefcase, Calen
 import TambahPaketModal from '@/components/paket-project/TambahPaketModal';
 
 export default function PaketProjectPage() {
-  const { paketProjectList, projectExpenses, projectVendors } = useAppStore();
+  const { activeTahun, paketProjectList, projectExpenses, projectVendors } = useAppStore();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<'semua' | ProjectStatus>('semua');
   const [tambahModalOpen, setTambahModalOpen] = useState(false);
 
+  const yearProjects = useMemo(() => {
+    if (activeTahun === 2027) return [];
+    return paketProjectList;
+  }, [paketProjectList, activeTahun]);
+
   // Filtered project list
   const filteredProjects = useMemo(() => {
-    return paketProjectList.filter((p) => {
+    return yearProjects.filter((p) => {
       const matchSearch =
         p.nama_paket.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.deskripsi.toLowerCase().includes(searchTerm.toLowerCase());
@@ -27,11 +32,11 @@ export default function PaketProjectPage() {
       
       return matchSearch && matchStatus;
     });
-  }, [paketProjectList, searchTerm, selectedStatus]);
+  }, [yearProjects, searchTerm, selectedStatus]);
 
   // Project summaries helper
   const projectSummaries = useMemo(() => {
-    return paketProjectList.reduce((acc, p) => {
+    return yearProjects.reduce((acc, p) => {
       const projExpenses = projectExpenses.filter(e => e.project_id === p.id);
       const totalRAB = projExpenses.reduce((sum, e) => sum + e.total_setelah_pajak, 0);
 
@@ -44,23 +49,23 @@ export default function PaketProjectPage() {
       };
       return acc;
     }, {} as Record<string, { totalRAB: number; vendorsNames: string }>);
-  }, [paketProjectList, projectExpenses, projectVendors]);
+  }, [yearProjects, projectExpenses, projectVendors]);
 
   // Statistics
   const stats = useMemo(() => {
-    const totalProjects = paketProjectList.length;
+    const totalProjects = yearProjects.length;
     
     // Sum of all projects' total RAB
     const totalBudget = Object.values(projectSummaries).reduce((sum, val) => sum + val.totalRAB, 0);
     
-    const activeProjects = paketProjectList.filter(p => p.status === 'berjalan').length;
+    const activeProjects = yearProjects.filter(p => p.status === 'berjalan').length;
 
     return {
       totalProjects,
       totalBudget,
       activeProjects
     };
-  }, [paketProjectList, projectSummaries]);
+  }, [yearProjects, projectSummaries]);
 
   const getStatusBadgeClass = (status: ProjectStatus) => {
     switch (status) {

@@ -69,7 +69,7 @@ export default function Sidebar() {
           </Link>
 
           <Link href="/dashboard/apbn" className={`sidebar-item ${isActive('/dashboard/apbn') ? 'active' : ''}`}>
-            <DollarSign size={18} />
+            <span style={{ fontSize: '11px', fontWeight: 800, minWidth: 18, textAlign: 'center', letterSpacing: '-0.5px', opacity: 0.85 }}>Rp.</span>
             <span>APBN Pertahun</span>
           </Link>
 

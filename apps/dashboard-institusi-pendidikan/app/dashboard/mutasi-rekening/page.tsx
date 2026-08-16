@@ -231,8 +231,28 @@ export default function MutasiRekeningPage() {
     return new Date();
   };
 
+  const filteredCredits = useMemo(() => {
+    if (activeTahun === 2027) {
+      return [
+        {
+          id: 'cr-carry-forward-2026',
+          tanggal: '01 Jan 2027',
+          keterangan: 'Saldo Awal - Sisa Kas Bank Rekening Sekolah Tahun 2026 (Carry Forward)',
+          tipe: 'Kredit' as const,
+          nominal: 37564102
+        }
+      ];
+    }
+    return creditItems.filter(item => item.tanggal ? item.tanggal.includes(activeTahun.toString()) : false);
+  }, [creditItems, activeTahun]);
+
+  const filteredDebets = useMemo(() => {
+    if (activeTahun === 2027) return [];
+    return debetItems.filter(item => item.tanggal ? item.tanggal.includes(activeTahun.toString()) : false);
+  }, [debetItems, activeTahun]);
+
   const allMutations = useMemo(() => {
-    const combined = [...debetItems, ...creditItems];
+    const combined = [...filteredDebets, ...filteredCredits];
     // Sort chronologically ascending
     combined.sort((a, b) => parseIndoDate(a.tanggal).getTime() - parseIndoDate(b.tanggal).getTime());
 
@@ -251,13 +271,13 @@ export default function MutasiRekeningPage() {
 
     // Display newest first
     return computed.reverse();
-  }, [debetItems, creditItems]);
+  }, [filteredDebets, filteredCredits]);
 
   const currentSaldo = useMemo(() => {
-    const totalCredit = creditItems.reduce((sum, item) => sum + item.nominal, 0);
-    const totalDebet = debetItems.reduce((sum, item) => sum + item.nominal, 0);
+    const totalCredit = filteredCredits.reduce((sum, item) => sum + item.nominal, 0);
+    const totalDebet = filteredDebets.reduce((sum, item) => sum + item.nominal, 0);
     return totalCredit - totalDebet;
-  }, [creditItems, debetItems]);
+  }, [filteredCredits, filteredDebets]);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<'Semua' | 'Kredit' | 'Debet'>('Semua');

@@ -4,9 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '@/lib/store';
 import { useRouter } from 'next/navigation';
 import { tahunAnggaranData, institusiPendidikanData, updateTahunAnggaran } from '@/lib/data';
+import { supabase } from '@/lib/supabase';
 import { Bell, Search, Menu, CheckCheck, Info, AlertTriangle, Sparkles, History, UserCheck } from 'lucide-react';
 import AuditTrailDrawer from '@/components/ui/AuditTrailDrawer';
-import { UserRole, InstitusiPendidikan } from '@/types';
+import { UserRole, InstitusiPendidikan, TahunAnggaran } from '@/types';
 
 interface HeaderProps {
   title: string;
@@ -35,7 +36,32 @@ export default function Header({ title, subtitle }: HeaderProps) {
     dataVersion,
   } = useAppStore();
 
-  const activeTahunList = [...tahunAnggaranData].sort((a, b) => a.tahun - b.tahun);
+  const [activeTahunList, setActiveTahunList] = useState<{ tahun: number; status: string }[]>(() => {
+    if (tahunAnggaranData && tahunAnggaranData.length > 0) {
+      return [...tahunAnggaranData].sort((a, b) => a.tahun - b.tahun);
+    }
+    return [{ tahun: 2026, status: 'ACTIVE' }, { tahun: 2027, status: 'DRAFT' }];
+  });
+
+  const fetchYearsFromDb = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tahun_anggaran')
+        .select('tahun, status')
+        .order('tahun', { ascending: true });
+      if (!error && data && data.length > 0) {
+        setActiveTahunList(data.map((d: any) => ({ tahun: Number(d.tahun), status: d.status || 'ACTIVE' })));
+      }
+    } catch (err) {
+      console.error('[Kementerian Header] Error fetching tahun_anggaran:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchYearsFromDb();
+    window.addEventListener('focus', fetchYearsFromDb);
+    return () => window.removeEventListener('focus', fetchYearsFromDb);
+  }, [dataVersion]);
 
   // Search States
   const [searchQuery, setSearchQuery] = useState('');

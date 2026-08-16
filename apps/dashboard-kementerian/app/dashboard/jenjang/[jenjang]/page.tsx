@@ -112,16 +112,24 @@ export default function JenjangPage() {
         const { data: batch, error } = await query;
         if (error) throw error;
 
-        const mapped = (batch || []).map((item: any) => ({
-          ...item,
-          nominal_alokasi: Number(item.nominal_alokasi || 0),
-          realisasi_total: Number(item.realisasi_total || 0),
-          selisih: Number(item.nominal_alokasi || 0) - Number(item.realisasi_total || 0),
-          persentase_penyerapan:
-            Number(item.nominal_alokasi) > 0
-              ? Math.round((Number(item.realisasi_total) / Number(item.nominal_alokasi)) * 1000) / 10
-              : 0,
-        }));
+        const activeTahunObj = tahunAnggaranData.find(t => Number(t.tahun) === Number(activeTahun));
+        const matchingProv = alokasiProvinsiData.filter(p => String(p.tahun_anggaran_id) === String(activeTahunObj?.id));
+        const hasAllocationsForYear = matchingProv.length > 0;
+
+        const mapped = (batch || []).map((item: any) => {
+          const nominal = hasAllocationsForYear ? Number(item.nominal_alokasi || 0) : 0;
+          const realisasi = hasAllocationsForYear ? Number(item.realisasi_total || 0) : 0;
+          return {
+            ...item,
+            nominal_alokasi: nominal,
+            realisasi_total: realisasi,
+            selisih: nominal - realisasi,
+            persentase_penyerapan:
+              nominal > 0
+                ? Math.round((realisasi / nominal) * 1000) / 10
+                : 0,
+          };
+        });
 
         if (isMounted) {
           setData(mapped);
@@ -136,7 +144,7 @@ export default function JenjangPage() {
 
     fetchInstitusi();
     return () => { isMounted = false; };
-  }, [config.jenjang, selectedProvinsiId, selectedKabKotaName, selectedStatus, debouncedSearch]);
+  }, [config.jenjang, selectedProvinsiId, selectedKabKotaName, selectedStatus, debouncedSearch, activeTahun, dataVersion]);
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -205,6 +213,18 @@ export default function JenjangPage() {
       try { return BigInt(s); } catch { return 0n; }
     };
 
+    const targetTahun = tahunAnggaranData.find(t => Number(t.tahun) === Number(activeTahun));
+    const matchingProv = alokasiProvinsiData.filter(p => String(p.tahun_anggaran_id) === String(targetTahun?.id));
+
+    if (matchingProv.length === 0) {
+      return {
+        nominal: 0,
+        realisasi: 0,
+        selisih: 0,
+        pct: 0,
+      };
+    }
+
     const jenjangWeightsPct: Record<string, bigint> = {
       UNIVERSITAS: 35n,
       SMA: 25n,
@@ -214,12 +234,10 @@ export default function JenjangPage() {
     };
 
     if (!hasFilter) {
-      const targetTahun = tahunAnggaranData.find(t => t.tahun === activeTahun) || tahunAnggaranData.find(t => t.tahun === 2026);
-      const bTotalAPBN = toBigIntHelper(targetTahun?.total_anggaran || 769100000000000);
+      const bTotalAllocated = matchingProv.reduce((s, p) => s + toBigIntHelper(p.nominal_alokasi), 0n);
       const weight = jenjangWeightsPct[config.jenjang] || 35n;
-      const bNom = (bTotalAPBN * weight) / 100n;
+      const bNom = (bTotalAllocated * weight) / 100n;
 
-      const matchingProv = alokasiProvinsiData.filter(p => p.tahun_anggaran_id === targetTahun?.id);
       const bTotalRealisasi = matchingProv.reduce((s, p) => s + toBigIntHelper(p.realisasi_total), 0n);
       const bReal = (bTotalRealisasi * weight) / 100n;
       const bSel = bNom - bReal;
@@ -243,7 +261,7 @@ export default function JenjangPage() {
       selisih: selisihBig.toString() as unknown as number,
       pct,
     };
-  }, [filtered, hasFilter, config.jenjang, activeTahun, dataVersion]);
+  }, [filtered, hasFilter, activeTahun, config.jenjang, dataVersion]);
 
   const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
   const paginatedData = useMemo(() => {

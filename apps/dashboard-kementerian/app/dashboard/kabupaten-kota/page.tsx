@@ -4,10 +4,10 @@ import { useState, useMemo } from 'react';
 import Header from '@/components/layout/Header';
 import PctBadge from '@/components/ui/PctBadge';
 import { useAppStore } from '@/lib/store';
-import { alokasiProvinsiData, getKabkotaByProvinsi, tahunAnggaranData } from '@/lib/data';
+import { alokasiProvinsiData, getKabkotaByProvinsi, tahunAnggaranData, masterProvinsiData } from '@/lib/data';
 import { fmtRupiah, fmtTriliun } from '@/lib/utils/formatters';
 import { exportToExcel, getPctColorHex } from '@/lib/utils/excelExport';
-import { AlokasiKabupatenKota } from '@/types';
+import { AlokasiKabupatenKota, AlokasiProvinsi } from '@/types';
 import { Search, Download, Plus } from 'lucide-react';
 
 
@@ -20,12 +20,29 @@ export default function KabupatenKotaPage() {
   }, [activeTahun, dataVersion]);
 
   const sortedProvinsiData = useMemo(() => {
-    const provs = activeTahunObj 
+    const yearAllocations = activeTahunObj 
       ? alokasiProvinsiData.filter(p => String(p.tahun_anggaran_id) === String(activeTahunObj.id))
-      : alokasiProvinsiData;
-    return [...provs].sort((a, b) =>
-      a.provinsi.nama_provinsi.localeCompare(b.provinsi.nama_provinsi, 'id')
-    );
+      : [];
+    if (yearAllocations.length > 0) {
+      return [...yearAllocations].sort((a, b) =>
+        a.provinsi.nama_provinsi.localeCompare(b.provinsi.nama_provinsi, 'id')
+      );
+    }
+    const masterList = masterProvinsiData.length > 0
+      ? masterProvinsiData
+      : Array.from(new Map(alokasiProvinsiData.map(p => [p.provinsi_id, p.provinsi])).values());
+
+    return masterList.map(prov => ({
+      id: `prov-draft-${prov.id}-${activeTahunObj?.id || ''}`,
+      tahun_anggaran_id: activeTahunObj?.id || '',
+      provinsi_id: prov.id,
+      provinsi: prov,
+      nominal_alokasi: 0,
+      realisasi_total: 0,
+      selisih: 0,
+      persentase_penyerapan: 0,
+      updated_at: new Date().toISOString().split('T')[0],
+    } as AlokasiProvinsi)).sort((a, b) => a.provinsi.nama_provinsi.localeCompare(b.provinsi.nama_provinsi, 'id'));
   }, [activeTahunObj, dataVersion]);
 
   const [selectedProvinsi, setSelectedProvinsi] = useState(() => sortedProvinsiData[0]?.provinsi_id || 'p-1');

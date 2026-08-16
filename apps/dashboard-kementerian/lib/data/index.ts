@@ -34,7 +34,7 @@ export const usersData: User[] = [];
 // provinceSchoolStatsData: populated at runtime from database via initDbConnection
 // DO NOT add hardcoded data here — always sourced from local PostgreSQL
 export const provinceSchoolStatsData: any[] = [];
-
+export const masterProvinsiData: { id: string; kode_provinsi: string; nama_provinsi: string }[] = [];
 
 export function updateTahunAnggaranData(newData: TahunAnggaran[]) {
   tahunAnggaranData.length = 0;
@@ -126,7 +126,7 @@ export async function initDbConnection(force = false) {
   };
 
   try {
-    const [taData, provData, kabkotaData, instData, sdData, pbData, userData, schoolStatsData] = await Promise.all([
+    const [taData, provData, kabkotaData, instData, sdData, pbData, userData, schoolStatsData, masterProvs] = await Promise.all([
       fetchPaginated(`${url}/rest/v1/tahun_anggaran?select=*&order=tahun.asc`, headers),
       fetchPaginated(`${url}/rest/v1/alokasi_provinsi?select=*,provinsi(*)&order=id.asc`, headers),
       fetchPaginated(`${url}/rest/v1/alokasi_kabupaten_kota?select=*,kabupaten_kota(*)&order=id.asc`, headers),
@@ -135,6 +135,7 @@ export async function initDbConnection(force = false) {
       Promise.resolve([]),
       fetchPaginated(`${url}/rest/v1/users?select=*&order=id.asc`, headers),
       fetchPaginated(`${url}/rest/v1/province_school_stats?select=*`, headers).catch(() => []),
+      fetchPaginated(`${url}/rest/v1/provinsi?select=*&order=id.asc`, headers).catch(() => []),
     ]);
 
     tahunAnggaranData.length = 0;
@@ -163,6 +164,11 @@ export async function initDbConnection(force = false) {
       provinceSchoolStatsData.push(...schoolStatsData.map((s: any) => cleanRecord(s) as any));
     }
 
+    if (masterProvs && masterProvs.length > 0) {
+      masterProvinsiData.length = 0;
+      masterProvinsiData.push(...masterProvs.map((p: any) => cleanRecord(p) as any));
+    }
+
     isInitialized = true;
     console.log('Successfully synchronized database with Supabase.');
 
@@ -172,6 +178,140 @@ export async function initDbConnection(force = false) {
   } catch (err) {
     console.error('Failed to load database from Supabase:', err);
     return false;
+  }
+}
+
+export async function patchProvinsi(
+  id: string,
+  field: 'nominal_alokasi' | 'realisasi_total',
+  value: number
+) {
+  const { url, anonKey } = getSupabaseConfig();
+  const headers = {
+    'apikey': anonKey,
+    'Authorization': `Bearer ${anonKey}`,
+    'Content-Type': 'application/json',
+  };
+
+  try {
+    if (id.startsWith('prov-draft-')) {
+      const parts = id.replace('prov-draft-', '').split('-');
+      const provId = parts[0] && parts[1] ? `${parts[0]}-${parts[1]}` : parts[0];
+      const tahunId = parts.slice(2).join('-');
+      const newId = `prov-${provId}-${tahunId}`;
+
+      const nominal = field === 'nominal_alokasi' ? value : 0;
+      const realisasi = field === 'realisasi_total' ? value : 0;
+      const selisih = nominal - realisasi;
+      const pct = nominal > 0 ? (realisasi / nominal) * 100 : 0;
+
+      const res = await fetch(`${url}/rest/v1/alokasi_provinsi`, {
+        method: 'POST',
+        headers: { ...headers, 'Prefer': 'return=representation' },
+        body: JSON.stringify({
+          id: newId,
+          tahun_anggaran_id: tahunId,
+          provinsi_id: provId,
+          nominal_alokasi: nominal,
+          realisasi_total: realisasi,
+          selisih,
+          persentase_penyerapan: pct,
+          updated_at: new Date().toISOString().split('T')[0]
+        })
+      });
+      if (!res.ok) throw new Error('Failed to insert new alokasi_provinsi');
+      await initDbConnection(true);
+      return;
+    }
+
+    const provRes = await fetch(`${url}/rest/v1/alokasi_provinsi?id=eq.${id}`, { headers });
+    if (!provRes.ok) throw new Error('Failed to fetch province allocation');
+    const [prov] = await provRes.json();
+    if (!prov) throw new Error('Province allocation not found');
+
+    const newNominal = field === 'nominal_alokasi' ? value : prov.nominal_alokasi;
+    const newRealisasi = field === 'realisasi_total' ? value : prov.realisasi_total;
+    const newSelisih = newNominal - newRealisasi;
+    const newPct = newNominal > 0 ? (newRealisasi / newNominal) * 100 : 0;
+
+    const res = await fetch(`${url}/rest/v1/alokasi_provinsi?id=eq.${id}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({
+        [field]: value,
+        selisih: newSelisih,
+        persentase_penyerapan: newPct,
+        updated_at: new Date().toISOString().split('T')[0]
+      }),
+    });
+    if (!res.ok) throw new Error('Failed to patch alokasi_provinsi');
+
+    // Audit Logging
+    const currentUser = useAppStore.getState().currentUser;
+    const provName = prov.provinsi?.nama_provinsi || id;
+    useAppStore.getState().addAuditLog({
+      user_nama: currentUser.username,
+      user_role: currentUser.role,
+      entitas: `Alokasi Provinsi (${provName})`,
+      entitas_id: id,
+      field,
+      nilai_lama: fmtRupiah(prov[field]),
+      nilai_baru: fmtRupiah(value),
+    });
+
+    // Cascade down to all child kabupaten/kota for this province
+    const kabsRes = await fetch(`${url}/rest/v1/alokasi_kabupaten_kota?alokasi_provinsi_id=eq.${id}&order=id.asc`, { headers });
+    if (kabsRes.ok) {
+      const kabs = await kabsRes.json();
+      if (Array.isArray(kabs) && kabs.length > 0) {
+        const kabCount = kabs.length;
+        const baseNominal = Math.floor(newNominal / kabCount);
+        const remainder = newNominal % kabCount;
+
+        await Promise.all(
+          kabs.map(async (k: any, idx: number) => {
+            const kNominal = idx === kabCount - 1 ? baseNominal + remainder : baseNominal;
+            const kRealisasi = k.realisasi_total;
+            const kSelisih = kNominal - kRealisasi;
+            const kPct = kNominal > 0 ? Math.round((kRealisasi / kNominal) * 1000) / 10 : 0;
+
+            await fetch(`${url}/rest/v1/alokasi_kabupaten_kota?id=eq.${k.id}`, {
+              method: 'PATCH',
+              headers,
+              body: JSON.stringify({
+                nominal_alokasi: kNominal,
+                selisih: kSelisih,
+                persentase_penyerapan: kPct,
+                updated_at: new Date().toISOString().split('T')[0]
+              })
+            });
+          })
+        );
+      }
+    }
+
+    // Cascade update to parent tahun_anggaran
+    const taId = prov.tahun_anggaran_id;
+    if (taId) {
+      const allProvsRes = await fetch(`${url}/rest/v1/alokasi_provinsi?tahun_anggaran_id=eq.${taId}`, { headers });
+      if (allProvsRes.ok) {
+        const allProvs = await allProvsRes.json();
+        const totalNominalTA = allProvs.reduce((s: number, p: any) => 
+          s + (p.id === id ? newNominal : p.nominal_alokasi), 0);
+
+        await fetch(`${url}/rest/v1/tahun_anggaran?id=eq.${taId}`, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({
+            total_anggaran: totalNominalTA
+          })
+        });
+      }
+    }
+
+    await initDbConnection(true); // force reload cache
+  } catch (err) {
+    console.error('Failed to patch alokasi_provinsi:', err);
   }
 }
 
@@ -510,17 +650,27 @@ export async function getProfilInstitusi(id: string, tahun: number = 2026): Prom
     if (!Array.isArray(instData) || instData.length === 0) return null;
 
     const rawInst = cleanRecord(instData[0]);
+
+    // Check if the given year has allocations in alokasi_provinsi
+    const targetTahun = tahunAnggaranData.find(t => Number(t.tahun) === Number(tahun));
+    const matchingProv = alokasiProvinsiData.filter(p => String(p.tahun_anggaran_id) === String(targetTahun?.id));
+    const hasAllocationsForYear = matchingProv.length > 0;
+
+    const nominalAlokasi = hasAllocationsForYear ? Number(rawInst.nominal_alokasi || 0) : 0;
+    const realisasiTotal = hasAllocationsForYear ? Number(rawInst.realisasi_total || 0) : 0;
+    const selisih = nominalAlokasi - realisasiTotal;
+    const persentase = nominalAlokasi > 0 ? Math.round((realisasiTotal / nominalAlokasi) * 1000) / 10 : 0;
+
     const institusi = {
       ...rawInst,
-      nominal_alokasi: Number(rawInst.nominal_alokasi || 0),
-      realisasi_total: Number(rawInst.realisasi_total || 0),
-      selisih: Number(rawInst.nominal_alokasi || 0) - Number(rawInst.realisasi_total || 0),
-      persentase_penyerapan: Number(rawInst.nominal_alokasi) > 0 
-        ? Math.round((Number(rawInst.realisasi_total) / Number(rawInst.nominal_alokasi)) * 1000) / 10 
-        : 0,
+      nominal_alokasi: nominalAlokasi,
+      realisasi_total: realisasiTotal,
+      selisih,
+      persentase_penyerapan: persentase,
     };
 
-    const resSd = await fetch(`${url}/rest/v1/sumber_dana_institusi?institusi_id=eq.${id}`, { headers });
+    // Filter sumber dana by active year
+    const resSd = await fetch(`${url}/rest/v1/sumber_dana_institusi?institusi_id=eq.${id}&tahun_anggaran=eq.${encodeURIComponent(String(tahun))}`, { headers });
     const sdData = await resSd.json();
     const sumber_dana_raw = Array.isArray(sdData) ? sdData.map(cleanRecord) : [];
 
@@ -531,44 +681,42 @@ export async function getProfilInstitusi(id: string, tahun: number = 2026): Prom
       saldo_di_bank: Number(sd.saldo_di_bank ?? (Number(sd.nominal || 0) - Number(sd.realisasi || 0))),
     })) : [
       {
-        id: `sd-${institusi.id}`,
+        id: `sd-${institusi.id}-${tahun}`,
         institusi_id: institusi.id,
+        nama_sumber: 'APBN (DANA INDUK PENDIDIKAN)',
         tahun_anggaran: String(tahun),
-        sumber_dana: 'APBN (DANA INDUK PENDIDIKAN)',
         nominal: institusi.nominal_alokasi,
         realisasi: institusi.realisasi_total,
         saldo_di_bank: institusi.nominal_alokasi - institusi.realisasi_total,
-        persentase: institusi.persentase_penyerapan,
-      }
+      } as any
     ];
 
     const resPb = await fetch(`${url}/rest/v1/pengeluaran_bulanan_institusi?institusi_id=eq.${id}&order=nomor.asc`, { headers });
     const pbData = await resPb.json();
     let pengeluaran_bulanan = Array.isArray(pbData) ? pbData.map(cleanRecord) : [];
 
-    if (pengeluaran_bulanan.length === 0) {
+    // If year has no allocations or DB is empty for this year, return 12 months with 0 pengeluaran (no synthetic mock)
+    if (pengeluaran_bulanan.length === 0 || !hasAllocationsForYear) {
       const monthNames = [
         'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
         'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
       ];
-      const pcts = [0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.08, 0.08, 0.08, 0.06, 0.05, 0.05];
-      let sumDist = 0;
       pengeluaran_bulanan = monthNames.map((bulan, i) => {
-        let nom = 0;
-        if (i === 11) {
-          nom = institusi.realisasi_total - sumDist;
-        } else {
-          nom = Math.round(institusi.realisasi_total * pcts[i]);
-          sumDist += nom;
-        }
         return {
-          id: `pb-${institusi.id}-${i + 1}`,
+          id: `pb-${institusi.id}-${tahun}-${i + 1}`,
           institusi_id: institusi.id,
           nomor: i + 1,
           bulan,
-          nominal_pengeluaran: nom,
+          nominal_pengeluaran: 0,
           qty: 1,
-          sub_total: nom
+          harga_satuan: 0,
+          pajak_persen: 0,
+          pajak_nominal: 0,
+          sub_total: 0,
+          total: 0,
+          status: 'DRAFT',
+          keterangan: '-',
+          updated_at: new Date().toISOString().split('T')[0],
         };
       });
     }
@@ -639,6 +787,7 @@ export interface FetchInstitusiParams {
   search?: string;
   page?: number;
   pageSize?: number;
+  tahun?: number;
 }
 
 export interface FetchInstitusiResult {
@@ -692,6 +841,25 @@ export async function fetchInstitusiPaginated(params: FetchInstitusiParams): Pro
 
     const rawData = await res.json();
     let data: InstitusiPendidikan[] = Array.isArray(rawData) ? rawData.map(cleanRecord) : [];
+
+    // Check if the given year has allocations in alokasi_provinsi
+    if (params.tahun) {
+      const targetTahun = tahunAnggaranData.find(t => Number(t.tahun) === Number(params.tahun));
+      const matchingProv = alokasiProvinsiData.filter(p => String(p.tahun_anggaran_id) === String(targetTahun?.id));
+      const hasAllocationsForYear = matchingProv.length > 0;
+
+      data = data.map(item => {
+        const nominal = hasAllocationsForYear ? Number(item.nominal_alokasi || 0) : 0;
+        const realisasi = hasAllocationsForYear ? Number(item.realisasi_total || 0) : 0;
+        return {
+          ...item,
+          nominal_alokasi: nominal,
+          realisasi_total: realisasi,
+          selisih: nominal - realisasi,
+          persentase_penyerapan: nominal > 0 ? (realisasi / nominal) * 100 : 0,
+        };
+      });
+    }
 
     if (params.kecamatan) {
       const kec = params.kecamatan.toLowerCase();
@@ -1224,9 +1392,10 @@ export async function updateTahunAnggaran(id: string, updates: Partial<TahunAngg
   }
 }
 
-export async function createTahunAnggaran(tahun: number, total_anggaran: number) {
+export async function createTahunAnggaran(tahun: number, total_anggaran: number | string) {
   const { url, anonKey } = getSupabaseConfig();
   try {
+    const genId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `ta-${tahun}-${Date.now()}`;
     const res = await fetch(`${url}/rest/v1/tahun_anggaran`, {
       method: 'POST',
       headers: {
@@ -1235,8 +1404,9 @@ export async function createTahunAnggaran(tahun: number, total_anggaran: number)
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        tahun,
-        total_anggaran,
+        id: genId,
+        tahun: Number(tahun),
+        total_anggaran: String(total_anggaran),
         status: 'DRAFT',
         created_at: new Date().toISOString(),
       }),
@@ -1250,10 +1420,11 @@ export async function createTahunAnggaran(tahun: number, total_anggaran: number)
         entitas_id: String(tahun),
         field: 'total_anggaran',
         nilai_lama: '0',
-        nilai_baru: fmtRupiah(total_anggaran),
+        nilai_baru: fmtRupiah(Number(total_anggaran)),
       });
 
       await initDbConnection(true);
+      useAppStore.getState().incrementVersion();
       return true;
     }
     return false;

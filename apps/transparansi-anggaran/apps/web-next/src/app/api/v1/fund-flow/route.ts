@@ -12,27 +12,69 @@ export async function GET(request: Request) {
     );
 
     try {
-        // 1. Fetch APBN Data
-        const { data: apbn, error: apbnErr } = await supabase
+        // 1. Fetch APBN Data from apbn_yearly_data or tahun_anggaran
+        let { data: apbn, error: apbnErr } = await supabase
             .from('apbn_yearly_data')
             .select('*')
             .eq('year', targetYear)
-            .single();
+            .maybeSingle();
 
-        if (apbnErr && apbnErr.code !== 'PGRST116') throw apbnErr;
+        if (!apbn) {
+            const { data: taData } = await supabase
+                .from('tahun_anggaran')
+                .select('*')
+                .eq('tahun', targetYear)
+                .maybeSingle();
+
+            if (taData) {
+                apbn = {
+                    id: taData.id,
+                    year: taData.tahun,
+                    total_budget: String(Number(taData.total_anggaran || 0) / 1e12),
+                    status: taData.status
+                };
+            }
+        }
 
         // 2. Fetch Provincial Allocations
-        const { data: provinsi, error: provErr } = await supabase
+        let { data: provinsi, error: provErr } = await supabase
             .from('provincial_allocations')
             .select('*')
             .eq('year', targetYear);
 
         if (provErr) throw provErr;
 
+        if (!provinsi || provinsi.length === 0) {
+            // Fallback to alokasi_provinsi
+            const { data: apList } = await supabase
+                .from('alokasi_provinsi')
+                .select('*, provinsi:provinsi(*)')
+                .eq('tahun', targetYear);
+
+            if (apList && apList.length > 0) {
+                provinsi = apList.map((ap: any) => ({
+                    id: ap.id,
+                    year: targetYear,
+                    provinsi_name: ap.provinsi?.nama_provinsi || ap.provinsi_nama,
+                    provinsi_code: ap.provinsi?.kode_provinsi || '',
+                    alokasi: Number(ap.nominal_alokasi || 0),
+                    diterima: Number(ap.realisasi_total || 0),
+                    disalurkan: Number(ap.realisasi_total || 0),
+                    sisa: Number(ap.selisih || 0),
+                    selisih: Number(ap.selisih || 0),
+                    persen_selisih: Number(ap.persentase_penyerapan || 0),
+                    is_flagged: false,
+                    is_manual_flagged: false,
+                    over_budget_warning: false
+                }));
+            }
+        }
+
         // 3. Fetch District Allocations from alokasi_kabupaten_kota & district_allocations
         const { data: akkData } = await supabase
             .from('alokasi_kabupaten_kota')
-            .select('*, kabupaten_kota:kabupaten_kota(*)');
+            .select('*, kabupaten_kota:kabupaten_kota(*)')
+            .eq('tahun', targetYear);
 
         const { data: districts } = await supabase
             .from('district_allocations')

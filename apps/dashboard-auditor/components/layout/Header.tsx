@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
 import { tahunAnggaranData } from '@/lib/data';
+import { supabase } from '@/lib/supabase';
 import { Bell, Search, Menu, CheckCheck, Info, AlertTriangle, Sparkles } from 'lucide-react';
 
 interface HeaderProps {
@@ -22,8 +23,33 @@ interface NotificationItem {
 
 export default function Header({ title, subtitle }: HeaderProps) {
   const { activeTahun, setActiveTahun, toggleSidebar } = useAppStore();
-  const activeTahunList = [...tahunAnggaranData].sort((a, b) => a.tahun - b.tahun).filter(t => t.status !== 'DRAFT');
+  const [activeTahunList, setActiveTahunList] = useState<{ tahun: number; status: string }[]>(() => {
+    if (tahunAnggaranData && tahunAnggaranData.length > 0) {
+      return [...tahunAnggaranData].sort((a, b) => a.tahun - b.tahun);
+    }
+    return [{ tahun: 2026, status: 'ACTIVE' }, { tahun: 2027, status: 'DRAFT' }];
+  });
   const router = useRouter();
+
+  const fetchYearsFromDb = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tahun_anggaran')
+        .select('tahun, status')
+        .order('tahun', { ascending: true });
+      if (!error && data && data.length > 0) {
+        setActiveTahunList(data.map((d: any) => ({ tahun: Number(d.tahun), status: d.status || 'ACTIVE' })));
+      }
+    } catch (err) {
+      console.error('[Auditor Header] Error fetching tahun_anggaran:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchYearsFromDb();
+    window.addEventListener('focus', fetchYearsFromDb);
+    return () => window.removeEventListener('focus', fetchYearsFromDb);
+  }, []);
 
   // Notification States
   const [showNotifications, setShowNotifications] = useState(false);

@@ -214,7 +214,7 @@ export default function ProvinsiPage() {
   return (
     <div className="min-h-screen">
       <Header
-        title="Penyaluran Wilayah"
+        title="Pagu Provinsi"
         subtitle={`Penyaluran dan pencairan dana APBN Pendidikan per Wilayah Provinsi Tahun ${activeTahun}`}
       />
 

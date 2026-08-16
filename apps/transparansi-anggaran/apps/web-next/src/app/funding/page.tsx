@@ -25,19 +25,33 @@ export default function FundingPage() {
     useEffect(() => {
         const fetchAllData = async () => {
             try {
-                // Fetch APBN
-                const { data: apbn, error: apbnError } = await supabase
-                    .from('apbn_yearly_data')
+                // Fetch APBN from tahun_anggaran (source of truth)
+                const { data: taList } = await supabase
+                    .from('tahun_anggaran')
                     .select('*')
-                    .order('year', { ascending: true });
+                    .order('tahun', { ascending: true });
 
-                if (!apbnError && apbn) {
-                    const formatted = apbn.map(item => ({
-                        year: item.year.toString(),
-                        amount: Number(item.total_budget),
-                        type: item.year >= 2025 ? (item.year === 2025 ? 'Pagu Anggaran' : 'Proyeksi') : (item.year === 2024 ? 'Outlook' : 'Realisasi')
+                if (taList && taList.length > 0) {
+                    const formatted = taList.map(item => ({
+                        year: item.tahun.toString(),
+                        amount: Number(item.total_anggaran || 0) / 1e12,
+                        type: item.tahun >= 2027 ? 'Rancangan / Draf' : (item.tahun === 2026 ? 'Pagu Anggaran' : 'Realisasi')
                     }));
                     setApbnData(formatted);
+                } else {
+                    const { data: apbn, error: apbnError } = await supabase
+                        .from('apbn_yearly_data')
+                        .select('*')
+                        .order('year', { ascending: true });
+
+                    if (!apbnError && apbn) {
+                        const formatted = apbn.map(item => ({
+                            year: item.year.toString(),
+                            amount: Number(item.total_budget),
+                            type: item.year >= 2025 ? (item.year === 2025 ? 'Pagu Anggaran' : 'Proyeksi') : (item.year === 2024 ? 'Outlook' : 'Realisasi')
+                        }));
+                        setApbnData(formatted);
+                    }
                 }
 
                 // Fetch APBD

@@ -186,45 +186,50 @@ function parseFilters(queryParams) {
   let idx = 1;
   const skip = new Set(['select', 'order', 'limit', 'offset', 'or']);
 
-  for (const [key, val] of Object.entries(queryParams)) {
-    if (skip.has(key) || typeof val !== 'string') continue;
+  for (const [key, rawVal] of Object.entries(queryParams)) {
+    if (skip.has(key)) continue;
+    const vals = Array.isArray(rawVal) ? rawVal : [rawVal];
 
-    if (val.startsWith('eq.')) {
-      let v = val.slice(3).replace(/^["']|["']$/g, '');
-      if (v === 'null') { whereClauses.push(`"${key}" IS NULL`); }
-      else { whereClauses.push(`"${key}" = $${idx++}`); values.push(v); }
-    } else if (val.startsWith('neq.')) {
-      let v = val.slice(4).replace(/^["']|["']$/g, '');
-      whereClauses.push(`"${key}" != $${idx++}`); values.push(v);
-    } else if (val.startsWith('gte.')) {
-      whereClauses.push(`"${key}" >= $${idx++}`); values.push(val.slice(4));
-    } else if (val.startsWith('lte.')) {
-      whereClauses.push(`"${key}" <= $${idx++}`); values.push(val.slice(4));
-    } else if (val.startsWith('gt.')) {
-      whereClauses.push(`"${key}" > $${idx++}`); values.push(val.slice(3));
-    } else if (val.startsWith('lt.')) {
-      whereClauses.push(`"${key}" < $${idx++}`); values.push(val.slice(3));
-    } else if (val.startsWith('ilike.')) {
-      let v = val.slice(6).replace(/\*/g, '%').replace(/^["']|["']$/g, '');
-      if (!v.includes('%')) v = `%${v}%`;
-      whereClauses.push(`"${key}" ILIKE $${idx++}`);
-      values.push(v);
-    } else if (val.startsWith('like.')) {
-      let v = val.slice(5).replace(/\*/g, '%').replace(/^["']|["']$/g, '');
-      if (!v.includes('%')) v = `%${v}%`;
-      whereClauses.push(`"${key}" LIKE $${idx++}`);
-      values.push(v);
-    } else if (val.startsWith('in.')) {
-      const list = val.slice(4, -1).split(',').map(s => s.trim().replace(/^["']|["']$/g, ''));
-      const placeholders = list.map(() => `$${idx++}`);
-      whereClauses.push(`"${key}" IN (${placeholders.join(',')})`);
-      values.push(...list);
-    } else if (val === 'is.null') {
-      whereClauses.push(`"${key}" IS NULL`);
-    } else if (val === 'is.true') {
-      whereClauses.push(`"${key}" = true`);
-    } else if (val === 'is.false') {
-      whereClauses.push(`"${key}" = false`);
+    for (const val of vals) {
+      if (typeof val !== 'string') continue;
+
+      if (val.startsWith('eq.')) {
+        let v = val.slice(3).replace(/^["']|["']$/g, '');
+        if (v === 'null') { whereClauses.push(`"${key}" IS NULL`); }
+        else { whereClauses.push(`"${key}" = $${idx++}`); values.push(v); }
+      } else if (val.startsWith('neq.')) {
+        let v = val.slice(4).replace(/^["']|["']$/g, '');
+        whereClauses.push(`"${key}" != $${idx++}`); values.push(v);
+      } else if (val.startsWith('gte.')) {
+        whereClauses.push(`"${key}" >= $${idx++}`); values.push(val.slice(4));
+      } else if (val.startsWith('lte.')) {
+        whereClauses.push(`"${key}" <= $${idx++}`); values.push(val.slice(4));
+      } else if (val.startsWith('gt.')) {
+        whereClauses.push(`"${key}" > $${idx++}`); values.push(val.slice(3));
+      } else if (val.startsWith('lt.')) {
+        whereClauses.push(`"${key}" < $${idx++}`); values.push(val.slice(3));
+      } else if (val.startsWith('ilike.')) {
+        let v = val.slice(6).replace(/\*/g, '%').replace(/^["']|["']$/g, '');
+        if (!v.includes('%')) v = `%${v}%`;
+        whereClauses.push(`"${key}" ILIKE $${idx++}`);
+        values.push(v);
+      } else if (val.startsWith('like.')) {
+        let v = val.slice(5).replace(/\*/g, '%').replace(/^["']|["']$/g, '');
+        if (!v.includes('%')) v = `%${v}%`;
+        whereClauses.push(`"${key}" LIKE $${idx++}`);
+        values.push(v);
+      } else if (val.startsWith('in.')) {
+        const list = val.slice(4, -1).split(',').map(s => s.trim().replace(/^["']|["']$/g, ''));
+        const placeholders = list.map(() => `$${idx++}`);
+        whereClauses.push(`"${key}" IN (${placeholders.join(',')})`);
+        values.push(...list);
+      } else if (val === 'is.null') {
+        whereClauses.push(`"${key}" IS NULL`);
+      } else if (val === 'is.true') {
+        whereClauses.push(`"${key}" = true`);
+      } else if (val === 'is.false') {
+        whereClauses.push(`"${key}" = false`);
+      }
     }
   }
 

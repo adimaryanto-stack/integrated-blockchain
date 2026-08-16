@@ -75,9 +75,10 @@ function AliranDanaPageContent() {
     const searchParams = useSearchParams();
     const sourceParam = searchParams.get('source')?.toUpperCase() || 'APBN';
 
+    const yearFromUrl = searchParams.get('year') ? parseInt(searchParams.get('year')!) : 2026;
     const [data, setData] = useState<{ allocations: Allocation[]; flowLinks: FlowLink[] } | null>(null);
     const [apbnYears, setApbnYears] = useState<any[]>([]);
-    const [selectedYear, setSelectedYear] = useState(2026);
+    const [selectedYear, setSelectedYear] = useState(yearFromUrl);
     const [loading, setLoading] = useState(true);
     const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
 
@@ -94,20 +95,50 @@ function AliranDanaPageContent() {
     const [xferPage, setXferPage] = useState(1);
     const xferItemsPerPage = 4;
 
-    // Fetch source specific data
+    // Sync selectedYear if URL param changes
     useEffect(() => {
-        supabase.from('apbd_yearly_data').select('*').order('year', { ascending: true }).then(({ data }) => {
-            if (data) setApbdSourceData(data);
-        });
+        if (searchParams.get('year')) {
+            const yr = parseInt(searchParams.get('year')!);
+            if (yr && yr !== selectedYear) {
+                setSelectedYear(yr);
+            }
+        }
+    }, [searchParams]);
 
-        supabase.from('csr_yearly_data').select('*').order('year', { ascending: true }).then(({ data }) => {
-            if (data) setCsrSourceData(data);
-        });
+    // Fetch source specific data from local database (100% PostgreSQL)
+    const fetchSourcesData = async () => {
+        try {
+            const { data: apbdData } = await supabase.from('apbd_yearly_data').select('*').order('year', { ascending: true });
+            if (apbdData && apbdData.length > 0) {
+                setApbdSourceData(apbdData);
+            }
+            const { data: csrData } = await supabase.from('csr_yearly_data').select('*').order('year', { ascending: true });
+            if (csrData && csrData.length > 0) {
+                setCsrSourceData(csrData);
+            }
+        } catch (e) {
+            console.error('Error fetching source data:', e);
+        }
+    };
+
+    useEffect(() => {
+        fetchSourcesData();
     }, []);
 
     const fetchYears = async () => {
-        const { data } = await supabase.from('apbn_yearly_data').select('*').order('year', { ascending: false });
-        if (data) setApbnYears(data);
+        const { data: taData } = await supabase.from('tahun_anggaran').select('*').order('tahun', { ascending: false });
+        if (taData && taData.length > 0) {
+            const formatted = taData.map((t: any) => ({
+                id: t.id,
+                year: t.tahun,
+                total_budget: String(Number(t.total_anggaran || 0) / 1e12),
+                status: t.status
+            }));
+            setApbnYears(formatted);
+        } else {
+            const { data } = await supabase.from('apbn_yearly_data').select('*').order('year', { ascending: false });
+            if (data) setApbnYears(data);
+        }
     };
 
     const fetchDetail = async (year: number) => {

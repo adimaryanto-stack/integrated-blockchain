@@ -46,7 +46,56 @@ export default function ProvinsiDetailPage() {
         .single();
 
       if (!provRow) {
-        setProvData(null);
+        // Fallback: ambil data provinsi dan kabupaten_kota agar tahun baru (misal 2027) tetap dapat dibuka
+        const { data: provInfo } = await supabase
+          .from('provinsi')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (!provInfo) {
+          setProvData(null);
+          setLoading(false);
+          return;
+        }
+
+        const fallbackProv: AlokasiProvinsi = {
+          id: `prov-draft-${id}-${activeTahun}`,
+          tahun_anggaran_id: years.id,
+          provinsi_id: id,
+          nominal_alokasi: 0,
+          realisasi_total: 0,
+          selisih: 0,
+          persentase_penyerapan: 0,
+          updated_at: new Date().toISOString().split('T')[0],
+          provinsi: provInfo
+        };
+
+        setProvData(fallbackProv);
+
+        const { data: rawKabs } = await supabase
+          .from('kabupaten_kota')
+          .select('*')
+          .eq('provinsi_id', id);
+
+        const fallbackKabList: AlokasiKabupatenKota[] = (rawKabs || []).map((k: any) => ({
+          id: `akk-draft-${k.id}-${activeTahun}`,
+          alokasi_provinsi_id: fallbackProv.id,
+          kabupaten_kota_id: k.id,
+          provinsi_nama: provInfo.nama_provinsi,
+          nominal_alokasi: 0,
+          realisasi_total: 0,
+          selisih: 0,
+          persentase_penyerapan: 0,
+          updated_at: new Date().toISOString().split('T')[0],
+          kabupaten_kota: k
+        }));
+
+        const sorted = fallbackKabList.sort((a, b) => a.kabupaten_kota.nama_kabupaten_kota.localeCompare(b.kabupaten_kota.nama_kabupaten_kota));
+        setKabkotaList(sorted);
+
+        const breakdown = await getJenjangBreakdownByProvinsi(id, 0);
+        setJenjangBreakdown(breakdown);
         setLoading(false);
         return;
       }
@@ -250,7 +299,7 @@ export default function ProvinsiDetailPage() {
   return (
     <div className="min-h-screen">
       <Header
-        title={`Penyaluran Wilayah: ${provData.provinsi.nama_provinsi}`}
+        title={`Pagu Provinsi: ${provData.provinsi.nama_provinsi}`}
         subtitle={`Tahun Anggaran ${activeTahun} — Status Penyaluran & Pencairan Dana Wilayah`}
       />
 

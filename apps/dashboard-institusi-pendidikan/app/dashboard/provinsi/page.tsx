@@ -19,11 +19,20 @@ export default function ProvinsiPage() {
   const fetchProvinsi = async () => {
     setLoading(true);
     try {
+      // Dapatkan record tahun_anggaran untuk tahun aktif
+      const { data: yearRow } = await supabase
+        .from('tahun_anggaran')
+        .select('id')
+        .eq('tahun', activeTahun)
+        .maybeSingle();
+
+      const yearId = yearRow?.id || String(activeTahun);
+
       const [resAlokasi, resProv] = await Promise.all([
         supabase
           .from('alokasi_provinsi')
           .select('*')
-          .eq('tahun_anggaran_id', String(activeTahun)),
+          .eq('tahun_anggaran_id', yearId),
         supabase
           .from('provinsi')
           .select('*')

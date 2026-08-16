@@ -132,6 +132,13 @@ export default function ProfilInstitusiDetailPage() {
   useEffect(() => {
     setAnomalies(mockAnomalies);
     
+    if (activeTahun === 2027) {
+      setDocuments([]);
+      setTransaksiList([]);
+      setChatMessages([]);
+      return;
+    }
+
     // Initial mock documents
     const initialDocs: typeof documents = [
       { id: 'doc-1', name: 'SPJ_Belanja_ATK_Januari.pdf', month: 'Januari', size: '1.2 MB', status: 'VERIFIED', uploadedAt: '2026-02-05' },

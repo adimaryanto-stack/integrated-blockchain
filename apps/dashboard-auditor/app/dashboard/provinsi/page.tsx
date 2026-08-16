@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import PctBadge from '@/components/ui/PctBadge';
 import { useAppStore } from '@/lib/store';
-import { alokasiProvinsiData, tahunAnggaranData } from '@/lib/data';
+import { alokasiProvinsiData, tahunAnggaranData, getBaseTahun, getTahunOrBase } from '@/lib/data';
 import { fmtRupiah, fmtTriliun } from '@/lib/utils/formatters';
 import { AlokasiProvinsi } from '@/types';
 import { Search, Download, RefreshCw } from 'lucide-react';
@@ -13,56 +13,69 @@ import { Search, Download, RefreshCw } from 'lucide-react';
 export default function ProvinsiPage() {
   const { activeTahun, isSupabaseMode, dbData } = useAppStore();
 
-  const scaledProvinsiData = useMemo(() => {
-    const targetTahun = tahunAnggaranData.find(t => t.tahun === activeTahun) || tahunAnggaranData[6];
-    const baseTahun = tahunAnggaranData[6];
-    const scale = targetTahun.total_anggaran > 0 ? targetTahun.total_anggaran / baseTahun.total_anggaran : 1.0;
-    const seed = (activeTahun % 7) || 1;
-    const shift = 0.95 + (seed * 0.012);
-
-    if (isSupabaseMode && dbData && dbData.alokasi_provinsi.length > 0) {
-      return dbData.alokasi_provinsi.map((ap: any) => {
-        const prov = dbData.provinsi?.find((p: any) => p.id === ap.provinsi_id);
-        const nominal = Math.round(Number(ap.nominal_alokasi) * scale);
-        const realisasi = Math.min(nominal, Math.round(Number(ap.realisasi_total) * scale * shift));
-        return {
-          id: ap.id,
-          tahun_anggaran_id: ap.tahun_anggaran_id,
-          provinsi_id: ap.provinsi_id,
-          provinsi: prov
-            ? { id: prov.id, kode_provinsi: prov.kode_provinsi, nama_provinsi: prov.nama_provinsi }
-            : { id: ap.provinsi_id, kode_provinsi: '', nama_provinsi: ap.provinsi?.nama_provinsi || 'Provinsi' },
-          nominal_alokasi: nominal,
-          realisasi_total: realisasi,
-          selisih: nominal - realisasi,
-          persentase_penyerapan:
-            nominal > 0
-              ? Math.round((realisasi / nominal) * 1000) / 10
-              : 0,
-          updated_at: ap.updated_at,
-        } as AlokasiProvinsi;
-      });
+  const activeTahunObj = useMemo(() => {
+    if (isSupabaseMode && dbData) {
+      return dbData.tahun_anggaran?.find((t: any) => Number(t.tahun) === Number(activeTahun));
     }
-
-    // Fallback: gunakan mock data dengan scaling per tahun
-    return alokasiProvinsiData.map(p => {
-      const nominal = Math.round(p.nominal_alokasi * scale);
-      const realisasi = Math.min(nominal, Math.round(p.realisasi_total * scale * shift));
-      return {
-        ...p,
-        nominal_alokasi: nominal,
-        realisasi_total: realisasi,
-        selisih: nominal - realisasi,
-        persentase_penyerapan: nominal > 0 ? (realisasi / nominal) * 100 : 0,
-      };
-    });
+    return tahunAnggaranData.find(t => Number(t.tahun) === Number(activeTahun));
   }, [activeTahun, isSupabaseMode, dbData]);
 
-  const [data, setData] = useState<AlokasiProvinsi[]>(scaledProvinsiData);
+  const realProvinsiData = useMemo(() => {
+    if (!activeTahunObj) return [];
+
+    if (isSupabaseMode && dbData) {
+      const yearAllocations = (dbData.alokasi_provinsi || []).filter(
+        (ap: any) => String(ap.tahun_anggaran_id) === String(activeTahunObj.id)
+      );
+
+      if (yearAllocations.length > 0) {
+        return yearAllocations.map((ap: any) => {
+          const prov = dbData.provinsi?.find((p: any) => p.id === ap.provinsi_id);
+          const nominal = Number(ap.nominal_alokasi || 0);
+          const realisasi = Number(ap.realisasi_total || 0);
+          return {
+            id: ap.id,
+            tahun_anggaran_id: ap.tahun_anggaran_id,
+            provinsi_id: ap.provinsi_id,
+            provinsi: prov
+              ? { id: prov.id, kode_provinsi: prov.kode_provinsi, nama_provinsi: prov.nama_provinsi }
+              : { id: ap.provinsi_id, kode_provinsi: '', nama_provinsi: ap.provinsi?.nama_provinsi || 'Provinsi' },
+            nominal_alokasi: nominal,
+            realisasi_total: realisasi,
+            selisih: nominal - realisasi,
+            persentase_penyerapan:
+              nominal > 0
+                ? Math.round((realisasi / nominal) * 1000) / 10
+                : 0,
+            updated_at: ap.updated_at,
+          } as AlokasiProvinsi;
+        });
+      }
+
+      // Fallback: master 38 provinsi dengan nominal Rp 0
+      return (dbData.provinsi || []).map((prov: any) => ({
+        id: `prov-draft-${prov.id}-${activeTahunObj.id}`,
+        tahun_anggaran_id: activeTahunObj.id,
+        provinsi_id: prov.id,
+        provinsi: { id: prov.id, kode_provinsi: prov.kode_provinsi, nama_provinsi: prov.nama_provinsi },
+        nominal_alokasi: 0,
+        realisasi_total: 0,
+        selisih: 0,
+        persentase_penyerapan: 0,
+        updated_at: new Date().toISOString().split('T')[0],
+      } as AlokasiProvinsi));
+    }
+
+    const yearAllocations = alokasiProvinsiData.filter(p => String(p.tahun_anggaran_id) === String(activeTahunObj.id));
+    if (yearAllocations.length > 0) return yearAllocations;
+    return alokasiProvinsiData.map(p => ({ ...p, nominal_alokasi: 0, realisasi_total: 0, selisih: 0, persentase_penyerapan: 0 }));
+  }, [activeTahunObj, isSupabaseMode, dbData]);
+
+  const [data, setData] = useState<AlokasiProvinsi[]>(realProvinsiData);
 
   useEffect(() => {
-    setData(scaledProvinsiData);
-  }, [scaledProvinsiData]);
+    setData(realProvinsiData);
+  }, [realProvinsiData]);
 
   const [search, setSearch] = useState('');
 
@@ -101,7 +114,7 @@ export default function ProvinsiPage() {
             />
           </div>
           <span className="text-xs text-text-muted flex-1">{filtered.length} provinsi</span>
-          <button className="btn btn-ghost" onClick={() => setData(scaledProvinsiData)}>
+          <button className="btn btn-ghost" onClick={() => setData(realProvinsiData)}>
             <RefreshCw size={14} />
             Refresh
           </button>
