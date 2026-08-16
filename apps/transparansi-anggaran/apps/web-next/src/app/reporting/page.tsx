@@ -125,16 +125,17 @@ function ReportingForm() {
 
     return (
         <div className="relative flex min-h-screen flex-col bg-slate-50">
-            <main className="flex flex-1 justify-center py-10 px-6">
-                <div className="flex flex-col w-full max-w-[800px]">
+            <SharedNavbar />
+            <main className="min-h-screen bg-slate-50 pt-4 pb-16">
+                <div className="max-w-7xl mx-auto px-4 md:px-8">
                     {/* Hero Section */}
-                    <div className="flex flex-col gap-3 mb-8">
+                    <div className="flex flex-col gap-2 mb-8">
                         <div className="flex items-center gap-2 text-primary">
                             <span className="material-symbols-outlined">description</span>
                             <span className="text-sm font-bold uppercase tracking-wider">Aduan Masyarakat</span>
                         </div>
-                        <h1 className="text-slate-900 text-4xl font-black leading-tight tracking-tight">Formulir Pelaporan</h1>
-                        <p className="text-slate-600 text-lg">
+                        <h1 className="text-slate-900 text-2xl md:text-3xl font-black leading-tight tracking-tight">Formulir Pelaporan</h1>
+                        <p className="text-slate-500 text-sm">
                             Bantu kami mengawasi penggunaan anggaran pendidikan. Laporkan segala bentuk ketidakwajaran atau penyimpangan dana secara aman dan rahasia.
                         </p>
                     </div>

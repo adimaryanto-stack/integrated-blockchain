@@ -55,7 +55,7 @@ export default function DashboardDbLoader({
           .select('*')
           .limit(1);
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Koneksi ke database lokal timeout setelah 10 detik. Pastikan proxy berjalan di port 2026.')), 10000)
+          setTimeout(() => reject(new Error('Koneksi ke database lokal timeout setelah 25 detik. Pastikan proxy berjalan di port 2026.')), 25000)
         );
         const { error: testError } = (await Promise.race([testPromise, timeoutPromise])) as any;
 

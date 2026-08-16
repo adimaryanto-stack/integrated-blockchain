@@ -175,15 +175,15 @@ function ProvincesPageInner() {
         <div className="relative flex min-h-screen flex-col bg-slate-50">
             <SharedNavbar />
 
-            <main className="flex-1 flex justify-center py-10 px-4 md:px-6">
-                <div className="w-full max-w-[1100px] flex flex-col gap-8">
+            <main className="min-h-screen bg-slate-50 pt-4 pb-16">
+                <div className="max-w-7xl mx-auto px-4 md:px-8 flex flex-col gap-8">
                     <div>
                         <div className="flex items-center gap-2 text-primary mb-2">
                             <span className="material-symbols-outlined">map</span>
                             <span className="text-sm font-bold uppercase tracking-wider">Navigasi Wilayah</span>
                         </div>
-                        <h1 className="text-4xl font-black tracking-tight text-slate-900">Daftar Provinsi</h1>
-                        <p className="text-slate-600 text-lg mt-2">Pilih provinsi untuk melihat data kabupaten/kota dan sekolah yang terdaftar.</p>
+                        <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900">Daftar Provinsi</h1>
+                        <p className="text-slate-500 text-sm mt-1">Pilih provinsi untuk melihat data kabupaten/kota dan sekolah yang terdaftar.</p>
 
                         {/* Active jenjang filter badge */}
                         {activeJenjang && JENJANG_LABELS[activeJenjang] && (

@@ -33,15 +33,15 @@ export default function AboutPage() {
         <div className="relative flex min-h-screen flex-col bg-slate-50">
             <SharedNavbar />
 
-            <main className="flex-1 flex justify-center py-10 px-4 md:px-6">
-                <div className="w-full max-w-[800px] flex flex-col gap-12">
+            <main className="min-h-screen bg-slate-50 pt-4 pb-16">
+                <div className="max-w-7xl mx-auto px-4 md:px-8 flex flex-col gap-10">
                     {/* Hero */}
-                    <div className="text-center pt-4">
-                        <div className="w-20 h-20 mx-auto rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-6">
-                            <span className="material-symbols-outlined text-5xl">account_balance</span>
+                    <div className="text-center pt-2">
+                        <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-4">
+                            <span className="material-symbols-outlined text-4xl">account_balance</span>
                         </div>
-                        <h1 className="text-4xl font-black tracking-tight text-slate-900">Transparansi Anggaran Pendidikan</h1>
-                        <p className="text-slate-600 text-lg mt-4 max-w-[600px] mx-auto leading-relaxed">
+                        <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900">Transparansi Anggaran Pendidikan</h1>
+                        <p className="text-slate-500 text-sm mt-2 max-w-[700px] mx-auto leading-relaxed">
                             Platform publik untuk memantau, melaporkan, dan mengaudit penggunaan dana pendidikan secara terbuka dan akuntabel di seluruh Indonesia.
                         </p>
                     </div>

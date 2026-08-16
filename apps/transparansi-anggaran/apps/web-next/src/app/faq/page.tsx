@@ -54,14 +54,14 @@ export default function FAQPage() {
         <div className="relative flex min-h-screen flex-col bg-slate-50">
             <SharedNavbar />
 
-            <main className="flex-1 flex justify-center py-10 px-4 md:px-6">
-                <div className="w-full max-w-[800px] flex flex-col gap-8">
-                    <div className="text-center pt-4">
+            <main className="min-h-screen bg-slate-50 pt-4 pb-16">
+                <div className="max-w-7xl mx-auto px-4 md:px-8 flex flex-col gap-8">
+                    <div className="text-center pt-2">
                         <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-4">
                             <span className="material-symbols-outlined text-4xl">help</span>
                         </div>
-                        <h1 className="text-4xl font-black tracking-tight text-slate-900">FAQ</h1>
-                        <p className="text-slate-600 text-lg mt-3">Pertanyaan yang sering ditanyakan tentang platform transparansi anggaran.</p>
+                        <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900">FAQ</h1>
+                        <p className="text-slate-500 text-sm mt-1">Pertanyaan yang sering ditanyakan tentang platform transparansi anggaran.</p>
                     </div>
 
                     <div className="flex flex-col gap-3">

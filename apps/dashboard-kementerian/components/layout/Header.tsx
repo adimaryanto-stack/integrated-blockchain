@@ -5,7 +5,7 @@ import { useAppStore } from '@/lib/store';
 import { useRouter } from 'next/navigation';
 import { tahunAnggaranData, institusiPendidikanData, updateTahunAnggaran } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
-import { Bell, Search, Menu, CheckCheck, Info, AlertTriangle, Sparkles, History, UserCheck } from 'lucide-react';
+import { Bell, Search, Menu, CheckCheck, Info, AlertTriangle, Sparkles, History, UserCheck, Database } from 'lucide-react';
 import AuditTrailDrawer from '@/components/ui/AuditTrailDrawer';
 import { UserRole, InstitusiPendidikan, TahunAnggaran } from '@/types';
 
@@ -43,6 +43,27 @@ export default function Header({ title, subtitle }: HeaderProps) {
     return [{ tahun: 2026, status: 'ACTIVE' }, { tahun: 2027, status: 'DRAFT' }];
   });
 
+  // Database Connection Health State
+  const [dbStatus, setDbStatus] = useState<{ ok: boolean; latencyMs: number } | null>(null);
+
+  const checkDbHealth = async () => {
+    const start = Date.now();
+    try {
+      const { data, error } = await supabase
+        .from('tahun_anggaran')
+        .select('id')
+        .limit(1);
+      const latencyMs = Date.now() - start;
+      if (error) {
+        setDbStatus({ ok: false, latencyMs });
+      } else {
+        setDbStatus({ ok: true, latencyMs });
+      }
+    } catch {
+      setDbStatus({ ok: false, latencyMs: Date.now() - start });
+    }
+  };
+
   const fetchYearsFromDb = async () => {
     try {
       const { data, error } = await supabase
@@ -59,8 +80,16 @@ export default function Header({ title, subtitle }: HeaderProps) {
 
   useEffect(() => {
     fetchYearsFromDb();
-    window.addEventListener('focus', fetchYearsFromDb);
-    return () => window.removeEventListener('focus', fetchYearsFromDb);
+    checkDbHealth();
+    const interval = setInterval(checkDbHealth, 10000);
+    window.addEventListener('focus', () => {
+      fetchYearsFromDb();
+      checkDbHealth();
+    });
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', fetchYearsFromDb);
+    };
   }, [dataVersion]);
 
   // Search States
@@ -190,6 +219,20 @@ export default function Header({ title, subtitle }: HeaderProps) {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Database Local Connection Status Badge */}
+            <div
+              className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[11px] font-medium transition ${
+                dbStatus?.ok
+                  ? 'bg-emerald-50/80 border-emerald-200 text-emerald-800'
+                  : 'bg-rose-50/80 border-rose-200 text-rose-800'
+              }`}
+              title={dbStatus?.ok ? `PostgreSQL 2025 & Supabase 2026 OK (${dbStatus.latencyMs}ms)` : 'Database offline / reconnecting'}
+            >
+              <Database size={13} className={dbStatus?.ok ? 'text-emerald-600' : 'text-rose-600'} />
+              <span>{dbStatus?.ok ? 'DB Lokal Aktif (100%)' : 'DB Reconnecting...'}</span>
+              <span className="font-mono text-[9px] opacity-75">{dbStatus?.latencyMs ?? 0}ms</span>
+            </div>
+
             {/* Year selector */}
             <div className="flex items-center gap-2">
               <span className="text-xs text-text-muted">Tahun:</span>

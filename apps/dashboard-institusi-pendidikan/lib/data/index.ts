@@ -46,30 +46,15 @@ function seededValues(count: number, min: number, max: number, seed: number): nu
   return result;
 }
 
-// === TAHUN ANGGARAN (2020–2026) ===
+// === TAHUN ANGGARAN ===
 export let tahunAnggaranData: TahunAnggaran[] = [
-  { id: '1', tahun: 2020, total_anggaran: 505_000_000_000_000, status: 'CLOSED', created_at: '2020-01-01' },
-  { id: '2', tahun: 2021, total_anggaran: 541_700_000_000_000, status: 'CLOSED', created_at: '2021-01-01' },
-  { id: '3', tahun: 2022, total_anggaran: 608_300_000_000_000, status: 'CLOSED', created_at: '2022-01-01' },
-  { id: '4', tahun: 2023, total_anggaran: 660_800_000_000_000, status: 'CLOSED', created_at: '2023-01-01' },
-  { id: '5', tahun: 2024, total_anggaran: 705_400_000_000_000, status: 'CLOSED', created_at: '2024-01-01' },
-  { id: '6', tahun: 2025, total_anggaran: 738_600_000_000_000, status: 'CLOSED', created_at: '2025-01-01' },
   { id: '7', tahun: 2026, total_anggaran: 769_100_000_000_000, status: 'ACTIVE', created_at: '2026-01-01' },
+  { id: '8', tahun: 2027, total_anggaran: 0, status: 'DRAFT', created_at: '2027-01-01' },
 ];
 
 export function updateTahunAnggaranData(newData: TahunAnggaran[]) {
   if (!newData || newData.length === 0) return;
-  const updated = tahunAnggaranData.map(base => {
-    const dbEntry = newData.find(d => d.tahun === base.tahun);
-    return dbEntry ? { ...base, ...dbEntry } : base;
-  });
-  newData.forEach(d => {
-    if (!updated.find(u => u.tahun === d.tahun)) {
-      updated.push(d);
-    }
-  });
-  updated.sort((a, b) => a.tahun - b.tahun);
-  tahunAnggaranData = updated;
+  tahunAnggaranData = [...newData].sort((a, b) => a.tahun - b.tahun);
 }
 
 export function getBaseTahun(): TahunAnggaran {

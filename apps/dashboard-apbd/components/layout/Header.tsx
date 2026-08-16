@@ -47,8 +47,12 @@ export default function Header({ title, subtitle }: HeaderProps) {
       }
     }
     pingDb();
+    const interval = setInterval(pingDb, 10000);
     window.addEventListener('focus', pingDb);
-    return () => window.removeEventListener('focus', pingDb);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', pingDb);
+    };
   }, [refreshKey]);
 
   useEffect(() => {
@@ -112,7 +116,7 @@ export default function Header({ title, subtitle }: HeaderProps) {
         <div className="flex items-center gap-3">
           {/* Database Local Connection Status Badge */}
           <div
-            className={`hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[11px] font-medium transition ${
+            className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[11px] font-medium transition ${
               dbStatus?.ok
                 ? 'bg-emerald-50/80 border-emerald-200 text-emerald-800'
                 : 'bg-rose-50/80 border-rose-200 text-rose-800'

@@ -6,7 +6,7 @@ import { useAppStore } from '@/lib/store';
 import { getTahunAnggaran } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
 import { TahunAnggaran } from '@/types';
-import { Bell, Search, Menu, CheckCheck, Info, AlertTriangle, Sparkles } from 'lucide-react';
+import { Bell, Search, Menu, CheckCheck, Info, AlertTriangle, Sparkles, Database } from 'lucide-react';
 
 interface HeaderProps {
   title: string;
@@ -27,6 +27,27 @@ export default function Header({ title, subtitle }: HeaderProps) {
   const { activeTahun, setActiveTahun, toggleSidebar } = useAppStore();
   const [activeTahunList, setActiveTahunList] = useState<TahunAnggaran[]>([]);
 
+  // Database Connection Health State
+  const [dbStatus, setDbStatus] = useState<{ ok: boolean; latencyMs: number } | null>(null);
+
+  const checkDbHealth = async () => {
+    const start = Date.now();
+    try {
+      const { data, error } = await supabase
+        .from('tahun_anggaran')
+        .select('id')
+        .limit(1);
+      const latencyMs = Date.now() - start;
+      if (error) {
+        setDbStatus({ ok: false, latencyMs });
+      } else {
+        setDbStatus({ ok: true, latencyMs });
+      }
+    } catch {
+      setDbStatus({ ok: false, latencyMs: Date.now() - start });
+    }
+  };
+
   const fetchYears = async () => {
     try {
       const res = await getTahunAnggaran();
@@ -39,8 +60,16 @@ export default function Header({ title, subtitle }: HeaderProps) {
 
   useEffect(() => {
     fetchYears();
-    window.addEventListener('focus', fetchYears);
-    return () => window.removeEventListener('focus', fetchYears);
+    checkDbHealth();
+    const interval = setInterval(checkDbHealth, 10000);
+    window.addEventListener('focus', () => {
+      fetchYears();
+      checkDbHealth();
+    });
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', fetchYears);
+    };
   }, []);
 
   // Notification States
@@ -146,6 +175,20 @@ export default function Header({ title, subtitle }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Database Local Connection Status Badge */}
+          <div
+            className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[11px] font-medium transition ${
+              dbStatus?.ok
+                ? 'bg-emerald-50/80 border-emerald-200 text-emerald-800'
+                : 'bg-rose-50/80 border-rose-200 text-rose-800'
+            }`}
+            title={dbStatus?.ok ? `PostgreSQL 2025 & Supabase 2026 OK (${dbStatus.latencyMs}ms)` : 'Database offline / reconnecting'}
+          >
+            <Database size={13} className={dbStatus?.ok ? 'text-emerald-600' : 'text-rose-600'} />
+            <span>{dbStatus?.ok ? 'DB Lokal Aktif (100%)' : 'DB Reconnecting...'}</span>
+            <span className="font-mono text-[9px] opacity-75">{dbStatus?.latencyMs ?? 0}ms</span>
+          </div>
+
           {/* Year selector */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-text-muted">Tahun:</span>

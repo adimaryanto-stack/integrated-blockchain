@@ -38,18 +38,13 @@ function seededValues(count: number, min: number, max: number, seed: number): nu
 
 // === TAHUN ANGGARAN ===
 export let tahunAnggaranData: TahunAnggaran[] = [
-  { id: '1', tahun: 2020, total_anggaran: 473_700_000_000_000, status: 'CLOSED', created_at: '2020-01-01' },
-  { id: '2', tahun: 2021, total_anggaran: 472_600_000_000_000, status: 'CLOSED', created_at: '2021-01-01' },
-  { id: '3', tahun: 2022, total_anggaran: 472_600_000_000_000, status: 'CLOSED', created_at: '2022-01-01' },
-  { id: '4', tahun: 2023, total_anggaran: 612_200_000_000_000, status: 'CLOSED', created_at: '2023-01-01' },
-  { id: '5', tahun: 2024, total_anggaran: 665_000_000_000_000, status: 'CLOSED', created_at: '2024-01-01' },
-  { id: '6', tahun: 2025, total_anggaran: 722_600_000_000_000, status: 'CLOSED', created_at: '2025-01-01' },
   { id: '7', tahun: 2026, total_anggaran: 769_100_000_000_000, status: 'ACTIVE', created_at: '2026-01-01' },
   { id: '8', tahun: 2027, total_anggaran: 0, status: 'DRAFT', created_at: '2026-06-01' },
 ];
 
 export function updateTahunAnggaranData(newData: TahunAnggaran[]) {
-  tahunAnggaranData = newData;
+  if (!newData || newData.length === 0) return;
+  tahunAnggaranData = [...newData].sort((a, b) => a.tahun - b.tahun);
 }
 
 // === 38 PROVINSI ===
