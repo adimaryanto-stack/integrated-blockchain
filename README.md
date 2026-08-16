@@ -14,7 +14,7 @@ Sistem tata kelola dan transparansi keuangan pendidikan Indonesia terintegrasi d
 
 | Dokumen | Format | Deskripsi | Tautan Langsung |
 |---|:---:|---|:---:|
-| 🌐 **Panduan Visual & Interaktif** | `HTML` | Tampilan panduan grafis modern untuk pengguna umum / non-programmer. | [https://github.com/adimaryanto-stack/integrated-blockchain/blob/main/README.md]() |
+| 🌐 **Panduan Visual & Interaktif** | `HTML` | Tampilan panduan grafis modern untuk pengguna umum / non-programmer. | [Halaman ini] |
 | 📋 **Product Requirements (PRD)** | `Markdown` | Spesifikasi lengkap sistem, alur bisnis dana APBN/APBD/CSR, & hak akses. | [**Buka `PRD.md`**](PRD.md) |
 | 🏆 **MVP & Laporan Verifikasi** | `Markdown` | Laporan pengujian fitur 8 port, performa latensi, dan integrasi database. | [**Buka `MVP.md`**](MVP.md) |
 | 🚀 **Panduan Deployment VPS/Mac** | `Markdown` | Tutorial step-by-step setup VPS Ubuntu/Debian, macOS, Nginx, Domain, & SSL. | [**Buka `deploy_guide.md`**](deploy_guide.md) |
