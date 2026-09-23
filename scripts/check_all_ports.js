@@ -24,7 +24,7 @@ async function testHttp(port, path = '/') {
 
 async function testPostgres() {
   const pool = new Pool({
-    connectionString: 'postgresql://postgres@127.0.0.1:2025/postgres',
+    connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@127.0.0.1:2025/postgres',
     connectionTimeoutMillis: 5000
   });
   const start = Date.now();

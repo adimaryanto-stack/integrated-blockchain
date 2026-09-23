@@ -1,10 +1,12 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
-  typescript: {
-    // Ignore TypeScript errors during build so deployment succeeds
-    ignoreBuildErrors: true,
-  },
+  typescript: { ignoreBuildErrors: true },
+  experimental: {
+    optimizePackageImports: ["recharts", "lucide-react", "@supabase/supabase-js", "tesseract.js"],
+    turbopack: { root: path.resolve(__dirname) },
+  } as any,
 };
 
 export default nextConfig;

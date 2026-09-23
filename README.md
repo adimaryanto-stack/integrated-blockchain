@@ -23,13 +23,29 @@ Sistem tata kelola dan transparansi keuangan pendidikan Indonesia terintegrasi d
 
 ## 💡 Panduan Cepat untuk Pemula (Bukan Programmer)
 
-Anda **tidak perlu menulis kode** atau menjalankan perintah SQL yang rumit. Cukup ikuti cara 1-klik di bawah ini:
+Sistem ini dirancang agar **bisa dijalankan oleh siapa pun**, termasuk orang awam yang tidak mengerti server, coding, atau database SQL. Cukup ikuti langkah mudah di bawah ini:
 
-### 🪟 1. Jika Anda Menggunakan Windows (Localhost):
-1. Buka folder project ini di komputer Anda.
-2. Klik kanan pada file **`start-all.ps1`**, lalu pilih **"Run with PowerShell"**.
-3. *Selesai!* Seluruh 8 port dan database akan otomatis menyala.
-4. Buka browser dan kunjungi: **[http://localhost:2020](http://localhost:2020)**.
+### ⚙️ Prasyarat Utama (Hanya 1x di Awal)
+Pastikan komputer Anda sudah terpasang **Node.js** (versi 18 atau lebih baru).
+- Jika belum terpasang, unduh gratis dari situs resmi: **[https://nodejs.org](https://nodejs.org/)** (klik tombol hijau bertuliskan **LTS**).
+- Jalankan file instalasi yang terunduh, klik **Next** sampai selesai.
+
+---
+
+### 🪟 1. Jika Anda Menggunakan Windows (Cara 1-Klik Paling Praktis):
+1. Buka folder proyek ini di Windows Explorer.
+2. **Klik 2x (Double-Click)** pada file **`start-all.bat`**.
+3. Sistem akan bekerja secara otomatis:
+   - Memeriksa file konfigurasi `.env.local` & dependensi aplikasi.
+   - Menyalakan database PostgreSQL lokal (Port 2025) & Proxy API (Port 2026).
+   - Menyalakan seluruh 6 portal aplikasi dashboard.
+   - Memanaskan halaman web dan **otomatis membuka peramban (browser) ke [http://localhost:2020](http://localhost:2020)**.
+4. **Cara Mematikan Server**: Cukup **Klik 2x** pada file **`stop-all.bat`** kapan saja Anda ingin menghentikan seluruh layanan.
+
+> ⏳ **Catatan Penting Saat Pertama Kali Membuka Halaman (First Compilation)**:
+> Pada peluncuran pertama kali, sistem Next.js memerlukan waktu sekitar 30–60 detik untuk membuat cache filesystem dan mengompilasi halaman web. Jika peramban sempat menampilkan status *Loading...*, mohon tunggu sejenak hingga proses kompilasi selesai.
+
+---
 
 ### 🐧 2. Jika Anda Menggunakan Linux VPS (Ubuntu / Debian Server):
 ```bash
@@ -41,6 +57,8 @@ DB_PORT=5432 DB_PASSWORD=postgres node scripts/setup-db.js
 chmod +x start.sh && ./start.sh
 ```
 
+---
+
 ### 🍎 3. Jika Anda Menggunakan MacBook (macOS Terminal):
 ```bash
 brew install node postgresql@16 && brew services start postgresql@16
@@ -50,10 +68,18 @@ DB_PORT=5432 DB_PASSWORD=postgres node scripts/setup-db.js
 chmod +x start.sh && ./start.sh
 ```
 
-### 🐳 4. Jika Menggunakan Docker Compose (1 Perintah):
+---
+
+### 🐳 4. Menggunakan Docker Compose (Database & Proxy Backend):
+File `docker-compose.yml` menyediakan basis data PostgreSQL (Port 2025) dan Proxy REST API (Port 2026) secara mandiri:
 ```bash
+# 1. Nyalakan Database & Proxy API Gateway dalam kontainer:
 docker compose up -d
+
+# 2. Jalankan portal web (contoh: Portal Transparansi Publik):
+npm run dev --prefix apps/transparansi-anggaran/apps/web-next
 ```
+*(Bagi pengguna umum/awam di Windows, kami sangat merekomendasikan menggunakan file **`start-all.bat`** karena tidak memerlukan Docker Desktop yang berat).*
 
 ---
 
