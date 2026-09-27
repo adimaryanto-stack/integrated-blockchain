@@ -1,7 +1,7 @@
 const { Pool } = require('pg');
 
 const pool = new Pool({
-  connectionString: 'postgresql://postgres@localhost:2025/postgres'
+  connectionString: 'postgresql://postgres@localhost:2027/postgres'
 });
 
 async function run() {

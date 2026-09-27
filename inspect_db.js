@@ -1,7 +1,7 @@
 const { Client } = require('pg');
 
 async function main() {
-  const c = new Client({ host: '127.0.0.1', port: 2025, database: 'postgres', user: 'postgres' });
+  const c = new Client({ host: '127.0.0.1', port: 2027, database: 'postgres', user: 'postgres' });
   await c.connect();
 
   console.log('=== KABUPATEN/KOTA IN REGENCIES TABLE FOR LAMPUNG (p-8) ===');

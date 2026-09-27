@@ -1,7 +1,7 @@
 const { Pool } = require('pg');
 
 async function cleanYearsDb() {
-  const pool = new Pool({ connectionString: 'postgresql://postgres@localhost:2025/postgres' });
+  const pool = new Pool({ connectionString: 'postgresql://postgres@localhost:2027/postgres' });
   try {
     console.log('Cleaning up older years in database to keep ONLY Year 2026...\n');
 

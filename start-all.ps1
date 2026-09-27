@@ -5,7 +5,7 @@ $PGSQL_BIN = "$ROOT\pgsql\bin"
 $PGSQL_DATA = "$ROOT\pgsql\data"
 
 Write-Host "==================================================================" -ForegroundColor Cyan
-Write-Host " Integrated Blockchain - Peluncur Otomatis & Verifikator 8 Port" -ForegroundColor Cyan
+Write-Host " Integrated Blockchain - Peluncur Otomatis & Verifikator 9 Port" -ForegroundColor Cyan
 Write-Host "==================================================================" -ForegroundColor Cyan
 
 # --- 0. Prasyarat: Cek Node.js & npm ---
@@ -19,9 +19,9 @@ if (-not $nodeCheck -or -not $npmCheck) {
     exit 1
 }
 
-# --- 1. Membersihkan port 2020-2027 bila ada sisa proses lama ---
-Write-Host "`n[1/6] Memeriksa dan membersihkan port 2020-2027..." -ForegroundColor Yellow
-$targetPorts = @(2020, 2021, 2022, 2023, 2024, 2026, 2027)
+# --- 1. Membersihkan port 2020-2028 bila ada sisa proses lama ---
+Write-Host "`n[1/6] Memeriksa dan membersihkan port 2020-2028..." -ForegroundColor Yellow
+$targetPorts = @(2020, 2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028)
 foreach ($p in $targetPorts) {
     $conns = Get-NetTCPConnection -LocalPort $p -ErrorAction SilentlyContinue | Where-Object { $_.State -eq 'Listen' }
     foreach ($c in $conns) {
@@ -44,8 +44,8 @@ if (-not (Test-Path $webEnv) -or -not (Test-Path $proxyEnv)) {
     Write-Host "      File konfigurasi .env.local sudah lengkap." -ForegroundColor Green
 }
 
-# --- 3. Memulai Database PostgreSQL pada port 2025 ---
-Write-Host "`n[3/6] Memulai Database PostgreSQL pada port 2025..." -ForegroundColor Yellow
+# --- 3. Memulai Database PostgreSQL pada port 2027 ---
+Write-Host "`n[3/6] Memulai Database PostgreSQL pada port 2027..." -ForegroundColor Yellow
 $hasLocalPg = (Test-Path "$PGSQL_BIN\pg_ctl.exe") -and (Test-Path $PGSQL_DATA)
 
 if ($hasLocalPg) {
@@ -56,13 +56,13 @@ if ($hasLocalPg) {
         if (Test-Path "$PGSQL_DATA\postmaster.pid") {
             Remove-Item "$PGSQL_DATA\postmaster.pid" -Force -ErrorAction SilentlyContinue
         }
-        & "$PGSQL_BIN\pg_ctl.exe" start -D $PGSQL_DATA -o "-p 2025" -l "$ROOT\pgsql_log.txt"
+        & "$PGSQL_BIN\pg_ctl.exe" start -D $PGSQL_DATA -o "-p 2027" -l "$ROOT\pgsql_log.txt"
         
         Write-Host "      Menunggu PostgreSQL siap menerima koneksi..." -ForegroundColor Gray
         $pgReady = $false
         for ($i = 0; $i -lt 20; $i++) {
             Start-Sleep 1
-            $test = & "$PGSQL_BIN\psql.exe" -U postgres -h 127.0.0.1 -p 2025 -d postgres -c "SELECT 1" 2>&1
+            $test = & "$PGSQL_BIN\psql.exe" -U postgres -h 127.0.0.1 -p 2027 -d postgres -c "SELECT 1" 2>&1
             if ($LASTEXITCODE -eq 0) {
                 $pgReady = $true
                 break
@@ -70,7 +70,7 @@ if ($hasLocalPg) {
         }
         
         if ($pgReady) {
-            Write-Host "      PostgreSQL berhasil dimulai di port 2025." -ForegroundColor Green
+            Write-Host "      PostgreSQL berhasil dimulai di port 2027." -ForegroundColor Green
         } else {
             Write-Host "      GAGAL memulai PostgreSQL! Cek log: $ROOT\pgsql_log.txt" -ForegroundColor Red
             Read-Host "Tekan Enter untuk keluar..."
@@ -78,16 +78,16 @@ if ($hasLocalPg) {
         }
     }
 } else {
-    $extConn = Get-NetTCPConnection -LocalPort 2025 -State Listen -ErrorAction SilentlyContinue
+    $extConn = Get-NetTCPConnection -LocalPort 2027 -State Listen -ErrorAction SilentlyContinue
     if ($extConn) {
-        Write-Host "      PostgreSQL terdeteksi aktif pada port 2025." -ForegroundColor Green
+        Write-Host "      PostgreSQL terdeteksi aktif pada port 2027." -ForegroundColor Green
     } else {
         Write-Host "      [INFO] PostgreSQL portabel tidak ditemukan. Menunggu database eksternal..." -ForegroundColor Gray
     }
 }
 
-# --- 4. Memulai Proxy API Server pada port 2026 ---
-Write-Host "`n[4/6] Memulai Proxy API Gateway pada port 2026..." -ForegroundColor Yellow
+# --- 4. Memulai Proxy API Server pada port 2028 ---
+Write-Host "`n[4/6] Memulai Proxy API Gateway pada port 2028..." -ForegroundColor Yellow
 if (-not (Test-Path "$ROOT\proxy\node_modules")) {
     Write-Host "      Memasang dependensi proxy (npm install)..." -ForegroundColor Cyan
     Push-Location "$ROOT\proxy"
@@ -95,11 +95,11 @@ if (-not (Test-Path "$ROOT\proxy\node_modules")) {
     Pop-Location
 }
 $proxyJob = Start-Process -FilePath "node" -ArgumentList "proxy.js" -WorkingDirectory "$ROOT\proxy" -WindowStyle Minimized -PassThru
-Write-Host "      Proxy API Server aktif di port 2026 (PID: $($proxyJob.Id))" -ForegroundColor Green
+Write-Host "      Proxy API Server aktif di port 2028 (PID: $($proxyJob.Id))" -ForegroundColor Green
 Start-Sleep 1
 
-# --- 5. Memulai Seluruh 6 Portal Aplikasi Dashboard ---
-Write-Host "`n[5/6] Memulai seluruh 6 portal dashboard..." -ForegroundColor Yellow
+# --- 5. Memulai Seluruh 7 Portal Aplikasi Dashboard ---
+Write-Host "`n[5/6] Memulai seluruh 7 portal dashboard..." -ForegroundColor Yellow
 
 $apps = @(
     @{ name = "Transparansi Publik";     port = 2020; path = "$ROOT\apps\transparansi-anggaran\apps\web-next"; cmd = "npm run dev" },
@@ -107,7 +107,8 @@ $apps = @(
     @{ name = "Dashboard Bank";          port = 2022; path = "$ROOT\apps\dashboard-bank";                     cmd = "npx next dev -p 2022" },
     @{ name = "Dashboard Auditor";       port = 2023; path = "$ROOT\apps\dashboard-auditor";                  cmd = "npm run dev" },
     @{ name = "Institusi Pendidikan";    port = 2024; path = "$ROOT\apps\dashboard-institusi-pendidikan";     cmd = "npx next dev -p 2024" },
-    @{ name = "Dashboard APBD Lampung";  port = 2027; path = "$ROOT\apps\dashboard-apbd";                     cmd = "npm run dev" }
+    @{ name = "Dashboard APBD Lampung";  port = 2025; path = "$ROOT\apps\dashboard-apbd";                     cmd = "npm run dev" },
+    @{ name = "Dashboard Admin";         port = 2026; path = "$ROOT\apps\dashboard-admin";                    cmd = "npm run dev" }
 )
 
 # Batasi penggunaan RAM per proses V8/Node agar tidak saling berebut memori
@@ -139,9 +140,10 @@ $allPortsList = @(
     @{ name = "Dashboard Bank";          port = 2022; url = "http://localhost:2022/dashboard" },
     @{ name = "Dashboard Auditor";       port = 2023; url = "http://localhost:2023/dashboard" },
     @{ name = "Institusi Pendidikan";    port = 2024; url = "http://localhost:2024/dashboard" },
-    @{ name = "Database PostgreSQL";     port = 2025; url = "postgresql://localhost:2025" },
-    @{ name = "Proxy DB API Server";     port = 2026; url = "http://localhost:2026" },
-    @{ name = "Dashboard APBD Lampung";  port = 2027; url = "http://localhost:2027/dashboard" }
+    @{ name = "Dashboard APBD Lampung";  port = 2025; url = "http://localhost:2025/dashboard" },
+    @{ name = "Dashboard Admin";         port = 2026; url = "http://localhost:2026" },
+    @{ name = "Database PostgreSQL";     port = 2027; url = "postgresql://localhost:2027" },
+    @{ name = "Proxy DB API Server";     port = 2028; url = "http://localhost:2028" }
 )
 
 $maxWaitSeconds = 45
@@ -173,7 +175,7 @@ for ($w = 0; $w -lt 25; $w++) {
 }
 
 Write-Host "`n==================================================================" -ForegroundColor Cyan
-Write-Host " STATUS SELURUH 8 SERVER DAN PORT:" -ForegroundColor Cyan
+Write-Host " STATUS SELURUH 9 SERVER DAN PORT:" -ForegroundColor Cyan
 Write-Host "==================================================================" -ForegroundColor Cyan
 
 foreach ($item in $allPortsList) {

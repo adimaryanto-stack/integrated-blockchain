@@ -1,7 +1,7 @@
 const { Pool } = require('pg');
 
 async function inspectYears() {
-  const pool = new Pool({ connectionString: 'postgresql://postgres@localhost:2025/postgres' });
+  const pool = new Pool({ connectionString: 'postgresql://postgres@localhost:2027/postgres' });
   try {
     const taRes = await pool.query('SELECT * FROM public.tahun_anggaran ORDER BY tahun');
     console.log('Current public.tahun_anggaran in DB:');

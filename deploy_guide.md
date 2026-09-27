@@ -5,7 +5,7 @@
 
 ---
 
-## 📌 Peta 8 Port & Direktori Aplikasi
+## 📌 Peta 9 Port & Direktori Aplikasi
 
 | No | Nama Layanan / Dashboard | Port | Direktori Sumber | Target Domain / Subdomain (Contoh) |
 |:---:|---|:---:|---|---|
@@ -14,13 +14,14 @@
 | **3** | **Dashboard Bank Penyalur** | `:2022` | `apps/dashboard-bank` | `https://bank.domain.com` |
 | **4** | **Dashboard Auditor BPK** | `:2023` | `apps/dashboard-auditor` | `https://auditor.domain.com` |
 | **5** | **Dashboard Institusi Pendidikan** | `:2024` | `apps/dashboard-institusi-pendidikan` | `https://sekolah.domain.com` |
-| **6** | **Database PostgreSQL 16** | `:2025` | `pgsql/data` / PostgreSQL Server | `postgresql://127.0.0.1:2025/postgres` |
-| **7** | **Proxy REST API Server** | `:2026` | `proxy/proxy.js` | `https://api.domain.com` |
-| **8** | **Dashboard APBD Provinsi Lampung** | `:2027` | `apps/dashboard-apbd` | `https://apbd.domain.com` |
+| **6** | **Dashboard APBD Provinsi Lampung** | `:2025` | `apps/dashboard-apbd` | `https://apbd.domain.com` |
+| **7** | **Dashboard Admin (Super-Console)** | `:2026` | `apps/dashboard-admin` | `https://admin.domain.com` |
+| **8** | **Database PostgreSQL 16** | `:2027` | `pgsql/data` / PostgreSQL Server | `postgresql://127.0.0.1:2027/postgres` |
+| **9** | **Proxy REST API Server** | `:2028` | `proxy/proxy.js` | `https://api.domain.com` |
 
 ---
 
-## 🗄️ Bagian 1: Cara Instalasi & Persiapan PostgreSQL di VPS Linux (Port 2025)
+## 🗄️ Bagian 1: Cara Instalasi & Persiapan PostgreSQL di VPS Linux (Port 2027)
 
 Sistem ini menggunakan basis data **PostgreSQL 16 lokal mandiri (Self-Hosted)**. Seluruh skema tabel (35 tabel relasional) dan data master 367.865 sekolah se-Indonesia tersimpan dalam file **`database_dump.sql.gz`** (48 MB).
 
@@ -39,11 +40,11 @@ sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
 sudo -u postgres psql -c "CREATE DATABASE postgres;" 2>/dev/null || true
 ```
 
-### 1.2 (Opsional) Mengatur Port PostgreSQL ke 2025:
-Jika ingin menyesuaikan port PostgreSQL ke `2025` sesuai port bawaan sistem:
+### 1.2 (Opsional) Mengatur Port PostgreSQL ke 2027:
+Jika ingin menyesuaikan port PostgreSQL ke `2027` sesuai port bawaan sistem:
 ```bash
 # Ubah port di file konfigurasi PostgreSQL
-sudo sed -i "s/port = 5432/port = 2025/g" /etc/postgresql/*/main/postgresql.conf
+sudo sed -i "s/port = 5432/port = 2027/g" /etc/postgresql/*/main/postgresql.conf
 sudo systemctl restart postgresql
 ```
 *(Catatan: Jika Anda tetap ingin menggunakan port default `5432`, sistem tetap dapat berjalan normal dengan menyetel `DB_PORT=5432`)*.
@@ -51,7 +52,7 @@ sudo systemctl restart postgresql
 ### 1.3 Restore Database Otomatis (1 Perintah):
 ```bash
 # Ekstrak otomatis & import seluruh 35 tabel (hanya 30-60 detik)
-DB_PORT=2025 DB_PASSWORD=postgres node scripts/setup-db.js
+DB_PORT=2027 DB_PASSWORD=postgres node scripts/setup-db.js
 ```
 *Jika menggunakan port 5432, jalankan:* `DB_PORT=5432 DB_PASSWORD=postgres node scripts/setup-db.js`.
 
@@ -63,7 +64,7 @@ DB_PORT=2025 DB_PASSWORD=postgres node scripts/setup-db.js
 >
 > Sistem ini **100% Self-Hosted & Mandiri**. Kita **TIDAK PERLU** mendaftar ke Supabase atau membayar layanan cloud pihak ketiga.
 > 
-> Variabel bernama `NEXT_PUBLIC_SUPABASE_URL` digunakan semata-mata karena aplikasi frontend menggunakan library SDK PostgREST standar untuk terhubung ke **Proxy API Server Lokal Kita Sendiri (Port 2026)**.
+> Variabel bernama `NEXT_PUBLIC_SUPABASE_URL` digunakan semata-mata karena aplikasi frontend menggunakan library SDK PostgREST standar untuk terhubung ke **Proxy API Server Lokal Kita Sendiri (Port 2028)**.
 
 ### 2.1 Di Mana Lokasi File `.env.local` Berada?
 File konfigurasi `.env.local` berada di dalam **masing-masing folder dari 6 aplikasi dashboard**:
@@ -73,17 +74,18 @@ File konfigurasi `.env.local` berada di dalam **masing-masing folder dari 6 apli
 4. `apps/dashboard-auditor/.env.local`
 5. `apps/dashboard-institusi-pendidikan/.env.local`
 6. `apps/dashboard-apbd/.env.local`
-7. `proxy/.env` (Untuk backend proxy yang menyambungkan ke PostgreSQL)
+7. `apps/dashboard-admin/.env` (Untuk Dashboard Admin terhubung ke Proxy)
+8. `proxy/.env` (Untuk backend proxy yang menyambungkan ke PostgreSQL)
 
 ### 2.2 Cara Otomatis Membuat Semua `.env.local` (Hanya 1 Detik!):
 Anda **tidak perlu** membuat atau mengedit file `.env.local` satu per satu secara manual. Cukup jalankan skrip otomatis bawaan sistem:
 
 ```bash
-# Untuk Localhost (Default http://localhost:2026):
+# Untuk Localhost (Default http://localhost:2028):
 node scripts/setup-env.js
 
 # Untuk VPS dengan IP Publik (Contoh IP: 103.123.45.67):
-node scripts/setup-env.js http://103.123.45.67:2026
+node scripts/setup-env.js http://103.123.45.67:2028
 
 # Untuk Domain Publik dengan SSL HTTPS (Contoh: api.domain.com):
 node scripts/setup-env.js https://api.domain.com
@@ -96,13 +98,13 @@ node scripts/setup-env.js https://api.domain.com
 
 Anda dapat menjalankan setiap dashboard secara terpisah di terminal atau server yang berbeda:
 
-### 1. Menjalankan Backend Proxy REST API (Port 2026)
+### 1. Menjalankan Backend Proxy REST API (Port 2028)
 ```bash
 cd proxy
 npm install
 node proxy.js
 # Atau dengan PM2:
-pm2 start proxy.js --name "blockchain-proxy-2026"
+pm2 start proxy.js --name "blockchain-proxy-2028"
 ```
 
 ### 2. Menjalankan Portal Transparansi Publik (Port 2020)
@@ -156,14 +158,24 @@ npx next start -p 2024
 pm2 start npx --name "app-2024-institusi" -- next start -p 2024
 ```
 
-### 7. Menjalankan Dashboard APBD Provinsi Lampung (Port 2027)
+### 7. Menjalankan Dashboard APBD Provinsi Lampung (Port 2025)
 ```bash
 cd apps/dashboard-apbd
 npm install
 npm run build
-npx next start -p 2027
+npx next start -p 2025
 # Atau dengan PM2:
-pm2 start npx --name "app-2027-apbd-lampung" -- next start -p 2027
+pm2 start npx --name "app-2025-apbd-lampung" -- next start -p 2025
+```
+
+### 8. Menjalankan Dashboard Admin Super-Console (Port 2026)
+```bash
+cd apps/dashboard-admin
+npm install
+npm run build
+npm run preview -- --port 2026
+# Atau dengan PM2:
+pm2 start npm --name "app-2026-admin" -- run preview -- --port 2026
 ```
 
 ---
@@ -256,9 +268,24 @@ server {
     }
 }
 
-# 6. Proxy DB REST API (Port 2026)
+# 6. Dashboard APBD Provinsi Lampung (Port 2025)
 server {
-    server_name api.domain.com;
+    server_name apbd.domain.com;
+    location / {
+        proxy_pass http://127.0.0.1:2025;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# 7. Dashboard Admin (Port 2026)
+server {
+    server_name admin.domain.com;
     location / {
         proxy_pass http://127.0.0.1:2026;
         proxy_http_version 1.1;
@@ -271,11 +298,11 @@ server {
     }
 }
 
-# 7. Dashboard APBD Provinsi Lampung (Port 2027)
+# 8. Proxy DB REST API (Port 2028)
 server {
-    server_name apbd.domain.com;
+    server_name api.domain.com;
     location / {
-        proxy_pass http://127.0.0.1:2027;
+        proxy_pass http://127.0.0.1:2028;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -305,7 +332,7 @@ Untuk mengaktifkan gembok hijau HTTPS pada seluruh subdomain dalam 1 perintah:
 sudo apt install -y certbot python3-certbot-nginx
 
 # Pasang SSL gratis otomatis ke seluruh subdomain
-sudo certbot --nginx -d transparansi.domain.com -d kementerian.domain.com -d bank.domain.com -d auditor.domain.com -d sekolah.domain.com -d api.domain.com -d apbd.domain.com
+sudo certbot --nginx -d transparansi.domain.com -d kementerian.domain.com -d bank.domain.com -d auditor.domain.com -d sekolah.domain.com -d apbd.domain.com -d admin.domain.com -d api.domain.com
 ```
 
 Certbot akan otomatis memperbarui sertifikat SSL setiap 90 hari.

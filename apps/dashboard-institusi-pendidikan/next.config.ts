@@ -5,7 +5,6 @@ const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: true },
   experimental: {
     optimizePackageImports: ["recharts", "lucide-react", "@supabase/supabase-js", "tesseract.js"],
-    turbopack: { root: path.resolve(__dirname) },
   } as any,
 };
 

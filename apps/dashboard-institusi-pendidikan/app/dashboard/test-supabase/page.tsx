@@ -294,7 +294,7 @@ export default function TestSupabasePage() {
               <div className="bg-indigo-50/50 p-3 rounded-lg border border-indigo-100 text-[11px] text-indigo-900 space-y-1">
                 <span className="font-bold flex items-center gap-1"><HelpCircle size={12} className="text-indigo-600" /> Cara Menjalankan:</span>
                 <ol className="list-decimal pl-4 space-y-1">
-                  <li>Buka SQL Editor pada database management tool (pgAdmin, DBeaver, atau Supabase Studio lokal di <code>http://localhost:2026</code>)</li>
+                  <li>Buka SQL Editor pada database management tool (pgAdmin, DBeaver di port <code>2027</code>, atau Proxy di <code>http://localhost:2028</code>)</li>
                   <li>Pilih menu <strong>SQL Editor</strong> di sidebar kiri</li>
                   <li>Klik <strong>New Query</strong>, paste kode SQL di atas</li>
                   <li>Klik tombol <strong>Run</strong> di bagian kanan bawah</li>

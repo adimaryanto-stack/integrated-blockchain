@@ -3,7 +3,7 @@ const cors = require('cors');
 const { Pool } = require('pg');
 
 const app = express();
-const port = 2026;
+const port = process.env.PORT || 2028;
 
 app.use(cors({
   origin: '*',
@@ -15,30 +15,25 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://postgres@localhost:2025/postgres',
+  connectionString: process.env.DATABASE_URL || 'postgresql://postgres@localhost:2027/postgres',
   max: 20,              // Increase from default 10 → 20 concurrent connections
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
 });
 
 // Middleware to log requests (only log slow or error responses)
-app.use((req, res, next) => {
-  const start = Date.now();
-  res.on('finish', () => {
-    const ms = Date.now() - start;
-    if (ms > 500 || res.statusCode >= 400) {
-      console.log(`[Proxy] ${req.method} ${req.url} → ${res.statusCode} (${ms}ms)`);
-    }
-  });
-  next();
-});
+const adminApi = require('./adminApi');
+
+// Mount Admin API router
+app.use('/api/admin', adminApi);
+
 
 // Root / health check endpoint
 app.get('/', (req, res) => {
   res.json({
     status: 'online',
     service: 'Integrated Blockchain Proxy API Server',
-    port: 2026,
+    port: port,
     endpoints: {
       rpc: '/rest/v1/rpc/:function',
       rest: '/rest/v1/:table'
@@ -518,7 +513,7 @@ app.get('/realtime/v1/websocket', (req, res) => {
 });
 
 // Health check
-app.get('/health', (req, res) => res.json({ status: 'ok', db: 'postgresql://localhost:2025' }));
+app.get('/health', (req, res) => res.json({ status: 'ok', db: process.env.DATABASE_URL || 'postgresql://localhost:2027' }));
 
 app.listen(port, () => {
   console.log(`[Proxy] Supabase REST API emulator listening on port ${port}`);

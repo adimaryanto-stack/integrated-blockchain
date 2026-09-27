@@ -24,33 +24,34 @@ async function testHttp(port, path = '/') {
 
 async function testPostgres() {
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@127.0.0.1:2025/postgres',
+    connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@127.0.0.1:2027/postgres',
     connectionTimeoutMillis: 5000
   });
   const start = Date.now();
   try {
     const res = await pool.query('SELECT current_database(), count(*) as table_count FROM information_schema.tables WHERE table_schema = $1', ['public']);
     await pool.end();
-    return { port: 2025, status: 'ONLINE', timeMs: Date.now() - start, info: res.rows[0] };
+    return { port: 2027, status: 'ONLINE', timeMs: Date.now() - start, info: res.rows[0] };
   } catch (e) {
-    return { port: 2025, status: 'ERROR', error: e.message };
+    return { port: 2027, status: 'ERROR', error: e.message };
   }
 }
 
 async function run() {
-  console.log('=== HEALTH CHECK FOR ALL 7 PORTS ===\n');
+  console.log('=== HEALTH CHECK FOR ALL 9 PORTS ===\n');
 
   const pgRes = await testPostgres();
-  console.log(`Port 2025 (PostgreSQL DB)    : ${pgRes.status} (${pgRes.timeMs}ms) - Database: ${pgRes.info?.current_database}, Public Tables: ${pgRes.info?.table_count || 0}`);
+  console.log(`Port 2027 (PostgreSQL DB)    : ${pgRes.status} (${pgRes.timeMs}ms) - Database: ${pgRes.info?.current_database}, Public Tables: ${pgRes.info?.table_count || 0}`);
 
   const endpoints = [
-    { port: 2026, name: 'Proxy API Server', path: '/' },
     { port: 2020, name: 'Transparansi Publik', path: '/' },
     { port: 2021, name: 'Dashboard Kementerian', path: '/dashboard' },
     { port: 2022, name: 'Dashboard Bank', path: '/dashboard' },
     { port: 2023, name: 'Dashboard Auditor', path: '/dashboard' },
     { port: 2024, name: 'Institusi Pendidikan', path: '/dashboard' },
-    { port: 2027, name: 'Dashboard APBD Provinsi', path: '/dashboard' },
+    { port: 2025, name: 'Dashboard APBD Provinsi', path: '/dashboard' },
+    { port: 2026, name: 'Dashboard Admin', path: '/' },
+    { port: 2028, name: 'Proxy API Server', path: '/' },
   ];
 
   for (const ep of endpoints) {

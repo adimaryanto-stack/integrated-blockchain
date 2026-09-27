@@ -12,7 +12,7 @@ foreach ($file in $files) {
 
     foreach ($line in $content) {
         if ($line -match "^NEXT_PUBLIC_SUPABASE_URL=") {
-            $updatedContent += "NEXT_PUBLIC_SUPABASE_URL=http://localhost:2026"
+            $updatedContent += "NEXT_PUBLIC_SUPABASE_URL=http://localhost:2028"
             $hasUrl = $true
         } else {
             $updatedContent += $line
@@ -20,7 +20,7 @@ foreach ($file in $files) {
     }
 
     if (-not $hasUrl) {
-        $updatedContent += "NEXT_PUBLIC_SUPABASE_URL=http://localhost:2026"
+        $updatedContent += "NEXT_PUBLIC_SUPABASE_URL=http://localhost:2028"
     }
 
     $updatedContent | Set-Content -Path $file.FullName

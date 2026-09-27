@@ -3,7 +3,7 @@ const http = require('http');
 async function queryTable(table) {
   return new Promise((resolve) => {
     const start = Date.now();
-    http.get(`http://localhost:2026/rest/v1/${table}?select=*&order=year.asc`, (res) => {
+    http.get(`http://localhost:2028/rest/v1/${table}?select=*&order=year.asc`, (res) => {
       let body = '';
       res.on('data', chunk => body += chunk);
       res.on('end', () => {

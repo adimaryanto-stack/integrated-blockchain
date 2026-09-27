@@ -1,7 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 
 async function testSupabaseOr() {
-  const supabase = createClient('http://localhost:2026', 'anon-key-davinci-2026');
+  const supabase = createClient('http://localhost:2028', 'anon-key-davinci-2026');
 
   console.log('Testing Supabase query for PAUD NPSN 69893669...\n');
 
@@ -25,7 +25,7 @@ async function testSupabaseOr() {
 
   // Test 3: raw query via proxy
   const http = require('http');
-  http.get('http://localhost:2026/rest/v1/institusi_pendidikan?jenjang=eq.PAUD&or=(nama_institusi.ilike.*69893669*,npsn.ilike.*69893669*)', (res) => {
+  http.get('http://localhost:2028/rest/v1/institusi_pendidikan?jenjang=eq.PAUD&or=(nama_institusi.ilike.*69893669*,npsn.ilike.*69893669*)', (res) => {
     let body = '';
     res.on('data', c => body += c);
     res.on('end', () => console.log('Raw HTTP Test with wildcard (*):', res.statusCode, body));

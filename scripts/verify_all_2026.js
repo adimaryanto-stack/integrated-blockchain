@@ -27,6 +27,12 @@ const testUrls = [
   { name: 'Institusi Dashboard', url: 'http://localhost:2024/dashboard' },
   { name: 'Institusi Mutasi', url: 'http://localhost:2024/dashboard/mutasi-rekening' },
   { name: 'Institusi Universitas', url: 'http://localhost:2024/dashboard/jenjang/universitas' },
+
+  // 2025: Dashboard APBD Lampung
+  { name: 'APBD Dashboard', url: 'http://localhost:2025/dashboard' },
+
+  // 2026: Dashboard Admin
+  { name: 'Admin Dashboard', url: 'http://localhost:2026' },
 ];
 
 async function run() {

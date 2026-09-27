@@ -1,7 +1,7 @@
 const { Pool } = require('pg');
 
 async function inspectSchool() {
-  const pool = new Pool({ connectionString: 'postgresql://postgres@localhost:2025/postgres' });
+  const pool = new Pool({ connectionString: 'postgresql://postgres@localhost:2027/postgres' });
   try {
     const inst = await pool.query("SELECT * FROM public.institusi_pendidikan WHERE npsn = '69893669'");
     console.log('institusi_pendidikan for 69893669:', inst.rows);

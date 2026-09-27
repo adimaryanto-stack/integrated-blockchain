@@ -145,9 +145,9 @@ Mengikuti stack yang sudah dipakai di `integrated-blockchain` agar konsisten dan
 
 | Layer | Teknologi | Port / Host | Keterangan |
 |---|---|---|---|
-| Database | **PostgreSQL 16 lokal** | `localhost:2025` | Instance existing di database `postgres`, tabel baru ditambahkan via migrasi/script SQL langsung |
-| API / Backend SDK | **Supabase (PostgREST / Supabase REST API)** | `http://localhost:2026` | Menggunakan `@supabase/supabase-js` dengan Anon Key |
-| Frontend | **Next.js 16 (App Router)** | `http://localhost:2027` | Dashboard berdiri sendiri (port 2027 baru) |
+| Database | **PostgreSQL 16 lokal** | `localhost:2027` | Instance existing di database `postgres`, tabel baru ditambahkan via migrasi/script SQL langsung |
+| API / Backend SDK | **Supabase (PostgREST / Supabase REST API)** | `http://localhost:2028` | Menggunakan `@supabase/supabase-js` dengan Anon Key |
+| Frontend | **Next.js 16 (App Router)** | `http://localhost:2025` | Dashboard berdiri sendiri (port 2025) |
 | AI / OCR Services | **Google Gemini & Vision API** | External Cloud | Gemini API & Vision API untuk analisis data / pemrosesan dokumen anggaran jika diperlukan |
 
 ### Konfigurasi Environment Variables (`.env.local`)
@@ -155,12 +155,12 @@ Aplikasi frontend `dashboard-apbd-lampung` terhubung menggunakan konfigurasi ber
 
 ```env
 # Supabase SDK credentials (for app code local connection)
-NEXT_PUBLIC_SUPABASE_URL=http://localhost:2026
+NEXT_PUBLIC_SUPABASE_URL=http://localhost:2028
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpweXR4bW54Ymljam1nc2dwcmJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2ODk1NzAsImV4cCI6MjA4ODI2NTU3MH0.BGQGztExtjrTr6XHrvQZ1A0njAAdkoBAp3APRfWsQNE
 
 # Local PostgreSQL direct connection configuration
-DATABASE_URL=postgresql://postgres:postgres@localhost:2025/postgres
-POSTGRES_URL=postgresql://postgres:postgres@localhost:2025/postgres
+DATABASE_URL=postgresql://postgres:postgres@localhost:2027/postgres
+POSTGRES_URL=postgresql://postgres:postgres@localhost:2027/postgres
 
 # Additional API keys and app config
 GEMINI_API_KEY=AIzaSyAMYMHF5x9c8JUgJqpmGJ6zmtYf2VHPDXg

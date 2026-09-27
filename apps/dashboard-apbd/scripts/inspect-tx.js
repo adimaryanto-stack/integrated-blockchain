@@ -1,7 +1,7 @@
 const { Client } = require('d:/DaVinci/Web Development/integrated-blockchain/node_modules/pg');
 
 async function inspectTransactions() {
-  const client = new Client({ connectionString: 'postgresql://postgres:postgres@localhost:2025/postgres' });
+  const client = new Client({ connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:2027/postgres' });
   try {
     await client.connect();
 

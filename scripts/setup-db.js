@@ -8,7 +8,7 @@ const zlib = require('zlib');
 const { execSync } = require('child_process');
 
 const DB_HOST = process.env.DB_HOST || '127.0.0.1';
-const DB_PORT = process.env.DB_PORT || '2025';
+const DB_PORT = process.env.DB_PORT || '2027';
 const DB_USER = process.env.DB_USER || 'postgres';
 const DB_PASS = process.env.DB_PASSWORD || process.env.PGPASSWORD || 'postgres';
 const DB_NAME = process.env.DB_NAME || 'postgres';

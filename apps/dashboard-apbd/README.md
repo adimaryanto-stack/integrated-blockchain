@@ -1,4 +1,4 @@
-# 🏛️ Dashboard APBD Provinsi Lampung (Port 2027)
+# 🏛️ Dashboard APBD Provinsi Lampung (Port 2025)
 
 > **Sistem Informasi Manajemen, Monitoring & Validasi Alokasi APBD Pendidikan Provinsi Lampung Berbasis Database PostgreSQL Lokal.**
 
@@ -10,7 +10,7 @@
 
 Dashboard APBD Provinsi Lampung dirancang khusus untuk Pemerintah Provinsi (BPKAD & Bappeda) guna memantau kepatuhan mandatori undang-undang (Pasal 31 ayat 4 UUD 1945 — minimal 20% APBD dialokasikan untuk pendidikan) serta mendistribusikan anggaran secara transparan ke seluruh 15 Kabupaten/Kota dan 11.354 satuan pendidikan di Lampung.
 
-Aplikasi ini berjalan pada **Port 2027** dan terhubung 100% secara langsung ke database lokal **PostgreSQL 16 (Port 2025)** melalui **Proxy API Server (Port 2026)**.
+Aplikasi ini berjalan pada **Port 2025** dan terhubung 100% secara langsung ke database lokal **PostgreSQL 16 (Port 2027)** melalui **Proxy API Server (Port 2028)**.
 
 ---
 
@@ -54,7 +54,7 @@ Aplikasi ini berjalan pada **Port 2027** dan terhubung 100% secara langsung ke d
 - **Styling**: Tailwind CSS & Glassmorphism Theme
 - **Charts**: Recharts & Lucide React
 - **Export Utility**: ExcelJS & FileSaver
-- **Database**: PostgreSQL 16 (Port 2025) via PostgREST / Supabase Client (Port 2026)
+- **Database**: PostgreSQL 16 (Port 2027) via PostgREST / Supabase Client (Port 2028)
 
 ---
 
@@ -67,8 +67,8 @@ cd apps/dashboard-apbd
 # Install dependencies
 npm install
 
-# Jalankan server development di port 2027
-npm run dev -- -p 2027
+# Jalankan server development di port 2025
+npm run dev
 ```
 
-Akses aplikasi di peramban web: **[http://localhost:2027](http://localhost:2027)**
+Akses aplikasi di peramban web: **[http://localhost:2025](http://localhost:2025)**

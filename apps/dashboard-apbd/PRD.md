@@ -17,9 +17,10 @@ Platform ini terintegrasi langsung dalam ekosistem Blockchain Transparansi Angga
 | **Port 2022** | Dashboard Bank | Rekening Escrow, Giro Penyaluran, & status mutasi |
 | **Port 2023** | Dashboard Auditor | Audit SPJ, OCR struk belanja, deteksi anomali pajak |
 | **Port 2024** | Dashboard Institusi Pendidikan | Dashboard sekolah penerima (RAB, Belanja, Kas Bank) |
-| **Port 2025** | Database PostgreSQL Lokal | Single source of truth (35 Tabel Publik) |
-| **Port 2026** | Proxy API Server (PostgREST) | RESTful API gateway ke database PostgreSQL |
-| **Port 2027** | **Dashboard APBD Provinsi** | **Monitoring Kepatuhan 20% & APBD Daerah Lampung** |
+| **Port 2025** | **Dashboard APBD Provinsi** | **Monitoring Kepatuhan 20% & APBD Daerah Lampung** |
+| **Port 2026** | Dashboard Admin | Konsol Super-Admin & manajemen platform |
+| **Port 2027** | Database PostgreSQL Lokal | Single source of truth (35 Tabel Publik) |
+| **Port 2028** | Proxy API Server (PostgREST) | RESTful API gateway ke database PostgreSQL |
 
 ---
 

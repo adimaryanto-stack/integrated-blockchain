@@ -24,7 +24,7 @@ if %errorlevel% neq 0 (
 )
 
 echo Node.js terdeteksi.
-echo Memulai seluruh 8 server dan database... Mohon tunggu sebentar...
+echo Memulai seluruh 9 server dan database... Mohon tunggu sebentar...
 echo.
 
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0start-all.ps1"

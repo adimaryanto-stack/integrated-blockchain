@@ -1,5 +1,5 @@
 $psql = "d:\DaVinci\Web Development\integrated-blockchain\pgsql\bin\psql.exe"
-$dbUrl = "postgresql://postgres@localhost:2025/postgres"
+$dbUrl = "postgresql://postgres@localhost:2027/postgres"
 
 Write-Host "=== Setting up Database Prerequisites ==="
 $prereqs = @'

@@ -1,12 +1,12 @@
 # 🚀 MVP Roadmap — Dashboard APBD Lampung
 
 ## Sprint 1 — Setup UI Spreadsheet & Fondasi Data Supabase (tanpa login)
-- Setup project Next.js 16 (port `2027`), Tailwind CSS, Recharts, Zustand store, Lucide Icons, dan Supabase JS SDK (`NEXT_PUBLIC_SUPABASE_URL=http://localhost:2026`).
+- Setup project Next.js 16 (port `2025`), Tailwind CSS, Recharts, Zustand store, Lucide Icons, dan Supabase JS SDK (`NEXT_PUBLIC_SUPABASE_URL=http://localhost:2028`).
 - Implementasi Sidebar navigasi persis Kementerian (Dashboard, APBD Pertahun, Kabupaten / Kota, Jenjang Pendidikan [Universitas, SMA, SMP, SD, PAUD], Profil Institusi, User Manager).
 - Implementasi Global Header dengan dropdown Tahun Anggaran aktif + info Super Admin (tanpa login page, langsung masuk dashboard).
-- Buat 4 tabel PostgreSQL lokal port `2025` (`apbd_provinsi`, `apbd_pendidikan_breakdown`, `apbd_pendidikan_satuan`, `apbd_input_log`).
+- Buat 4 tabel PostgreSQL lokal port `2027` (`apbd_provinsi`, `apbd_pendidikan_breakdown`, `apbd_pendidikan_satuan`, `apbd_input_log`).
 
-**Kriteria selesai**: Dashboard port 2027 bisa dibuka langsung via URL tanpa login page, navigasi sidebar & header berfungsi utuh.
+**Kriteria selesai**: Dashboard port 2025 bisa dibuka langsung via URL tanpa login page, navigasi sidebar & header berfungsi utuh.
 
 ---
 

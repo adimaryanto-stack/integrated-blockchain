@@ -1,7 +1,7 @@
 const http = require('http');
 
 async function testSearch(jenjang, term) {
-  const url = `http://localhost:2026/rest/v1/institusi_pendidikan?jenjang=eq.${encodeURIComponent(jenjang)}&nama_institusi=ilike.*${encodeURIComponent(term)}*&select=id,nama_institusi,npsn,provinsi_nama,kabupaten_kota_nama&limit=10`;
+  const url = `http://localhost:2028/rest/v1/institusi_pendidikan?jenjang=eq.${encodeURIComponent(jenjang)}&nama_institusi=ilike.*${encodeURIComponent(term)}*&select=id,nama_institusi,npsn,provinsi_nama,kabupaten_kota_nama&limit=10`;
   const start = Date.now();
   return new Promise((resolve) => {
     http.get(url, (res) => {

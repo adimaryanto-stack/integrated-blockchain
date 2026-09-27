@@ -2,7 +2,7 @@ const { Pool } = require('pg');
 const crypto = require('crypto');
 
 async function updateIncomingFundsCategorized() {
-  const pool = new Pool({ connectionString: 'postgresql://postgres@localhost:2025/postgres' });
+  const pool = new Pool({ connectionString: 'postgresql://postgres@localhost:2027/postgres' });
   try {
     const schoolId = 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7';
 

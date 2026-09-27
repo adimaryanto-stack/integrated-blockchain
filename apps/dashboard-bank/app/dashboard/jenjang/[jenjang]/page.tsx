@@ -54,7 +54,7 @@ export default function JenjangPage() {
     try {
       setLoading(true);
       // Fetch total count lightweight
-      const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2026';
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2028';
       const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'anon-key-davinci-2026';
       let countUrl = `${url}/rest/v1/institusi_pendidikan?jenjang=eq.${config.jenjang}&select=id`;
       if (selectedStatus) countUrl += `&status_sekolah=eq.${selectedStatus}`;
@@ -249,7 +249,7 @@ export default function JenjangPage() {
           return;
         }
 
-        const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2026';
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2028';
         const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'anon-key-davinci-2026';
         const res = await fetch(`${url}/rest/v1/rpc/get_jenjang_summary`, {
           method: 'POST',

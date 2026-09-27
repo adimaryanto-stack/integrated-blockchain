@@ -2,7 +2,7 @@ const { Client } = require('d:/DaVinci/Web Development/integrated-blockchain/nod
 
 async function migrate() {
   const client = new Client({
-    connectionString: 'postgresql://postgres:postgres@localhost:2025/postgres'
+    connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:2027/postgres'
   });
 
   try {

@@ -45,7 +45,7 @@ let isInitialized = false;
 
 // Utility to get Supabase connection details safely on the client
 function getSupabaseConfig() {
-  const url = (process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2026').trim();
+  const url = (process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2028').trim();
   const anonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim();
   return { url, anonKey };
 }
@@ -542,7 +542,7 @@ export function getInstitusiByJenjang(jenjang: Jenjang): InstitusiPendidikan[] {
 }
 
 export async function fetchInstitusiByJenjang(jenjang: Jenjang): Promise<InstitusiPendidikan[]> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2026';
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2028';
   const headers = {
     apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'anon-key-davinci-2026',
     Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'anon-key-davinci-2026'}`,
@@ -638,7 +638,7 @@ export function getDashboardSummary(tahun: number = 2026): DashboardSummary {
 }
 
 export async function getProfilInstitusi(id: string, tahun: number = 2026): Promise<ProfilInstitusi | null> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2026';
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2028';
   const headers = {
     apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'anon-key-davinci-2026',
     Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'anon-key-davinci-2026'}`,

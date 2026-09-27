@@ -8,7 +8,7 @@ async function testInsert() {
     created_at: new Date().toISOString(),
   });
 
-  const req = http.request('http://localhost:2026/rest/v1/tahun_anggaran', {
+  const req = http.request('http://localhost:2028/rest/v1/tahun_anggaran', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

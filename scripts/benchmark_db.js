@@ -1,5 +1,5 @@
 const { Pool } = require('pg');
-const pool = new Pool({ connectionString: 'postgresql://postgres@localhost:2025/postgres' });
+const pool = new Pool({ connectionString: 'postgresql://postgres@localhost:2027/postgres' });
 
 async function bench(label, sql, params) {
   const t0 = Date.now();

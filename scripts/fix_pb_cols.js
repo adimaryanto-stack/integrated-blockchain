@@ -1,7 +1,7 @@
 const { Pool } = require('pg');
 
 async function checkPbCols() {
-  const pool = new Pool({ connectionString: 'postgresql://postgres@localhost:2025/postgres' });
+  const pool = new Pool({ connectionString: 'postgresql://postgres@localhost:2027/postgres' });
   try {
     const res = await pool.query("SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'pengeluaran_bulanan_institusi'");
     console.log('Columns in pengeluaran_bulanan_institusi:', res.rows);

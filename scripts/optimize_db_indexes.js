@@ -2,7 +2,7 @@ const { Pool } = require('pg');
 
 async function optimizeDb() {
   const pool = new Pool({
-    connectionString: 'postgresql://postgres@localhost:2025/postgres',
+    connectionString: 'postgresql://postgres@localhost:2027/postgres',
   });
 
   console.log('Optimizing PostgreSQL indexes for fast queries...\n');

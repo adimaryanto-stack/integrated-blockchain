@@ -6,15 +6,15 @@ Write-Host "=================================================================="
 Write-Host " Blockchain Anggaran - Startup Script (Dashboard Kementerian)"
 Write-Host "=================================================================="
 
-# --- 1. Start PostgreSQL on port 2025 ---
-Write-Host "`n[1/3] Memulai PostgreSQL pada port 2025..."
+# --- 1. Start PostgreSQL on port 2027 ---
+Write-Host "`n[1/3] Memulai PostgreSQL pada port 2027..."
 $pgStatus = & "$PGSQL_BIN\pg_ctl.exe" status -D $PGSQL_DATA 2>&1
 if ($pgStatus -like "*server is running*") {
     Write-Host "      PostgreSQL sudah berjalan."
 } else {
-    & "$PGSQL_BIN\pg_ctl.exe" start -D $PGSQL_DATA -o "-p 2025" -l "pgsql_log.txt"
+    & "$PGSQL_BIN\pg_ctl.exe" start -D $PGSQL_DATA -o "-p 2027" -l "pgsql_log.txt"
     Start-Sleep 4
-    $test = & "$PGSQL_BIN\psql.exe" -U postgres -h 127.0.0.1 -p 2025 -c "SELECT 1" 2>&1
+    $test = & "$PGSQL_BIN\psql.exe" -U postgres -h 127.0.0.1 -p 2027 -c "SELECT 1" 2>&1
     if ($LASTEXITCODE -eq 0) {
         Write-Host "      PostgreSQL berhasil dimulai." -ForegroundColor Green
     } else {
@@ -23,8 +23,8 @@ if ($pgStatus -like "*server is running*") {
     }
 }
 
-# --- 2. Start Proxy API Server on port 2026 ---
-Write-Host "`n[2/3] Memulai Proxy API Server pada port 2026..."
+# --- 2. Start Proxy API Server on port 2028 ---
+Write-Host "`n[2/3] Memulai Proxy API Server pada port 2028..."
 $proxyJob = Start-Process -FilePath "node" -ArgumentList "proxy\proxy.js" -WorkingDirectory $ROOT -WindowStyle Minimized -PassThru
 Write-Host "      Proxy server dimulai (PID: $($proxyJob.Id))" -ForegroundColor Green
 
@@ -39,8 +39,8 @@ Write-Host " Server sedang dimulai. Tunggu sekitar 10-15 detik..."
 Write-Host "=================================================================="
 Write-Host ""
 Write-Host " Link Dashboard Kementerian -> http://localhost:2021"
-Write-Host " Proxy DB API               -> http://localhost:2026"
-Write-Host " Database PostgreSQL berjalan pada port 2025"
+Write-Host " Proxy DB API               -> http://localhost:2028"
+Write-Host " Database PostgreSQL berjalan pada port 2027"
 Write-Host "=================================================================="
 
 Write-Host "`nMenjaga agar server tetap berjalan. Tekan Ctrl+C untuk menghentikan."

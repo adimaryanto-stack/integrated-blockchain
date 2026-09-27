@@ -37,8 +37,8 @@ Pastikan komputer Anda sudah terpasang **Node.js** (versi 18 atau lebih baru).
 2. **Klik 2x (Double-Click)** pada file **`start-all.bat`**.
 3. Sistem akan bekerja secara otomatis:
    - Memeriksa file konfigurasi `.env.local` & dependensi aplikasi.
-   - Menyalakan database PostgreSQL lokal (Port 2025) & Proxy API (Port 2026).
-   - Menyalakan seluruh 6 portal aplikasi dashboard.
+   - Menyalakan database PostgreSQL lokal (Port 2027) & Proxy API (Port 2028).
+   - Menyalakan seluruh 7 portal aplikasi dashboard.
    - Memanaskan halaman web dan **otomatis membuka peramban (browser) ke [http://localhost:2020](http://localhost:2020)**.
 4. **Cara Mematikan Server**: Cukup **Klik 2x** pada file **`stop-all.bat`** kapan saja Anda ingin menghentikan seluruh layanan.
 
@@ -71,7 +71,7 @@ chmod +x start.sh && ./start.sh
 ---
 
 ### 🐳 4. Menggunakan Docker Compose (Database & Proxy Backend):
-File `docker-compose.yml` menyediakan basis data PostgreSQL (Port 2025) dan Proxy REST API (Port 2026) secara mandiri:
+File `docker-compose.yml` menyediakan basis data PostgreSQL (Port 2027) dan Proxy REST API (Port 2028) secara mandiri:
 ```bash
 # 1. Nyalakan Database & Proxy API Gateway dalam kontainer:
 docker compose up -d
@@ -86,7 +86,7 @@ npm run dev --prefix apps/transparansi-anggaran/apps/web-next
 ## 🛠️ Otomasi Environment (`.env.local`) — 100% Mandiri Tanpa Cloud Supabase!
 
 > 💡 **Apakah Perlu Akun Supabase? TIDAK!**
-> Sistem ini **100% Self-Hosted** menggunakan database PostgreSQL lokal kita sendiri. Variabel `NEXT_PUBLIC_SUPABASE_URL` terhubung ke **Proxy REST API Lokal (Port 2026)**.
+> Sistem ini **100% Self-Hosted** menggunakan database PostgreSQL lokal kita sendiri. Variabel `NEXT_PUBLIC_SUPABASE_URL` terhubung ke **Proxy REST API Lokal (Port 2028)**.
 
 Untuk membuat seluruh file `.env.local` di ke-6 folder aplikasi sekaligus secara otomatis, jalankan:
 ```bash
@@ -94,10 +94,10 @@ Untuk membuat seluruh file `.env.local` di ke-6 folder aplikasi sekaligus secara
 node scripts/setup-env.js
 
 # Untuk VPS dengan IP / Domain:
-node scripts/setup-env.js http://IP_VPS_ANDA:2026
+node scripts/setup-env.js http://IP_VPS_ANDA:2028
 ```
 
-## 🗺️ Peta 8 Port & Akses Dashboard
+## 🗺️ Peta 9 Port & Akses Dashboard
 
 | Port | Peran Pengguna / Dashboard | Direktori Aplikasi | Tautan Akses Cepat |
 |:---:|---|---|:---:|
@@ -106,9 +106,10 @@ node scripts/setup-env.js http://IP_VPS_ANDA:2026
 | **2022** | **Dashboard Bank Penyalur** (Mandiri, BRI, BNI, BSI, BPD) | `apps/dashboard-bank` | [http://localhost:2022/dashboard](http://localhost:2022/dashboard) |
 | **2023** | **Dashboard Auditor BPK** (Pengawasan & Deteksi Anomali AI) | `apps/dashboard-auditor` | [http://localhost:2023/dashboard](http://localhost:2023/dashboard) |
 | **2024** | **Dashboard Institusi Pendidikan** (Kepala Sekolah & Bendahara) | `apps/dashboard-institusi-pendidikan` | [http://localhost:2024/dashboard](http://localhost:2024/dashboard) |
-| **2025** | **Database PostgreSQL 16** (35 Tabel Relasional Mandiri) | `pgsql/bin` / System Postgres | `localhost:2025` |
-| **2026** | **Proxy REST API Server** (Protokol PostgREST Sub-10ms) | `proxy/proxy.js` | [http://localhost:2026](http://localhost:2026) |
-| **2027** | **Dashboard APBD Provinsi Lampung** (Pemda & Dinas Pendidikan) | `apps/dashboard-apbd` | [http://localhost:2027/dashboard](http://localhost:2027/dashboard) |
+| **2025** | **Dashboard APBD Provinsi Lampung** (Pemda & Dinas Pendidikan) | `apps/dashboard-apbd` | [http://localhost:2025/dashboard](http://localhost:2025/dashboard) |
+| **2026** | **Dashboard Admin** (Super-Admin Console & Manajemen Pengguna) | `apps/dashboard-admin` | [http://localhost:2026](http://localhost:2026) |
+| **2027** | **Database PostgreSQL 16** (35 Tabel Relasional Mandiri) | `pgsql/bin` / System Postgres | `localhost:2027` |
+| **2028** | **Proxy REST API Server** (Protokol PostgREST Sub-10ms) | `proxy/proxy.js` | [http://localhost:2028](http://localhost:2028) |
 
 ---
 
@@ -122,7 +123,7 @@ node scripts/setup-env.js http://IP_VPS_ANDA:2026
 | **Dashboard Bank Penyalur** | `:2022` | ![Dashboard Bank](screenshots/port-2022-bank.png) |
 | **Dashboard Auditor BPK** | `:2023` | ![Dashboard Auditor](screenshots/port-2023-auditor.png) |
 | **Dashboard Institusi Pendidikan** | `:2024` | ![Dashboard Sekolah](screenshots/port-2024-institusi-pendidikan.png) |
-| **Dashboard APBD Provinsi Lampung** | `:2027` | ![Dashboard APBD](screenshots/port-2027-apbd-lampung.png) |
+| **Dashboard APBD Provinsi Lampung** | `:2025` | ![Dashboard APBD](screenshots/port-2027-apbd-lampung.png) |
 
 ---
 
@@ -132,7 +133,7 @@ node scripts/setup-env.js http://IP_VPS_ANDA:2026
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                          1. DATA PERSISTENCE LAYER                          │
 │                                                                             │
-│   PostgreSQL 16 Engine (:2025)                                              │
+│   PostgreSQL 16 Engine (:2027)                                              │
 │   └── 35 Public Tables (Master Anggaran, Wilayah, Transaksi, Audit, APBD)   │
 │   └── Performance B-Tree Indexes & Cascading Foreign Keys                   │
 └──────────────────────────────────────┬──────────────────────────────────────┘
@@ -140,7 +141,7 @@ node scripts/setup-env.js http://IP_VPS_ANDA:2026
 ┌──────────────────────────────────────▼──────────────────────────────────────┐
 │                          2. LOCAL API PROXY LAYER                           │
 │                                                                             │
-│   Node.js / Express PostgREST Gateway (:2026)                               │
+│   Node.js / Express PostgREST Gateway (:2028)                               │
 │   ├── Dynamic Filter Parser (ilike, eq, in, or, order, pagination)          │
 │   ├── Quote Stripping & SQL Injection Prevention Engine                     │
 │   └── Sub-10ms Fast Response Gateway                                       │
@@ -156,9 +157,15 @@ node scripts/setup-env.js http://IP_VPS_ANDA:2026
        │                               │                               │
        ▼                               ▼                               ▼
 ┌──────────────────────┐   ┌──────────────────────┐   ┌──────────────────────┐
-│  Port 2023: Auditor  │   │ Port 2024: Sekolah   │   │ Port 2027: APBD Prov │
+│  Port 2023: Auditor  │   │ Port 2024: Sekolah   │   │ Port 2025: APBD Prov │
 │  Deteksi Anomali AI  │   │ Belanja & SPJ Digital│   │ Mandat 20% Daerah    │
 └──────────────────────┘   └──────────────────────┘   └──────────────────────┘
+                                       │
+                                       ▼
+                           ┌──────────────────────┐
+                           │ Port 2026: Admin     │
+                           │ Super-Admin Console  │
+                           └──────────────────────┘
 ```
 
 ---

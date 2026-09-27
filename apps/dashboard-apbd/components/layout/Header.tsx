@@ -121,7 +121,7 @@ export default function Header({ title, subtitle }: HeaderProps) {
                 ? 'bg-emerald-50/80 border-emerald-200 text-emerald-800'
                 : 'bg-rose-50/80 border-rose-200 text-rose-800'
             }`}
-            title={dbStatus?.ok ? `PostgreSQL 2025 & Supabase 2026 OK (${dbStatus.latencyMs}ms)` : 'Database offline'}
+            title={dbStatus?.ok ? `PostgreSQL 2027 & Supabase 2028 OK (${dbStatus.latencyMs}ms)` : 'Database offline'}
           >
             <Database size={13} className={dbStatus?.ok ? 'text-emerald-600' : 'text-rose-600'} />
             <span>{dbStatus?.ok ? 'DB Lokal Aktif (100%)' : 'DB Reconnecting...'}</span>

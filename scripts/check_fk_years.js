@@ -1,7 +1,7 @@
 const { Pool } = require('pg');
 
 async function inspectForeignKeys() {
-  const pool = new Pool({ connectionString: 'postgresql://postgres@localhost:2025/postgres' });
+  const pool = new Pool({ connectionString: 'postgresql://postgres@localhost:2027/postgres' });
   try {
     const provYears = await pool.query('SELECT tahun_anggaran_id, count(*) FROM public.alokasi_provinsi GROUP BY tahun_anggaran_id');
     console.log('alokasi_provinsi by tahun_anggaran_id:');

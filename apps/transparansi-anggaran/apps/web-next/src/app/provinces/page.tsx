@@ -42,7 +42,7 @@ function ProvincesPageInner() {
     useEffect(() => {
         const fetchAll = async () => {
             try {
-                const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2026';
+                const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2028';
                 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
                 const headers = {
                     'apikey': supabaseKey,

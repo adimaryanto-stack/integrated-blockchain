@@ -1,7 +1,7 @@
 const { Pool } = require('pg');
 
 async function checkUsers() {
-  const pool = new Pool({ connectionString: 'postgresql://postgres@localhost:2025/postgres' });
+  const pool = new Pool({ connectionString: 'postgresql://postgres@localhost:2027/postgres' });
   try {
     const cols = await pool.query("SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'users'");
     console.log('Columns in users:', cols.rows.map(c => c.column_name));

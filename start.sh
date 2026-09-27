@@ -20,9 +20,9 @@ if ! command -v node &> /dev/null; then
 fi
 
 # 2. Check PostgreSQL
-echo -e "\n[1/4] Checking PostgreSQL connection on port 2025..."
-if ! nc -z 127.0.0.1 2025 &>/dev/null && ! nc -z localhost 2025 &>/dev/null; then
-    echo "⚠️  PostgreSQL is not running on port 2025."
+echo -e "\n[1/4] Checking PostgreSQL connection on port 2027..."
+if ! nc -z 127.0.0.1 2027 &>/dev/null && ! nc -z localhost 2027 &>/dev/null; then
+    echo "⚠️  PostgreSQL is not running on port 2027."
     echo "   Attempting to start standard postgresql service or setup database..."
     if command -v systemctl &> /dev/null; then
         sudo systemctl start postgresql || true
@@ -37,10 +37,10 @@ node scripts/setup-db.js || {
     echo "⚠️  Database restore skipped or already populated."
 }
 
-# 4. Start Proxy API Gateway (Port 2026)
-echo -e "\n[3/4] Starting Proxy API Server on port 2026..."
+# 4. Start Proxy API Gateway (Port 2028)
+echo -e "\n[3/4] Starting Proxy API Server on port 2028..."
 if command -v pm2 &> /dev/null; then
-    pm2 start proxy/proxy.js --name "blockchain-proxy-2026" || pm2 restart "blockchain-proxy-2026"
+    pm2 start proxy/proxy.js --name "blockchain-proxy-2028" || pm2 restart "blockchain-proxy-2028"
 else
     node proxy/proxy.js > proxy.log 2>&1 &
     PROXY_PID=$!
@@ -48,7 +48,7 @@ else
 fi
 
 # 5. Start Dashboards
-echo -e "\n[4/4] Starting All 6 Dashboards..."
+echo -e "\n[4/4] Starting All 7 Dashboards..."
 
 start_app() {
     local name="$1"
@@ -74,17 +74,19 @@ start_app "Dashboard Kementerian"   "apps/dashboard-kementerian"              20
 start_app "Dashboard Bank"          "apps/dashboard-bank"                     2022 "npx next dev"
 start_app "Dashboard Auditor"       "apps/dashboard-auditor"                  2023 "npx next dev"
 start_app "Institusi Pendidikan"    "apps/dashboard-institusi-pendidikan"     2024 "npx next dev"
-start_app "Dashboard APBD Lampung"  "apps/dashboard-apbd"                     2027 "npx next dev"
+start_app "Dashboard APBD Lampung"  "apps/dashboard-apbd"                     2025 "npx next dev"
+start_app "Dashboard Admin"         "apps/dashboard-admin"                    2026 "npm run dev"
 
 echo -e "\n=================================================================="
-echo " 🎉 ALL 8 SERVICES & PORTS ARE ACTIVE!"
+echo " 🎉 ALL 9 SERVICES & PORTS ARE ACTIVE!"
 echo "=================================================================="
 echo "  Transparansi Publik      -> http://localhost:2020"
 echo "  Dashboard Kementerian    -> http://localhost:2021/dashboard"
 echo "  Dashboard Bank           -> http://localhost:2022/dashboard"
 echo "  Dashboard Auditor        -> http://localhost:2023/dashboard"
 echo "  Institusi Pendidikan     -> http://localhost:2024/dashboard"
-echo "  Database PostgreSQL      -> Port 2025"
-echo "  Proxy DB API Server      -> http://localhost:2026"
-echo "  Dashboard APBD Lampung   -> http://localhost:2027/dashboard"
+echo "  Dashboard APBD Lampung   -> http://localhost:2025/dashboard"
+echo "  Dashboard Admin          -> http://localhost:2026"
+echo "  Database PostgreSQL      -> Port 2027"
+echo "  Proxy DB API Server      -> http://localhost:2028"
 echo "=================================================================="

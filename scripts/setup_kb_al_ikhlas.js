@@ -1,7 +1,7 @@
 const { Pool } = require('pg');
 
 async function setupKbAlIkhlas() {
-  const pool = new Pool({ connectionString: 'postgresql://postgres@localhost:2025/postgres' });
+  const pool = new Pool({ connectionString: 'postgresql://postgres@localhost:2027/postgres' });
   try {
     const checkRes = await pool.query("SELECT * FROM public.institusi_pendidikan WHERE npsn = $1", ['69893669']);
     console.log('Existing 69893669 rows:', checkRes.rows);
