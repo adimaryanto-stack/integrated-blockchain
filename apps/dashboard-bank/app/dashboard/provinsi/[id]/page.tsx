@@ -102,11 +102,7 @@ export default function ProvinsiDetailPage() {
 
       setProvData(provRow);
 
-      const { data: kabList } = await supabase
-        .from('alokasi_kabupaten_kota')
-        .select('*, kabupaten_kota:kabupaten_kota(*)')
-        .eq('alokasi_provinsi_id', provRow.id);
-
+      const kabList = await getKabkotaByProvinsi(id, activeTahun);
       const sortedKabList = kabList ? [...kabList].sort((a, b) => a.kabupaten_kota.nama_kabupaten_kota.localeCompare(b.kabupaten_kota.nama_kabupaten_kota)) : [];
       setKabkotaList(sortedKabList);
 

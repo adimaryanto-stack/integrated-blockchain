@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import PctBadge from '@/components/ui/PctBadge';
 import { useAppStore } from '@/lib/store';
@@ -25,12 +25,12 @@ export default function KabupatenKotaPage() {
       : [];
     if (yearAllocations.length > 0) {
       return [...yearAllocations].sort((a, b) =>
-        a.provinsi.nama_provinsi.localeCompare(b.provinsi.nama_provinsi, 'id')
+        (a.provinsi?.nama_provinsi || '').localeCompare(b.provinsi?.nama_provinsi || '', 'id')
       );
     }
     const masterList = masterProvinsiData.length > 0
       ? masterProvinsiData
-      : Array.from(new Map(alokasiProvinsiData.map(p => [p.provinsi_id, p.provinsi])).values());
+      : Array.from(new Map(alokasiProvinsiData.map(p => [p.provinsi_id, p.provinsi])).values()).filter(Boolean);
 
     return masterList.map(prov => ({
       id: `prov-draft-${prov.id}-${activeTahunObj?.id || ''}`,
@@ -42,7 +42,7 @@ export default function KabupatenKotaPage() {
       selisih: 0,
       persentase_penyerapan: 0,
       updated_at: new Date().toISOString().split('T')[0],
-    } as AlokasiProvinsi)).sort((a, b) => a.provinsi.nama_provinsi.localeCompare(b.provinsi.nama_provinsi, 'id'));
+    } as AlokasiProvinsi)).sort((a, b) => (a.provinsi?.nama_provinsi || '').localeCompare(b.provinsi?.nama_provinsi || '', 'id'));
   }, [activeTahunObj, dataVersion]);
 
   const [selectedProvinsi, setSelectedProvinsi] = useState(() => sortedProvinsiData[0]?.provinsi_id || 'p-1');
@@ -50,17 +50,22 @@ export default function KabupatenKotaPage() {
   const [editingCell, setEditingCell] = useState<{ id: string; field: 'nominal' | 'realisasi' } | null>(null);
   const [editValue, setEditValue] = useState('');
 
+  // Keep selectedProvinsi aligned if active province list changes
+  useEffect(() => {
+    if (sortedProvinsiData.length > 0 && !sortedProvinsiData.some(p => p.provinsi_id === selectedProvinsi)) {
+      setSelectedProvinsi(sortedProvinsiData[0].provinsi_id);
+    }
+  }, [sortedProvinsiData, selectedProvinsi]);
+
   const rawData = useMemo(() => {
     return getKabkotaByProvinsi(selectedProvinsi, activeTahunObj?.id);
   }, [selectedProvinsi, activeTahunObj, dataVersion]);
 
-  const [prevRawData, setPrevRawData] = useState(rawData);
   const [localData, setLocalData] = useState<AlokasiKabupatenKota[]>(rawData);
 
-  if (rawData !== prevRawData) {
-    setPrevRawData(rawData);
+  useEffect(() => {
     setLocalData(rawData);
-  }
+  }, [rawData]);
 
   const filtered = useMemo(() => {
     let list = localData;
@@ -208,7 +213,10 @@ export default function KabupatenKotaPage() {
     );
   };
 
-  const selectedProvName = alokasiProvinsiData.find(p => p.provinsi_id === selectedProvinsi)?.provinsi.nama_provinsi || '';
+  const selectedProvName = 
+    sortedProvinsiData.find(p => p.provinsi_id === selectedProvinsi)?.provinsi?.nama_provinsi ||
+    alokasiProvinsiData.find(p => p.provinsi_id === selectedProvinsi)?.provinsi?.nama_provinsi ||
+    masterProvinsiData.find(p => p.id === selectedProvinsi)?.nama_provinsi || '';
 
   return (
     <div className="min-h-screen">

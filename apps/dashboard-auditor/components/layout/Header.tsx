@@ -6,6 +6,7 @@ import { useAppStore } from '@/lib/store';
 import { tahunAnggaranData } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
 import { Bell, Search, Menu, CheckCheck, Info, AlertTriangle, Sparkles, Database } from 'lucide-react';
+import { reloadAuditorDb } from '@/components/layout/DashboardDbLoader';
 
 interface HeaderProps {
   title: string;
@@ -70,13 +71,15 @@ export default function Header({ title, subtitle }: HeaderProps) {
     fetchYearsFromDb();
     checkDbHealth();
     const interval = setInterval(checkDbHealth, 10000);
-    window.addEventListener('focus', () => {
+    const handleFocus = () => {
       fetchYearsFromDb();
       checkDbHealth();
-    });
+      reloadAuditorDb();
+    };
+    window.addEventListener('focus', handleFocus);
     return () => {
       clearInterval(interval);
-      window.removeEventListener('focus', fetchYearsFromDb);
+      window.removeEventListener('focus', handleFocus);
     };
   }, []);
 
@@ -156,7 +159,11 @@ export default function Header({ title, subtitle }: HeaderProps) {
             <span className="text-xs text-text-muted">Tahun:</span>
             <select
               value={activeTahun}
-              onChange={(e) => setActiveTahun(Number(e.target.value))}
+              onChange={(e) => {
+                const yr = Number(e.target.value);
+                setActiveTahun(yr);
+                reloadAuditorDb();
+              }}
               className="select-dropdown font-bold text-indigo-700"
             >
               {activeTahunList.map(t => (

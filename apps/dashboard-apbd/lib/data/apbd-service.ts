@@ -106,25 +106,26 @@ export async function checkDatabaseHealth(): Promise<{ ok: boolean; message: str
  */
 export async function getAvailableYearsFromDb(): Promise<{ tahun: number; status: string }[]> {
   try {
-    const { data, error } = await supabase
-      .from('tahun_anggaran')
-      .select('tahun, status')
-      .order('tahun', { ascending: false });
+    const [taRes, apbdRes] = await Promise.all([
+      supabase.from('tahun_anggaran').select('tahun, status').order('tahun', { ascending: false }),
+      supabase.from('apbd_provinsi').select('tahun, status_anggaran').eq('provinsi_id', 'p-8').order('tahun', { ascending: false }),
+    ]);
 
-    if (error || !data || data.length === 0) {
-      const { data: apbdYears } = await supabase
-        .from('apbd_provinsi')
-        .select('tahun, status_anggaran')
-        .eq('provinsi_id', 'p-8')
-        .order('tahun', { ascending: false });
-
-      if (apbdYears && apbdYears.length > 0) {
-        return apbdYears.map((a) => ({ tahun: a.tahun, status: a.status_anggaran }));
+    const yearsMap = new Map<number, string>();
+    (taRes.data || []).forEach((t: any) => yearsMap.set(Number(t.tahun), t.status || 'ACTIVE'));
+    (apbdRes.data || []).forEach((a: any) => {
+      if (!yearsMap.has(Number(a.tahun))) {
+        yearsMap.set(Number(a.tahun), a.status_anggaran || 'ACTIVE');
       }
+    });
+
+    if (yearsMap.size === 0) {
       return [{ tahun: 2026, status: 'ACTIVE' }];
     }
 
-    return data.map((d) => ({ tahun: d.tahun, status: d.status || 'ACTIVE' }));
+    return Array.from(yearsMap.entries())
+      .map(([tahun, status]) => ({ tahun, status }))
+      .sort((a, b) => b.tahun - a.tahun);
   } catch (err) {
     console.error('Error fetching available years:', err);
     return [{ tahun: 2026, status: 'ACTIVE' }];
@@ -228,13 +229,139 @@ export async function upsertApbdProvinsi(payload: {
       updateObj.realisasi_pendidikan_total = payload.realisasi_pendidikan_total;
     }
 
-    const { data, error } = await supabase
+    const { data: upsertData, error } = await supabase
       .from('apbd_provinsi')
       .upsert(updateObj)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
+
+    // Jika proxy mengembalikan null (DO NOTHING pada conflict), re-fetch data dari DB
+    const data = upsertData ?? (await supabase
+      .from('apbd_provinsi')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+      .then(r => r.data));
+
+    if (!data) throw new Error('Gagal mendapatkan data setelah upsert');
+
+    // Sinkronisasi ke tabel tahun_anggaran agar SEMUA 7 dashboard (Kementerian, Auditor, Bank, Institusi, Transparansi, Admin, APBD) langsung update tahunnya
+    const { data: taRow } = await supabase.from('tahun_anggaran').upsert({
+      id: `ta-${payload.tahun}`,
+      tahun: payload.tahun,
+      total_anggaran: payload.total_apbd,
+      status: payload.status_anggaran || 'ACTIVE',
+    }, { onConflict: 'tahun' }).select('id').maybeSingle();
+
+    const taId = taRow?.id || `ta-${payload.tahun}`;
+
+    // Sinkronisasi alokasi ke 38 provinsi di alokasi_provinsi (membagi rata nominal APBN)
+    try {
+      const { data: provList } = await supabase
+        .from('provinsi')
+        .select('id, kode_provinsi, nama_provinsi')
+        .order('id', { ascending: true });
+
+      if (provList && provList.length > 0) {
+        const provCount = provList.length;
+        const totalNum = payload.total_apbd;
+        const baseProvNom = Math.floor(totalNum / provCount);
+        const remProvNom = totalNum % provCount;
+
+        const provRows = provList.map((p, idx) => {
+          const isLampung = p.id === 'p-8';
+          const nom = isLampung ? payload.alokasi_pendidikan_riil : (idx === provCount - 1 ? baseProvNom + remProvNom : baseProvNom);
+          const real = isLampung ? (payload.realisasi_pendidikan_total || 0) : 0;
+          const sel = nom - real;
+          const pct = nom > 0 ? (real / nom) * 100 : 0;
+
+          return {
+            id: `prov-${p.id}-${taId}`,
+            tahun_anggaran_id: taId,
+            provinsi_id: p.id,
+            nominal_alokasi: nom,
+            realisasi_total: real,
+            selisih: sel,
+            persentase_penyerapan: Number(pct.toFixed(1)),
+            updated_at: new Date().toISOString().split('T')[0],
+          };
+        });
+
+        await supabase.from('alokasi_provinsi').upsert(provRows, { onConflict: 'id' });
+      }
+    } catch (eProvs) {
+      console.warn('Warning: Failed to sync alokasi_provinsi for 38 provinces:', eProvs);
+    }
+
+    // Sinkronisasi alokasi pendidikan riil ke 15 Kabupaten/Kota di Lampung (membagi rata sama rata)
+    try {
+      const { data: kabList } = await supabase
+        .from('kabupaten_kota')
+        .select('id, nama_kabupaten_kota, tipe')
+        .eq('provinsi_id', 'p-8')
+        .order('id', { ascending: true });
+
+      if (kabList && kabList.length > 0) {
+        const kabCount = kabList.length;
+        const baseKabNom = Math.floor(payload.alokasi_pendidikan_riil / kabCount);
+        const remKabNom = payload.alokasi_pendidikan_riil % kabCount;
+        const totalReal = payload.realisasi_pendidikan_total || 0;
+        const baseKabReal = Math.floor(totalReal / kabCount);
+        const remKabReal = totalReal % kabCount;
+
+        const breakdownRows = kabList.map((kab, idx) => {
+          const nom = idx === kabCount - 1 ? baseKabNom + remKabNom : baseKabNom;
+          const real = idx === kabCount - 1 ? baseKabReal + remKabReal : baseKabReal;
+          return {
+            id: `apbd-bd-${payload.tahun}-${kab.id}`,
+            apbd_provinsi_id: id,
+            kabupaten_kota_id: kab.id,
+            tahun: payload.tahun,
+            nominal_alokasi: nom,
+            realisasi_total: real,
+            updated_at: new Date().toISOString(),
+          };
+        });
+
+        await supabase.from('apbd_pendidikan_breakdown').upsert(breakdownRows, { onConflict: 'id' });
+      }
+    } catch (eKabs) {
+      console.warn('Warning: Failed to sync apbd_pendidikan_breakdown for 15 kab/kota:', eKabs);
+    }
+
+    // Sinkronisasi ke apbd_yearly_data agar Transparansi Publik melihat tahun baru
+    try {
+      const { data: existingYearly } = await supabase
+        .from('apbd_yearly_data')
+        .select('id')
+        .eq('year', payload.tahun)
+        .maybeSingle();
+
+      if (existingYearly) {
+        await supabase.from('apbd_yearly_data').update({
+          total_budget: (payload.total_apbd / 1_000_000_000_000).toFixed(2),
+          allocated_amount: String(payload.alokasi_pendidikan_riil),
+          disbursed_amount: String(payload.realisasi_pendidikan_total || 0),
+          remaining_amount: String(selisihAlokasi),
+          status: 'PUBLISHED',
+          updated_at: new Date().toISOString(),
+        }).eq('id', existingYearly.id);
+      } else {
+        await supabase.from('apbd_yearly_data').insert({
+          year: payload.tahun,
+          total_budget: (payload.total_apbd / 1_000_000_000_000).toFixed(2),
+          allocated_amount: String(payload.alokasi_pendidikan_riil),
+          disbursed_amount: String(payload.realisasi_pendidikan_total || 0),
+          remaining_amount: String(selisihAlokasi),
+          status: 'PUBLISHED',
+          updated_at: new Date().toISOString(),
+        });
+      }
+    } catch (eYearly) {
+      console.warn('Warning: Failed to sync apbd_yearly_data:', eYearly);
+    }
 
     // Catat log di PostgreSQL
     const logId = `log-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
@@ -266,6 +393,56 @@ export async function upsertApbdProvinsi(payload: {
 }
 
 /**
+ * Hapus data APBD Provinsi beserta breakdown dan log-nya
+ */
+export async function deleteApbdProvinsi(tahun: number): Promise<{ ok: boolean; message: string }> {
+  const id = `apbd-lampung-${tahun}`;
+  try {
+    // 1. Hapus breakdown kabupaten/kota terkait
+    await supabase
+      .from('apbd_pendidikan_breakdown')
+      .delete()
+      .eq('apbd_provinsi_id', id);
+
+    // 2. Hapus audit log terkait
+    await supabase
+      .from('apbd_input_log')
+      .delete()
+      .eq('apbd_provinsi_id', id);
+
+    // 3. Hapus data utama APBD provinsi
+    const { error } = await supabase
+      .from('apbd_provinsi')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+
+    // 4. Hapus dari alokasi_provinsi untuk Lampung
+    await supabase
+      .from('alokasi_provinsi')
+      .delete()
+      .eq('id', `prov-8-${tahun}`);
+
+    // 5. Cek apakah ada APBD tahun ini di data lain. Jika tidak ada, bersihkan juga apbd_yearly_data & tahun_anggaran
+    const { data: remainingApbd } = await supabase
+      .from('apbd_provinsi')
+      .select('id')
+      .eq('tahun', tahun);
+
+    if (!remainingApbd || remainingApbd.length === 0) {
+      await supabase.from('apbd_yearly_data').delete().eq('year', tahun);
+      await supabase.from('tahun_anggaran').delete().eq('tahun', tahun);
+    }
+
+    return { ok: true, message: `Data APBD Tahun ${tahun} berhasil dihapus` };
+  } catch (err: any) {
+    console.error('Error deleting APBD from DB:', err);
+    return { ok: false, message: err?.message || 'Gagal menghapus data' };
+  }
+}
+
+/**
  * Ambil daftar breakdown alokasi 15 Kabupaten/Kota di Lampung dari database
  */
 export async function getBreakdownKabKota(tahun: number): Promise<ApbdBreakdownKabKota[]> {
@@ -279,10 +456,44 @@ export async function getBreakdownKabKota(tahun: number): Promise<ApbdBreakdownK
     if (errKab || !kabList) throw errKab;
 
     const apbdProvId = `apbd-lampung-${tahun}`;
-    const { data: breakdownList } = await supabase
+    let { data: breakdownList } = await supabase
       .from('apbd_pendidikan_breakdown')
       .select('*')
       .eq('apbd_provinsi_id', apbdProvId);
+
+    // Jika belum ada data breakdown atau totalnya 0, ambil alokasi_pendidikan_riil dari apbd_provinsi lalu bagi rata sama rata ke 15 kab/kota
+    const totalBreakdownNominal = (breakdownList || []).reduce((s, b) => s + Number(b.nominal_alokasi || 0), 0);
+    if ((!breakdownList || breakdownList.length === 0 || totalBreakdownNominal === 0) && kabList.length > 0) {
+      const { data: apbdProv } = await supabase
+        .from('apbd_provinsi')
+        .select('alokasi_pendidikan_riil, realisasi_pendidikan_total')
+        .eq('id', apbdProvId)
+        .maybeSingle();
+
+      const alokasiRiil = Number(apbdProv?.alokasi_pendidikan_riil || 0);
+      const realisasiRiil = Number(apbdProv?.realisasi_pendidikan_total || 0);
+
+      if (alokasiRiil > 0) {
+        const kabCount = kabList.length;
+        const baseNom = Math.floor(alokasiRiil / kabCount);
+        const remNom = alokasiRiil % kabCount;
+        const baseReal = Math.floor(realisasiRiil / kabCount);
+        const remReal = realisasiRiil % kabCount;
+
+        const autoRows = kabList.map((kab, idx) => ({
+          id: `apbd-bd-${tahun}-${kab.id}`,
+          apbd_provinsi_id: apbdProvId,
+          kabupaten_kota_id: kab.id,
+          tahun,
+          nominal_alokasi: idx === kabCount - 1 ? baseNom + remNom : baseNom,
+          realisasi_total: idx === kabCount - 1 ? baseReal + remReal : baseReal,
+          updated_at: new Date().toISOString(),
+        }));
+
+        await supabase.from('apbd_pendidikan_breakdown').upsert(autoRows, { onConflict: 'id' });
+        breakdownList = autoRows as any;
+      }
+    }
 
     const breakdownMap = new Map(
       (breakdownList || []).map((b) => [b.kabupaten_kota_id, b])
@@ -497,9 +708,8 @@ export async function getSumberDanaInstitusi(institusiId: string, tahun: number 
  * Format row dari institusi_pendidikan
  */
 function formatInstitusiRow(item: any, tahun: number = 2026): InstitusiPendidikan {
-  const isZeroYear = (tahun === 2027);
-  const nom = isZeroYear ? 0 : Number(item.nominal_alokasi || 0);
-  const real = isZeroYear ? 0 : Number(item.realisasi_total || 0);
+  const nom = Number(item.nominal_alokasi || 0);
+  const real = Number(item.realisasi_total || 0);
   const sel = nom - real;
   const pct = nom > 0 ? (real / nom) * 100 : 0;
   return {
@@ -517,7 +727,7 @@ function formatInstitusiRow(item: any, tahun: number = 2026): InstitusiPendidika
     nominal_alokasi: nom,
     realisasi_total: real,
     selisih: sel,
-    persentase: isZeroYear ? 0 : Number(item.persentase_penyerapan || pct),
+    persentase: Number(item.persentase_penyerapan || pct),
   };
 }
 

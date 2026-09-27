@@ -326,9 +326,41 @@ export async function updateAlokasiProvinsi(id: string, field: string, value: nu
 
   try {
     const provRes = await fetch(`${url}/rest/v1/alokasi_provinsi?id=eq.${id}`, { headers });
-    if (!provRes.ok) throw new Error('Failed to fetch province allocation');
-    const [prov] = await provRes.json();
-    if (!prov) throw new Error('Province allocation not found');
+    const provRows = provRes.ok ? await provRes.json() : [];
+    const prov = provRows[0];
+
+    if (!prov) {
+      // Row belum tersimpan di database alokasi_provinsi — buat baris baru secara otomatis (upsert)
+      const cleanParts = id.replace('prov-draft-', '').replace('prov-', '').split('-');
+      const provId = cleanParts.length > 1 ? `p-${cleanParts[0].replace(/^p-?/, '')}` : 'p-1';
+      const taId = cleanParts.slice(1).join('-') || String(useAppStore.getState().activeTahun);
+
+      const newNominal = field === 'nominal_alokasi' ? value : 0;
+      const newRealisasi = field === 'realisasi_total' ? value : 0;
+      const newSelisih = newNominal - newRealisasi;
+      const newPct = newNominal > 0 ? (newRealisasi / newNominal) * 100 : 0;
+
+      const upsertRes = await fetch(`${url}/rest/v1/alokasi_provinsi`, {
+        method: 'POST',
+        headers: { ...headers, 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify({
+          id,
+          tahun_anggaran_id: String(taId),
+          provinsi_id: provId,
+          nominal_alokasi: newNominal,
+          realisasi_total: newRealisasi,
+          selisih: newSelisih,
+          persentase_penyerapan: Number(newPct.toFixed(1)),
+          updated_at: new Date().toISOString().split('T')[0]
+        }),
+      });
+
+      if (upsertRes.ok) {
+        await initDbConnection(true);
+        useAppStore.getState().incrementVersion();
+      }
+      return;
+    }
 
     const newNominal = field === 'nominal_alokasi' ? value : prov.nominal_alokasi;
     const newRealisasi = field === 'realisasi_total' ? value : prov.realisasi_total;
@@ -426,9 +458,80 @@ export async function updateAlokasiKabupatenKota(id: string, field: string, valu
 
   try {
     const kkRes = await fetch(`${url}/rest/v1/alokasi_kabupaten_kota?id=eq.${id}`, { headers });
-    if (!kkRes.ok) throw new Error('Failed to fetch kabupaten_kota allocation');
-    const [kk] = await kkRes.json();
-    if (!kk) throw new Error('Kabupaten/Kota allocation not found');
+    const kkRows = kkRes.ok ? await kkRes.json() : [];
+    const kk = kkRows[0];
+
+    if (!kk) {
+      // Row belum tersimpan di DB alokasi_kabupaten_kota (misal tahun baru) — lakukan upsert
+      const baseKab = alokasiKabupatenKotaData.find(
+        (k) => k.id === id || id.includes(k.kabupaten_kota_id) || (k.kabupaten_kota && id.includes(k.kabupaten_kota.id))
+      );
+      if (!baseKab) throw new Error(`Kabupaten/Kota with id ${id} not found in master data`);
+
+      const provId = baseKab.kabupaten_kota?.provinsi_id;
+      const activeTahun = useAppStore.getState().activeTahun;
+      const activeTa = tahunAnggaranData.find(t => Number(t.tahun) === Number(activeTahun));
+      const taId = activeTa?.id;
+
+      const provAlloc = alokasiProvinsiData.find(
+        (p) => p.provinsi_id === provId && (p.tahun_anggaran_id === taId || id.includes(p.tahun_anggaran_id))
+      );
+
+      const newNominal = field === 'nominal_alokasi' ? value : 0;
+      const newRealisasi = field === 'realisasi_total' ? value : 0;
+      const newSelisih = newNominal - newRealisasi;
+      const newPct = newNominal > 0 ? (newRealisasi / newNominal) * 100 : 0;
+      const alokasiProvinsiId = provAlloc?.id || baseKab.alokasi_provinsi_id;
+
+      const upsertRes = await fetch(`${url}/rest/v1/alokasi_kabupaten_kota`, {
+        method: 'POST',
+        headers: { ...headers, 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify({
+          id,
+          alokasi_provinsi_id: alokasiProvinsiId,
+          kabupaten_kota_id: baseKab.kabupaten_kota_id,
+          provinsi_nama: baseKab.provinsi_nama,
+          nominal_alokasi: newNominal,
+          realisasi_total: newRealisasi,
+          selisih: newSelisih,
+          persentase_penyerapan: Number(newPct.toFixed(1)),
+          updated_at: new Date().toISOString().split('T')[0]
+        }),
+      });
+
+      if (!upsertRes.ok) {
+        const errText = await upsertRes.text();
+        console.error('Failed to upsert alokasi_kabupaten_kota:', errText);
+        throw new Error('Failed to insert new alokasi_kabupaten_kota: ' + errText);
+      }
+
+      // Cascade update to parent alokasi_provinsi
+      if (alokasiProvinsiId) {
+        const allKabsRes = await fetch(`${url}/rest/v1/alokasi_kabupaten_kota?alokasi_provinsi_id=eq.${alokasiProvinsiId}`, { headers });
+        if (allKabsRes.ok) {
+          const allKabs = await allKabsRes.json();
+          const totalNominalProv = allKabs.reduce((s: number, k: any) => s + (k.id === id ? newNominal : k.nominal_alokasi), 0);
+          const totalRealisasiProv = allKabs.reduce((s: number, k: any) => s + (k.id === id ? newRealisasi : k.realisasi_total), 0);
+          const selisihProv = totalNominalProv - totalRealisasiProv;
+          const pctProv = totalNominalProv > 0 ? (totalRealisasiProv / totalNominalProv) * 100 : 0;
+
+          await fetch(`${url}/rest/v1/alokasi_provinsi?id=eq.${alokasiProvinsiId}`, {
+            method: 'PATCH',
+            headers,
+            body: JSON.stringify({
+              nominal_alokasi: totalNominalProv,
+              realisasi_total: totalRealisasiProv,
+              selisih: selisihProv,
+              persentase_penyerapan: pctProv,
+              updated_at: new Date().toISOString().split('T')[0]
+            })
+          });
+        }
+      }
+
+      await initDbConnection(true);
+      return;
+    }
 
     const newNominal = field === 'nominal_alokasi' ? value : kk.nominal_alokasi;
     const newRealisasi = field === 'realisasi_total' ? value : kk.realisasi_total;
@@ -459,7 +562,6 @@ export async function updateAlokasiKabupatenKota(id: string, field: string, valu
       nilai_lama: fmtRupiah(kk[field]),
       nilai_baru: fmtRupiah(value),
     });
-
 
     const alokasiProvinsiId = kk.alokasi_provinsi_id;
     if (alokasiProvinsiId) {
@@ -517,20 +619,85 @@ export async function updateAlokasiKabupatenKota(id: string, field: string, valu
 
 // Data fetching stubs returning elements from memory cache
 export function getKabkotaByProvinsi(provinsiId: string, tahunAnggaranId?: string | null): AlokasiKabupatenKota[] {
-  if (!tahunAnggaranId) {
-    return alokasiKabupatenKotaData.filter(
-      (item) => item.kabupaten_kota?.provinsi_id === provinsiId
-    );
+  // 1. Ambil daftar unik kabupaten/kota untuk provinsi ini
+  const uniqueKabMap = new Map<string, AlokasiKabupatenKota>();
+  for (const item of alokasiKabupatenKotaData) {
+    const pId = item.kabupaten_kota?.provinsi_id || (item as any).provinsi_id;
+    if (pId === provinsiId) {
+      const kId = item.kabupaten_kota_id || item.kabupaten_kota?.id || item.id;
+      if (kId && !uniqueKabMap.has(kId)) {
+        uniqueKabMap.set(kId, item);
+      }
+    }
   }
-  // Filter by year: resolve alokasi_provinsi rows for this year+province, then match kabkota
-  const provAllocIds = new Set(
-    alokasiProvinsiData
-      .filter(p => String(p.tahun_anggaran_id) === String(tahunAnggaranId) && p.provinsi_id === provinsiId)
-      .map(p => p.id)
+  const baseKabsOfProv = Array.from(uniqueKabMap.values());
+
+  if (!tahunAnggaranId) {
+    return baseKabsOfProv;
+  }
+
+  // 2. Cek baris alokasi provinsi untuk tahunAnggaranId ini
+  const provAllocRows = alokasiProvinsiData.filter(
+    (p) => String(p.tahun_anggaran_id) === String(tahunAnggaranId) && p.provinsi_id === provinsiId
   );
-  return alokasiKabupatenKotaData.filter(
-    (item) => item.alokasi_provinsi_id && provAllocIds.has(item.alokasi_provinsi_id)
-  );
+  const provAllocIds = new Set(provAllocRows.map((p) => p.id));
+
+  // Ambil data kab/kota yang sudah spesifik tersimpan di DB untuk alokasi provinsi tahun ini
+  const savedKabMap = new Map<string, AlokasiKabupatenKota>();
+  for (const item of alokasiKabupatenKotaData) {
+    if (item.alokasi_provinsi_id && provAllocIds.has(item.alokasi_provinsi_id)) {
+      const kId = item.kabupaten_kota_id || item.kabupaten_kota?.id;
+      if (kId) {
+        savedKabMap.set(kId, item);
+      }
+    }
+  }
+
+  // Jika SEMUA kabupaten/kota di provinsi ini sudah memiliki alokasi spesifik di DB, return saved rows
+  if (baseKabsOfProv.length > 0 && savedKabMap.size >= baseKabsOfProv.length) {
+    return Array.from(savedKabMap.values());
+  }
+
+  // 3. Fallback / Distribusi Rata:
+  // Ambil nominal provinsi tahun ini
+  const provAlloc = provAllocRows[0];
+  const provNominal = provAlloc ? Number(provAlloc.nominal_alokasi || 0) : 0;
+  const provRealisasi = provAlloc ? Number(provAlloc.realisasi_total || 0) : 0;
+
+  if (baseKabsOfProv.length > 0) {
+    const count = baseKabsOfProv.length;
+    const baseNom = Math.floor(provNominal / count);
+    const remNom = provNominal % count;
+    const baseReal = Math.floor(provRealisasi / count);
+    const remReal = provRealisasi % count;
+
+    return baseKabsOfProv.map((k, idx) => {
+      const kId = k.kabupaten_kota_id || k.kabupaten_kota?.id || k.id;
+      // Jika kabupaten ini sudah punya data tersimpan spesifik di DB dengan nominal > 0, gunakan itu
+      if (savedKabMap.has(kId)) {
+        return savedKabMap.get(kId)!;
+      }
+
+      // Default: bagi rata alokasi provinsi
+      const nom = idx === count - 1 ? baseNom + remNom : baseNom;
+      const real = idx === count - 1 ? baseReal + remReal : baseReal;
+      const sel = nom - real;
+      const pct = nom > 0 ? (real / nom) * 100 : 0;
+
+      return {
+        ...k,
+        id: `akk-${kId}-${tahunAnggaranId}`,
+        alokasi_provinsi_id: provAlloc?.id || k.alokasi_provinsi_id,
+        nominal_alokasi: nom,
+        realisasi_total: real,
+        selisih: sel,
+        persentase_penyerapan: Number(pct.toFixed(1)),
+        updated_at: new Date().toISOString().split('T')[0],
+      };
+    });
+  }
+
+  return baseKabsOfProv;
 }
 
 export function getAllKabkota(): AlokasiKabupatenKota[] {
@@ -1392,6 +1559,60 @@ export async function updateTahunAnggaran(id: string, updates: Partial<TahunAngg
   }
 }
 
+/**
+ * Membagi rata total APBN ke 38 provinsi di alokasi_provinsi
+ */
+export async function initAlokasiProvinsiEqualShare(tahunAnggaranId: string, totalAnggaran: number) {
+  const { url, anonKey } = getSupabaseConfig();
+  const headers = {
+    'apikey': anonKey,
+    'Authorization': `Bearer ${anonKey}`,
+    'Content-Type': 'application/json',
+    'Prefer': 'resolution=merge-duplicates',
+  };
+
+  try {
+    const provsRes = await fetch(`${url}/rest/v1/provinsi?select=*&order=id.asc`, { headers });
+    if (!provsRes.ok) return false;
+    const provs = await provsRes.json();
+    if (!Array.isArray(provs) || provs.length === 0) return false;
+
+    const count = provs.length;
+    const baseNom = count > 0 ? Math.floor(totalAnggaran / count) : 0;
+    const remNom = count > 0 ? totalAnggaran % count : 0;
+
+    const rows = provs.map((p: any, idx: number) => {
+      const nom = idx === count - 1 ? baseNom + remNom : baseNom;
+      return {
+        id: `prov-${p.id}-${tahunAnggaranId}`,
+        tahun_anggaran_id: tahunAnggaranId,
+        provinsi_id: p.id,
+        nominal_alokasi: nom,
+        realisasi_total: 0,
+        selisih: nom,
+        persentase_penyerapan: 0,
+        updated_at: new Date().toISOString().split('T')[0],
+      };
+    });
+
+    const res = await fetch(`${url}/rest/v1/alokasi_provinsi`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(rows),
+    });
+
+    if (res.ok) {
+      await initDbConnection(true);
+      useAppStore.getState().incrementVersion();
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error('Failed to init alokasi_provinsi equal share:', err);
+    return false;
+  }
+}
+
 export async function createTahunAnggaran(tahun: number, total_anggaran: number | string) {
   const { url, anonKey } = getSupabaseConfig();
   try {
@@ -1412,6 +1633,9 @@ export async function createTahunAnggaran(tahun: number, total_anggaran: number 
       }),
     });
     if (res.ok) {
+      // Otomatis membagi jumlah APBN sama rata ke 38 provinsi di alokasi_provinsi
+      await initAlokasiProvinsiEqualShare(genId, Number(total_anggaran));
+
       const currentUser = useAppStore.getState().currentUser;
       useAppStore.getState().addAuditLog({
         user_nama: currentUser.username,

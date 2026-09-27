@@ -294,6 +294,10 @@ function buildBaseQuery(table, selectParam) {
   } else if (table === 'alokasi_provinsi') {
     return `
       SELECT ap.*,
+        COALESCE(
+          (SELECT ta.tahun FROM tahun_anggaran ta WHERE ta.id = ap.tahun_anggaran_id LIMIT 1),
+          NULLIF(regexp_replace(ap.tahun_anggaran_id, '^ta-', ''), '')::integer
+        ) as tahun,
         (SELECT json_build_object('id', p.id, 'kode_provinsi', p.kode_provinsi, 'nama_provinsi', p.nama_provinsi)
          FROM provinsi p WHERE p.id = ap.provinsi_id) as provinsi
       FROM alokasi_provinsi ap
@@ -301,6 +305,7 @@ function buildBaseQuery(table, selectParam) {
   } else if (table === 'alokasi_kabupaten_kota') {
     return `
       SELECT akk.*,
+        (SELECT ta.tahun FROM alokasi_provinsi ap JOIN tahun_anggaran ta ON ta.id = ap.tahun_anggaran_id WHERE ap.id = akk.alokasi_provinsi_id LIMIT 1) as tahun,
         (SELECT json_build_object('id', kk.id, 'provinsi_id', kk.provinsi_id, 'kode_kabupaten_kota', kk.kode_kabupaten_kota, 'nama_kabupaten_kota', kk.nama_kabupaten_kota, 'tipe', kk.tipe)
          FROM kabupaten_kota kk WHERE kk.id = akk.kabupaten_kota_id) as kabupaten_kota
       FROM alokasi_kabupaten_kota akk
@@ -456,6 +461,11 @@ app.all('/rest/v1/:table', async (req, res) => {
       else if (table === 'audit_anomaly') onConflict = 'ON CONFLICT (id) DO UPDATE SET status = EXCLUDED.status, nominal_selisih = EXCLUDED.nominal_selisih, tingkat_keparahan = EXCLUDED.tingkat_keparahan';
       else if (table === 'school_likes') onConflict = 'ON CONFLICT (npsn, device_id) DO NOTHING';
       else if (table === 'schools') onConflict = 'ON CONFLICT (npsn) DO UPDATE SET name = EXCLUDED.name, location = EXCLUDED.location, accreditation = EXCLUDED.accreditation';
+      // APBD tables — full upsert (merge-duplicates) required by supabase-js client
+      else if (table === 'apbd_provinsi') onConflict = 'ON CONFLICT (id) DO UPDATE SET total_apbd = EXCLUDED.total_apbd, alokasi_pendidikan_riil = EXCLUDED.alokasi_pendidikan_riil, realisasi_pendidikan_total = COALESCE(EXCLUDED.realisasi_pendidikan_total, apbd_provinsi.realisasi_pendidikan_total), status_kepatuhan = EXCLUDED.status_kepatuhan, status_anggaran = EXCLUDED.status_anggaran, diinput_oleh = EXCLUDED.diinput_oleh, catatan = EXCLUDED.catatan, updated_at = EXCLUDED.updated_at';
+      else if (table === 'apbd_pendidikan_breakdown') onConflict = 'ON CONFLICT (id) DO UPDATE SET nominal_alokasi = EXCLUDED.nominal_alokasi, realisasi_total = EXCLUDED.realisasi_total, updated_at = EXCLUDED.updated_at';
+      else if (table === 'apbd_input_log') onConflict = 'ON CONFLICT (id) DO NOTHING';
+      else if (table === 'apbd_yearly_data') onConflict = 'ON CONFLICT (id) DO UPDATE SET total_budget = EXCLUDED.total_budget, allocated_amount = EXCLUDED.allocated_amount, disbursed_amount = EXCLUDED.disbursed_amount, remaining_amount = EXCLUDED.remaining_amount, updated_at = EXCLUDED.updated_at';
 
       const sql = `INSERT INTO "${table}" (${columns.map(c => `"${c}"`).join(', ')}) VALUES ${rowPlaceholders.join(', ')} ${onConflict} RETURNING *`;
       // console.log(`[Proxy SQL] Insert into ${table} with ${items.length} row(s)`);

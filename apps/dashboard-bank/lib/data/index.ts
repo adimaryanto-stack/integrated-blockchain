@@ -283,32 +283,97 @@ export async function getKabkotaByProvinsi(
 
   const { data: provAlloc } = await supabase
     .from('alokasi_provinsi')
-    .select('id')
+    .select('*, provinsi:provinsi(*)')
     .eq('provinsi_id', provinsiId)
     .eq('tahun_anggaran_id', yearRow.id)
-    .single();
-  if (!provAlloc) return [];
+    .maybeSingle();
 
-  const { data, error } = await supabase
-    .from('alokasi_kabupaten_kota')
-    .select('*, kabupaten_kota:kabupaten_kota(*)')
-    .eq('alokasi_provinsi_id', provAlloc.id);
-  
-  if (error) throw error;
-  return (data || []).map((row: any) => {
-    const nominal = Number(row.nominal_alokasi || 0);
-    const realisasi = Number(row.realisasi_total || 0);
+  // Ambil semua master kabupaten/kota untuk provinsi ini
+  const { data: masterKabs } = await supabase
+    .from('kabupaten_kota')
+    .select('*')
+    .eq('provinsi_id', provinsiId)
+    .order('nama_kabupaten_kota', { ascending: true });
+
+  const kabsList = masterKabs || [];
+  if (kabsList.length === 0) return [];
+
+  // Ambil data spesifik di alokasi_kabupaten_kota jika sudah ada
+  let savedRows: any[] = [];
+  if (provAlloc) {
+    const { data: existingRows } = await supabase
+      .from('alokasi_kabupaten_kota')
+      .select('*, kabupaten_kota:kabupaten_kota(*)')
+      .eq('alokasi_provinsi_id', provAlloc.id);
+    savedRows = existingRows || [];
+  }
+
+  // Jika semua kab/kota sudah tersimpan di database dan ada nominal > 0
+  if (savedRows.length >= kabsList.length && savedRows.some((r: any) => Number(r.nominal_alokasi) > 0)) {
+    return savedRows.map((row: any) => {
+      const nominal = Number(row.nominal_alokasi || 0);
+      const realisasi = Number(row.realisasi_total || 0);
+      return {
+        id: row.id,
+        alokasi_provinsi_id: row.alokasi_provinsi_id,
+        kabupaten_kota_id: row.kabupaten_kota_id,
+        kabupaten_kota: row.kabupaten_kota || { id: row.kabupaten_kota_id, nama_kabupaten_kota: 'Kab/Kota', tipe: 'KABUPATEN' },
+        provinsi_nama: row.provinsi_nama || provAlloc?.provinsi?.nama_provinsi || '',
+        nominal_alokasi: nominal,
+        realisasi_total: realisasi,
+        selisih: nominal - realisasi,
+        persentase_penyerapan: nominal > 0 ? (realisasi / nominal) * 100 : 0,
+        updated_at: row.updated_at || '',
+      };
+    });
+  }
+
+  // Fallback / Auto-distribusi: Bagi rata alokasi provinsi ke seluruh kabupaten/kota
+  const savedMap = new Map<string, any>(savedRows.map((r: any) => [r.kabupaten_kota_id, r]));
+  const provNominal = provAlloc ? Number(provAlloc.nominal_alokasi || 0) : 0;
+  const provRealisasi = provAlloc ? Number(provAlloc.realisasi_total || 0) : 0;
+  const count = kabsList.length;
+  const baseNom = Math.floor(provNominal / count);
+  const remNom = provNominal % count;
+  const baseReal = Math.floor(provRealisasi / count);
+  const remReal = provRealisasi % count;
+  const provName = provAlloc?.provinsi?.nama_provinsi || '';
+
+  return kabsList.map((k: any, idx: number) => {
+    if (savedMap.has(k.id)) {
+      const row = savedMap.get(k.id);
+      const nominal = Number(row.nominal_alokasi || 0);
+      const realisasi = Number(row.realisasi_total || 0);
+      return {
+        id: row.id,
+        alokasi_provinsi_id: row.alokasi_provinsi_id,
+        kabupaten_kota_id: row.kabupaten_kota_id,
+        kabupaten_kota: row.kabupaten_kota || k,
+        provinsi_nama: row.provinsi_nama || provName,
+        nominal_alokasi: nominal,
+        realisasi_total: realisasi,
+        selisih: nominal - realisasi,
+        persentase_penyerapan: nominal > 0 ? (realisasi / nominal) * 100 : 0,
+        updated_at: row.updated_at || '',
+      };
+    }
+
+    const nom = idx === count - 1 ? baseNom + remNom : baseNom;
+    const real = idx === count - 1 ? baseReal + remReal : baseReal;
+    const sel = nom - real;
+    const pct = nom > 0 ? (real / nom) * 100 : 0;
+
     return {
-      id: row.id,
-      alokasi_provinsi_id: row.alokasi_provinsi_id,
-      kabupaten_kota_id: row.kabupaten_kota_id,
-      kabupaten_kota: row.kabupaten_kota || { id: row.kabupaten_kota_id, nama_kabupaten_kota: 'Kab/Kota', tipe: 'KABUPATEN' },
-      provinsi_nama: row.provinsi_nama || '',
-      nominal_alokasi: nominal,
-      realisasi_total: realisasi,
-      selisih: nominal - realisasi,
-      persentase_penyerapan: nominal > 0 ? (realisasi / nominal) * 100 : 0,
-      updated_at: row.updated_at || '',
+      id: `akk-${k.id}-${yearRow.id}`,
+      alokasi_provinsi_id: provAlloc?.id || `prov-draft-${provinsiId}-${yearRow.id}`,
+      kabupaten_kota_id: k.id,
+      kabupaten_kota: k,
+      provinsi_nama: provName,
+      nominal_alokasi: nom,
+      realisasi_total: real,
+      selisih: sel,
+      persentase_penyerapan: Number(pct.toFixed(1)),
+      updated_at: new Date().toISOString().split('T')[0],
     };
   });
 }
@@ -323,34 +388,43 @@ export async function getAllKabkota(tahun: number = 2026): Promise<AlokasiKabupa
 
   const { data: provAllocs } = await supabase
     .from('alokasi_provinsi')
-    .select('id')
+    .select('id, provinsi_id, nominal_alokasi, realisasi_total, provinsi:provinsi(*)')
     .eq('tahun_anggaran_id', yearRow.id);
   
   if (!provAllocs || provAllocs.length === 0) return [];
   const provAllocIds = provAllocs.map(p => p.id);
 
-  const { data, error } = await supabase
+  const { data: dbKabs } = await supabase
     .from('alokasi_kabupaten_kota')
     .select('*, kabupaten_kota:kabupaten_kota(*)')
     .in('alokasi_provinsi_id', provAllocIds);
   
-  if (error) throw error;
-  return (data || []).map((row: any) => {
-    const nominal = Number(row.nominal_alokasi || 0);
-    const realisasi = Number(row.realisasi_total || 0);
-    return {
-      id: row.id,
-      alokasi_provinsi_id: row.alokasi_provinsi_id,
-      kabupaten_kota_id: row.kabupaten_kota_id,
-      kabupaten_kota: row.kabupaten_kota || { id: row.kabupaten_kota_id, nama_kabupaten_kota: 'Kab/Kota', tipe: 'KABUPATEN' },
-      provinsi_nama: row.provinsi_nama || '',
-      nominal_alokasi: nominal,
-      realisasi_total: realisasi,
-      selisih: nominal - realisasi,
-      persentase_penyerapan: nominal > 0 ? (realisasi / nominal) * 100 : 0,
-      updated_at: row.updated_at || '',
-    };
-  });
+  if (dbKabs && dbKabs.length >= 514) {
+    return dbKabs.map((row: any) => {
+      const nominal = Number(row.nominal_alokasi || 0);
+      const realisasi = Number(row.realisasi_total || 0);
+      return {
+        id: row.id,
+        alokasi_provinsi_id: row.alokasi_provinsi_id,
+        kabupaten_kota_id: row.kabupaten_kota_id,
+        kabupaten_kota: row.kabupaten_kota || { id: row.kabupaten_kota_id, nama_kabupaten_kota: 'Kab/Kota', tipe: 'KABUPATEN' },
+        provinsi_nama: row.provinsi_nama || '',
+        nominal_alokasi: nominal,
+        realisasi_total: realisasi,
+        selisih: nominal - realisasi,
+        persentase_penyerapan: nominal > 0 ? (realisasi / nominal) * 100 : 0,
+        updated_at: row.updated_at || '',
+      };
+    });
+  }
+
+  // Jika belum ada alokasi per kabkota di DB untuk tahun ini (2027+), generate via getKabkotaByProvinsi
+  const results: AlokasiKabupatenKota[] = [];
+  for (const p of provAllocs) {
+    const kabs = await getKabkotaByProvinsi(p.provinsi_id, tahun);
+    results.push(...kabs);
+  }
+  return results;
 }
 
 export async function getInstitusiByJenjang(jenjang: Jenjang): Promise<InstitusiPendidikan[]> {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, AlertCircle, Save, Landmark } from 'lucide-react';
 import { formatRupiah, fmtTriliun } from '@/lib/utils/formatters';
 import { upsertApbdProvinsi } from '@/lib/data/apbd-service';
@@ -23,13 +23,24 @@ export default function ApbdInputModal({
   initialRealisasi = 1420000000000,
   tahun,
 }: ApbdInputModalProps) {
-  const { triggerRefresh } = useAppStore();
+  const { triggerRefresh, setActiveTahun } = useAppStore();
+  const [currentTahun, setCurrentTahun] = useState<number>(tahun);
   const [totalApbd, setTotalApbd] = useState<number>(initialTotalApbd);
   const [alokasiRiil, setAlokasiRiil] = useState<number>(initialAlokasiRiil);
   const [realisasi, setRealisasi] = useState<number>(initialRealisasi);
   const [catatan, setCatatan] = useState<string>(`Perda APBD Provinsi Lampung Tahun ${tahun}`);
   const [saving, setSaving] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Reset semua state saat tahun atau initial values berubah (pindah ke tahun lain)
+  useEffect(() => {
+    setCurrentTahun(tahun);
+    setTotalApbd(initialTotalApbd);
+    setAlokasiRiil(initialAlokasiRiil);
+    setRealisasi(initialRealisasi);
+    setCatatan(`Perda APBD Provinsi Lampung Tahun ${tahun}`);
+    setErrorMsg(null);
+  }, [tahun, initialTotalApbd, initialAlokasiRiil, initialRealisasi]);
 
   if (!isOpen) return null;
 
@@ -44,12 +55,16 @@ export default function ApbdInputModal({
       setErrorMsg('Total APBD harus lebih besar dari 0');
       return;
     }
+    if (!currentTahun || currentTahun < 2000 || currentTahun > 2100) {
+      setErrorMsg('Tahun anggaran tidak valid');
+      return;
+    }
 
     setSaving(true);
     setErrorMsg(null);
 
     const res = await upsertApbdProvinsi({
-      tahun,
+      tahun: currentTahun,
       total_apbd: totalApbd,
       alokasi_pendidikan_riil: alokasiRiil,
       realisasi_pendidikan_total: realisasi,
@@ -60,6 +75,7 @@ export default function ApbdInputModal({
     setSaving(false);
 
     if (res) {
+      setActiveTahun(currentTahun);
       triggerRefresh();
       onClose();
     } else {
@@ -96,6 +112,26 @@ export default function ApbdInputModal({
         )}
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          {/* Tahun Anggaran */}
+          <div>
+            <label className="block text-xs font-semibold text-text-secondary mb-1">
+              Tahun Anggaran
+            </label>
+            <input
+              type="number"
+              min={2020}
+              max={2035}
+              value={currentTahun}
+              onChange={(e) => {
+                const y = Number(e.target.value);
+                setCurrentTahun(y);
+                setCatatan(`Perda APBD Provinsi Lampung Tahun ${y}`);
+              }}
+              className="w-full px-3 py-2 text-sm font-mono font-bold text-indigo-700 bg-white border border-border rounded-lg focus:outline-none focus:border-accent"
+              required
+            />
+          </div>
+
           {/* Total APBD */}
           <div>
             <label className="block text-xs font-semibold text-text-secondary mb-1">

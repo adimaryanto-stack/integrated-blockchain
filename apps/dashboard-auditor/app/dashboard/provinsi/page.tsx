@@ -9,6 +9,8 @@ import { alokasiProvinsiData, tahunAnggaranData, getBaseTahun, getTahunOrBase } 
 import { fmtRupiah, fmtTriliun } from '@/lib/utils/formatters';
 import { AlokasiProvinsi } from '@/types';
 import { Search, Download, RefreshCw } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { reloadAuditorDb } from '@/components/layout/DashboardDbLoader';
 
 export default function ProvinsiPage() {
   const { activeTahun, isSupabaseMode, dbData } = useAppStore();
@@ -75,7 +77,39 @@ export default function ProvinsiPage() {
 
   useEffect(() => {
     setData(realProvinsiData);
-  }, [realProvinsiData]);
+    if (realProvinsiData.length === 0) {
+      supabase
+        .from('tahun_anggaran')
+        .select('*')
+        .eq('tahun', activeTahun)
+        .maybeSingle()
+        .then(async ({ data: yData }) => {
+          if (yData) {
+            const { data: pData } = await supabase
+              .from('alokasi_provinsi')
+              .select('*, provinsi:provinsi(*)')
+              .eq('tahun_anggaran_id', yData.id);
+            if (pData && pData.length > 0) {
+              setData(pData.map((ap: any) => {
+                const nominal = Number(ap.nominal_alokasi || 0);
+                const realisasi = Number(ap.realisasi_total || 0);
+                return {
+                  id: ap.id,
+                  tahun_anggaran_id: ap.tahun_anggaran_id,
+                  provinsi_id: ap.provinsi_id,
+                  provinsi: ap.provinsi || { id: ap.provinsi_id, kode_provinsi: '', nama_provinsi: 'Provinsi' },
+                  nominal_alokasi: nominal,
+                  realisasi_total: realisasi,
+                  selisih: nominal - realisasi,
+                  persentase_penyerapan: nominal > 0 ? (realisasi / nominal) * 100 : 0,
+                  updated_at: ap.updated_at,
+                };
+              }));
+            }
+          }
+        });
+    }
+  }, [realProvinsiData, activeTahun]);
 
   const [search, setSearch] = useState('');
 
@@ -114,7 +148,7 @@ export default function ProvinsiPage() {
             />
           </div>
           <span className="text-xs text-text-muted flex-1">{filtered.length} provinsi</span>
-          <button className="btn btn-ghost" onClick={() => setData(realProvinsiData)}>
+          <button className="btn btn-ghost" onClick={() => reloadAuditorDb()}>
             <RefreshCw size={14} />
             Refresh
           </button>

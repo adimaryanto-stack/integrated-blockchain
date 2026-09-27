@@ -99,14 +99,20 @@ export default function KabupatenKotaPage() {
           };
         }));
 
-        // 2. Update DB
+        // 2. Update DB with upsert for draft/virtual rows
         const { error: kabError } = await supabase
           .from('alokasi_kabupaten_kota')
-          .update({
+          .upsert({
+            id: target.id,
+            alokasi_provinsi_id: target.alokasi_provinsi_id,
+            kabupaten_kota_id: target.kabupaten_kota_id,
+            provinsi_nama: target.provinsi_nama,
             nominal_alokasi: nominal,
             realisasi_total: realisasi,
-          })
-          .eq('id', editingCell.id);
+            selisih: nominal - realisasi,
+            persentase_penyerapan: nominal > 0 ? Math.round((realisasi / nominal) * 1000) / 10 : 0,
+            updated_at: new Date().toISOString().split('T')[0]
+          });
 
         if (kabError) {
           console.error(kabError);

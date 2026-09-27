@@ -20,33 +20,53 @@ export default function ProvinsiPage() {
   const realProvinsiData = useMemo(() => {
     if (!activeTahunObj) return [];
     const yearAllocations = alokasiProvinsiData.filter(p => String(p.tahun_anggaran_id) === String(activeTahunObj.id));
-    if (yearAllocations.length > 0) {
+    const hasNonZero = yearAllocations.some(p => Number(p.nominal_alokasi) > 0);
+    if (yearAllocations.length > 0 && hasNonZero) {
       return yearAllocations;
     }
 
-    // Jika tahun belum memiliki alokasi di DB (misal 2027), tampilkan master 38 provinsi dengan nominal Rp 0
+    // Jika tahun belum memiliki alokasi di DB atau masih bernilai 0 (misal 2027), otomatis bagi rata ke 38 provinsi
     const masterList = masterProvinsiData.length > 0
       ? masterProvinsiData
       : Array.from(new Map(alokasiProvinsiData.map(p => [p.provinsi_id, p.provinsi])).values());
 
-    return masterList.map(prov => ({
-      id: `prov-draft-${prov.id}-${activeTahunObj.id}`,
-      tahun_anggaran_id: activeTahunObj.id,
-      provinsi_id: prov.id,
-      provinsi: prov,
-      nominal_alokasi: 0,
-      realisasi_total: 0,
-      selisih: 0,
-      persentase_penyerapan: 0,
-      updated_at: new Date().toISOString().split('T')[0],
-    } as AlokasiProvinsi));
+    const totalTA = Number(activeTahunObj.total_anggaran || 0);
+    const count = masterList.length || 38;
+    const baseNom = count > 0 ? Math.floor(totalTA / count) : 0;
+    const remNom = count > 0 ? totalTA % count : 0;
+
+    return masterList.map((prov, idx) => {
+      const nom = idx === count - 1 ? baseNom + remNom : baseNom;
+      return {
+        id: `prov-${prov.id}-${activeTahunObj.id}`,
+        tahun_anggaran_id: activeTahunObj.id,
+        provinsi_id: prov.id,
+        provinsi: prov,
+        nominal_alokasi: nom,
+        realisasi_total: 0,
+        selisih: nom,
+        persentase_penyerapan: 0,
+        updated_at: new Date().toISOString().split('T')[0],
+      } as AlokasiProvinsi;
+    });
   }, [activeTahunObj, dataVersion]);
 
   const [data, setData] = useState<AlokasiProvinsi[]>(realProvinsiData);
 
   useEffect(() => {
     setData(realProvinsiData);
-  }, [realProvinsiData]);
+
+    // Auto-persist ke database alokasi_provinsi jika data di DB belum ada alokasi > 0
+    if (activeTahunObj && Number(activeTahunObj.total_anggaran) > 0) {
+      const yearAllocations = alokasiProvinsiData.filter(p => String(p.tahun_anggaran_id) === String(activeTahunObj.id));
+      const hasAlloc = yearAllocations.some(p => Number(p.nominal_alokasi) > 0);
+      if (!hasAlloc) {
+        import('@/lib/data').then(({ initAlokasiProvinsiEqualShare }) => {
+          initAlokasiProvinsiEqualShare(activeTahunObj.id, Number(activeTahunObj.total_anggaran));
+        });
+      }
+    }
+  }, [realProvinsiData, activeTahunObj]);
 
   const [search, setSearch] = useState('');
   const [editingCell, setEditingCell] = useState<{ id: string; field: 'nominal' | 'realisasi' } | null>(null);

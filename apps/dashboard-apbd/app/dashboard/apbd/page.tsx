@@ -7,16 +7,19 @@ import PctBadge from '@/components/ui/PctBadge';
 import ApbdInputModal from '@/components/ui/ApbdInputModal';
 import { useAppStore } from '@/lib/store';
 import { fmtTriliun, formatRupiah } from '@/lib/utils/formatters';
-import { getAllApbdProvinsi, ApbdProvinsi } from '@/lib/data/apbd-service';
+import { getAllApbdProvinsi, deleteApbdProvinsi, ApbdProvinsi } from '@/lib/data/apbd-service';
 import {
   DollarSign,
   Plus,
   Edit2,
+  Trash2,
+  AlertTriangle,
   Calendar,
   CheckCircle2,
   AlertCircle,
   FileSpreadsheet,
   Lock,
+  X,
 } from 'lucide-react';
 
 export default function ApbdPertahunPage() {
@@ -24,13 +27,23 @@ export default function ApbdPertahunPage() {
   const [apbdList, setApbdList] = useState<ApbdProvinsi[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
-  const [editYear, setEditYear] = useState<number>(2026);
+  const [editYear, setEditYear] = useState<number>(new Date().getFullYear() + 1);
+
+  // Delete confirm state
+  const [deleteTarget, setDeleteTarget] = useState<ApbdProvinsi | null>(null);
+  const [deleting, setDeleting] = useState<boolean>(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
       setLoading(true);
       const data = await getAllApbdProvinsi();
       setApbdList(data);
+      // Auto-suggest tahun baru = tahun terbesar yang sudah ada + 1
+      if (data.length > 0) {
+        const maxTahun = Math.max(...data.map(d => d.tahun));
+        setEditYear(maxTahun + 1);
+      }
       setLoading(false);
     }
     load();
@@ -39,6 +52,32 @@ export default function ApbdPertahunPage() {
   const handleOpenEdit = (tahun: number) => {
     setEditYear(tahun);
     setModalOpen(true);
+  };
+
+  const handleDeleteClick = (item: ApbdProvinsi) => {
+    setDeleteTarget(item);
+    setDeleteError(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setDeleteError(null);
+    const result = await deleteApbdProvinsi(deleteTarget.tahun);
+    setDeleting(false);
+    if (result.ok) {
+      setDeleteTarget(null);
+      // Jika tahun yang dihapus adalah tahun aktif, reset ke tahun sebelumnya
+      if (deleteTarget.tahun === activeTahun) {
+        const remaining = apbdList.filter(a => a.tahun !== deleteTarget.tahun);
+        if (remaining.length > 0) {
+          setActiveTahun(Math.max(...remaining.map(a => a.tahun)));
+        }
+      }
+      triggerRefresh();
+    } else {
+      setDeleteError(result.message);
+    }
   };
 
   const selectedYearData = apbdList.find((a) => a.tahun === editYear);
@@ -60,13 +99,26 @@ export default function ApbdPertahunPage() {
             </p>
           </div>
 
-          <button
-            onClick={() => handleOpenEdit(activeTahun)}
-            className="btn btn-primary text-xs"
-          >
-            <Plus size={14} />
-            <span>Tambah / Edit Tahun Anggaran</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              <label className="text-xs font-semibold text-text-secondary">Tahun:</label>
+              <input
+                type="number"
+                min={2020}
+                max={2035}
+                value={editYear}
+                onChange={(e) => setEditYear(Number(e.target.value))}
+                className="w-24 px-2 py-1.5 text-sm font-mono border border-border rounded-lg focus:outline-none focus:border-accent bg-white"
+              />
+            </div>
+            <button
+              onClick={() => handleOpenEdit(editYear)}
+              className="btn btn-primary text-xs"
+            >
+              <Plus size={14} />
+              <span>Tambah / Edit Tahun Anggaran</span>
+            </button>
+          </div>
         </div>
 
         {/* Table List of Years */}
@@ -83,7 +135,7 @@ export default function ApbdPertahunPage() {
                   <th className="sheet-header-cell text-right">Realisasi</th>
                   <th className="sheet-header-cell text-center">% Pendidikan</th>
                   <th className="sheet-header-cell text-center">Kepatuhan</th>
-                  <th className="sheet-header-cell text-center" style={{ width: 120 }}>Aksi</th>
+                  <th className="sheet-header-cell text-center" style={{ width: 140 }}>Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -143,7 +195,7 @@ export default function ApbdPertahunPage() {
                         </span>
                       </td>
                       <td className="sheet-cell text-center">
-                        <div className="flex items-center justify-center gap-1.5">
+                        <div className="flex items-center justify-center gap-1">
                           <button
                             onClick={() => {
                               setActiveTahun(item.tahun);
@@ -160,6 +212,13 @@ export default function ApbdPertahunPage() {
                             title="Edit Data Anggaran"
                           >
                             <Edit2 size={12} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(item)}
+                            className="btn btn-ghost text-[11px] py-1 px-2 text-rose-500 hover:bg-rose-50 hover:text-rose-700"
+                            title="Hapus Data Anggaran"
+                          >
+                            <Trash2 size={12} />
                           </button>
                         </div>
                       </td>
@@ -181,6 +240,121 @@ export default function ApbdPertahunPage() {
         initialRealisasi={selectedYearData?.realisasi_pendidikan_total || 1420000000000}
         tahun={editYear}
       />
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div className="modal-overlay">
+          <div className="modal-content animate-fade-in-up max-w-sm">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600">
+                  <Trash2 size={18} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-text-primary">Hapus Data APBD</h3>
+                  <p className="text-xs text-text-muted">Tahun Anggaran {deleteTarget.tahun}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setDeleteTarget(null); setDeleteError(null); }}
+                className="p-1 rounded-lg hover:bg-slate-100 text-text-muted hover:text-text-primary transition"
+                disabled={deleting}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Warning */}
+            <div className="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3">
+              <AlertTriangle size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="text-xs text-amber-800 space-y-1">
+                <p className="font-semibold">Tindakan ini tidak dapat dibatalkan!</p>
+                <p>Semua data APBD Tahun <strong>{deleteTarget.tahun}</strong> akan dihapus permanen, termasuk:</p>
+                <ul className="list-disc list-inside space-y-0.5 mt-1 text-amber-700">
+                  <li>Data anggaran provinsi (Total: {fmtTriliun(deleteTarget.total_apbd)})</li>
+                  <li>Breakdown alokasi kabupaten/kota</li>
+                  <li>Riwayat audit log input</li>
+                </ul>
+                {deleteTarget.tahun === activeTahun && (
+                  <p className="mt-2 font-semibold text-rose-700">
+                    ⚠ Ini adalah tahun anggaran yang sedang aktif!
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Error */}
+            {deleteError && (
+              <div className="mt-3 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                <AlertCircle size={14} />
+                <span>{deleteError}</span>
+              </div>
+            )}
+
+            {/* Confirm input */}
+            <p className="mt-4 text-xs text-text-secondary">
+              Ketik <strong className="font-mono text-rose-600">{deleteTarget.tahun}</strong> untuk konfirmasi:
+            </p>
+            <ConfirmInput
+              expected={String(deleteTarget.tahun)}
+              onConfirm={handleDeleteConfirm}
+              onCancel={() => { setDeleteTarget(null); setDeleteError(null); }}
+              deleting={deleting}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Inline confirm input component ──────────────────────────────────────────
+function ConfirmInput({
+  expected,
+  onConfirm,
+  onCancel,
+  deleting,
+}: {
+  expected: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  deleting: boolean;
+}) {
+  const [value, setValue] = useState('');
+  const isMatch = value.trim() === expected;
+
+  return (
+    <div className="mt-2 space-y-3">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder={`Ketik ${expected}`}
+        className="w-full px-3 py-2 text-sm font-mono border border-border rounded-lg focus:outline-none focus:border-rose-400 bg-white"
+        disabled={deleting}
+        autoFocus
+        onKeyDown={(e) => { if (e.key === 'Enter' && isMatch) onConfirm(); }}
+      />
+      <div className="pt-1 border-t border-border flex items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="btn btn-ghost text-xs"
+          disabled={deleting}
+        >
+          Batal
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={!isMatch || deleting}
+          className="btn text-xs bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Trash2 size={13} />
+          <span>{deleting ? 'Menghapus...' : 'Ya, Hapus Data'}</span>
+        </button>
+      </div>
     </div>
   );
 }

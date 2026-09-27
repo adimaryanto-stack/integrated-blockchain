@@ -56,7 +56,7 @@ export default function DashboardPage() {
       setApbdData(prov);
       setAllApbd(all);
 
-      if (prov && activeTahun !== 2027) {
+      if (prov) {
         const jList = await getJenjangSummary(
           activeTahun,
           prov.alokasi_pendidikan_riil,
@@ -76,16 +76,15 @@ export default function DashboardPage() {
     loadData();
   }, [activeTahun, refreshKey]);
 
-  const isZeroYear = (activeTahun === 2027);
-  const totalApbd = isZeroYear ? 0 : (apbdData?.total_apbd || 8240000000000);
-  const batas20 = isZeroYear ? 0 : (apbdData?.batas_minimal_pendidikan || totalApbd * 0.2);
-  const alokasiRiil = isZeroYear ? 0 : (apbdData?.alokasi_pendidikan_riil || 1750000000000);
-  const realisasi = isZeroYear ? 0 : (apbdData?.realisasi_pendidikan_total || 1420000000000);
+  const totalApbd = apbdData?.total_apbd || 0;
+  const batas20 = apbdData?.batas_minimal_pendidikan || totalApbd * 0.2;
+  const alokasiRiil = apbdData?.alokasi_pendidikan_riil || 0;
+  const realisasi = apbdData?.realisasi_pendidikan_total || 0;
   const persentasePendidikan = totalApbd > 0 ? (alokasiRiil / totalApbd) * 100 : 0;
   const persentaseSerapan = alokasiRiil > 0 ? (realisasi / alokasiRiil) * 100 : 0;
-  const isMemenuhi = isZeroYear ? true : (alokasiRiil >= batas20);
-  const selisihAlokasiBatas = isZeroYear ? 0 : (alokasiRiil - batas20);
-  const saldoBankSisa2026 = 330000000000; // Rp 330 Miliar sisa alokasi riil - realisasi 2026
+  const isMemenuhi = alokasiRiil >= batas20;
+  const selisihAlokasiBatas = alokasiRiil - batas20;
+  const saldoBankSisa = Math.max(0, alokasiRiil - realisasi);
 
   // Chart data per jenjang
   const barData = useMemo(() => {
