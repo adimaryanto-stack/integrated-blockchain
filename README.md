@@ -6,29 +6,46 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4%2F4.0-38B2AC.svg?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Sistem tata kelola dan transparansi keuangan pendidikan Indonesia terintegrasi dengan database lokal mandiri (*100% Single Source of Truth PostgreSQL*), mencakup **6 portal spesifik peran pengguna** untuk **PAUD, SD, SMP, SMA, dan Perguruan Tinggi** di 38 Provinsi dan 514 Kabupaten/Kota.
+Sistem tata kelola dan transparansi keuangan pendidikan Indonesia terintegrasi dengan database lokal mandiri (*100% Single Source of Truth PostgreSQL*), mencakup **7 portal spesifik peran pengguna** untuk **PAUD, SD, SMP, SMA, dan Perguruan Tinggi** di 38 Provinsi dan 514 Kabupaten/Kota.
 
 ---
 
-## 🌟 Pusat Navigasi & Dokumentasi Cepat
+## 🌟 Pusat Navigasi & Dokumentasi Proyek
 
 | Dokumen | Format | Deskripsi | Tautan Langsung |
 |---|:---:|---|:---:|
-| 🌐 **Panduan Visual & Interaktif** | `HTML` | Tampilan panduan grafis modern untuk pengguna umum / non-programmer. | Halaman ini |
+| 🌐 **Panduan Visual & Interaktif** | `HTML` | Tampilan panduan grafis modern untuk pengguna umum / non-programmer. | [**Buka `README.html`**](README.html) |
 | 📋 **Product Requirements (PRD)** | `Markdown` | Spesifikasi lengkap sistem, alur bisnis dana APBN/APBD/CSR, & hak akses. | [**Buka `PRD.md`**](PRD.md) |
-| 🏆 **MVP & Laporan Verifikasi** | `Markdown` | Laporan pengujian fitur 8 port, performa latensi, dan integrasi database. | [**Buka `MVP.md`**](MVP.md) |
+| 🏆 **MVP & Laporan Verifikasi** | `Markdown` | Laporan pengujian fitur 9 port, performa latensi, dan integrasi database. | [**Buka `MVP.md`**](MVP.md) |
 | 🚀 **Panduan Deployment VPS/Mac** | `Markdown` | Tutorial step-by-step setup VPS Ubuntu/Debian, macOS, Nginx, Domain, & SSL. | [**Buka `deploy_guide.md`**](deploy_guide.md) |
+| 🗺️ **Topologi Arsitektur** | `Markdown` | Diagram relasi database PostgreSQL, Proxy REST API, dan 7 Dashboard. | [**Buka `TOPOLOGY.md`**](TOPOLOGY.md) |
 
 ---
 
-## 💡 Panduan Cepat untuk Pemula (Bukan Programmer)
+## 🗺️ Peta 9 Port & Akses Dashboard
 
-Sistem ini dirancang agar **bisa dijalankan oleh siapa pun**, termasuk orang awam yang tidak mengerti server, coding, atau database SQL. Cukup ikuti langkah mudah di bawah ini:
+| Port | Peran Pengguna / Dashboard | Direktori Aplikasi | Tautan Akses Cepat | Status |
+|:---:|---|---|:---:|:---:|
+| **2020** | **Portal Transparansi Publik** (Masyarakat & Orang Tua) | `apps/transparansi-anggaran/apps/web-next` | [http://localhost:2020](http://localhost:2020) | 🟢 Aktif |
+| **2021** | **Dashboard Kementerian** (Kemenkeu & Kemendikdasmen) | `apps/dashboard-kementerian` | [http://localhost:2021/dashboard](http://localhost:2021/dashboard) | 🟢 Aktif |
+| **2022** | **Dashboard Bank Penyalur** (Mandiri, BRI, BNI, BSI, BPD) | `apps/dashboard-bank` | [http://localhost:2022/dashboard](http://localhost:2022/dashboard) | 🟢 Aktif |
+| **2023** | **Dashboard Auditor BPK** (Pengawasan & Deteksi Anomali AI) | `apps/dashboard-auditor` | [http://localhost:2023/dashboard](http://localhost:2023/dashboard) | 🟢 Aktif |
+| **2024** | **Dashboard Institusi Pendidikan** (Kepala Sekolah & Bendahara) | `apps/dashboard-institusi-pendidikan` | [http://localhost:2024/dashboard](http://localhost:2024/dashboard) | 🟢 Aktif |
+| **2025** | **Dashboard APBD Provinsi Lampung** (Pemda & Dinas Pendidikan) | `apps/dashboard-apbd` | [http://localhost:2025/dashboard](http://localhost:2025/dashboard) | 🟢 Aktif |
+| **2026** | **Dashboard Admin** (Super-Admin Console & Manajemen Pengguna) | `apps/dashboard-admin` | [http://localhost:2026](http://localhost:2026) | 🟢 Aktif |
+| **2027** | **Database PostgreSQL 16** (35 Tabel Relasional Mandiri) | `pgsql/bin` / System PostgreSQL | `postgresql://localhost:2027` | 🟢 Aktif |
+| **2028** | **Proxy REST API Server** (Protokol PostgREST Sub-10ms) | `proxy/proxy.js` | [http://localhost:2028](http://localhost:2028) | 🟢 Aktif |
+
+---
+
+## 💡 Panduan Instalasi & Eksekusi Cepat (Untuk Pengguna Umum & Programmer)
+
+Sistem ini dirancang agar **bisa dijalankan oleh siapa pun dengan sangat mudah**:
 
 ### ⚙️ Prasyarat Utama (Hanya 1x di Awal)
 Pastikan komputer Anda sudah terpasang **Node.js** (versi 18 atau lebih baru).
 - Jika belum terpasang, unduh gratis dari situs resmi: **[https://nodejs.org](https://nodejs.org/)** (klik tombol hijau bertuliskan **LTS**).
-- Jalankan file instalasi yang terunduh, klik **Next** sampai selesai.
+- Jalankan file installer yang terunduh, klik **Next** sampai selesai.
 
 ---
 
@@ -37,23 +54,32 @@ Pastikan komputer Anda sudah terpasang **Node.js** (versi 18 atau lebih baru).
 2. **Klik 2x (Double-Click)** pada file **`start-all.bat`**.
 3. Sistem akan bekerja secara otomatis:
    - Memeriksa file konfigurasi `.env.local` & dependensi aplikasi.
-   - Menyalakan database PostgreSQL lokal (Port 2027) & Proxy API (Port 2028).
-   - Menyalakan seluruh 7 portal aplikasi dashboard.
+   - Menyalakan database PostgreSQL portabel (Port 2027) & Proxy API Gateway (Port 2028).
+   - Menyalakan seluruh 7 portal aplikasi dashboard secara berurutan.
    - Memanaskan halaman web dan **otomatis membuka peramban (browser) ke [http://localhost:2020](http://localhost:2020)**.
-4. **Cara Mematikan Server**: Cukup **Klik 2x** pada file **`stop-all.bat`** kapan saja Anda ingin menghentikan seluruh layanan.
-
-> ⏳ **Catatan Penting Saat Pertama Kali Membuka Halaman (First Compilation)**:
-> Pada peluncuran pertama kali, sistem Next.js memerlukan waktu sekitar 30–60 detik untuk membuat cache filesystem dan mengompilasi halaman web. Jika peramban sempat menampilkan status *Loading...*, mohon tunggu sejenak hingga proses kompilasi selesai.
+4. **Cara Mematikan Server**: Cukup **Klik 2x** pada file **`stop-all.bat`** kapan saja Anda ingin menghentikan seluruh layanan dengan aman.
 
 ---
 
 ### 🐧 2. Jika Anda Menggunakan Linux VPS (Ubuntu / Debian Server):
 ```bash
-# Clone & Jalankan otomatis (1 Perintah)
+# 1. Clone repository
 git clone https://github.com/adimaryanto-stack/integrated-blockchain.git
 cd integrated-blockchain
+
+# 2. Setup PostgreSQL & user password
+sudo apt update && sudo apt install -y postgresql postgresql-contrib
+sudo systemctl start postgresql && sudo systemctl enable postgresql
 sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+sudo -u postgres psql -c "CREATE DATABASE postgres;" 2>/dev/null || true
+
+# 3. Setup database & import otomatis 35 tabel master
 DB_PORT=5432 DB_PASSWORD=postgres node scripts/setup-db.js
+
+# 4. Generate konfigurasi environment (.env.local) untuk VPS Anda
+node scripts/setup-env.js http://IP_VPS_ANDA:2028
+
+# 5. Jalankan backend & dashboard (atau gunakan PM2)
 chmod +x start.sh && ./start.sh
 ```
 
@@ -61,69 +87,83 @@ chmod +x start.sh && ./start.sh
 
 ### 🍎 3. Jika Anda Menggunakan MacBook (macOS Terminal):
 ```bash
+# 1. Install Node.js & PostgreSQL via Homebrew
 brew install node postgresql@16 && brew services start postgresql@16
+
+# 2. Clone repository & masuk ke direktori
 git clone https://github.com/adimaryanto-stack/integrated-blockchain.git
 cd integrated-blockchain
+
+# 3. Import database & setup environment
 DB_PORT=5432 DB_PASSWORD=postgres node scripts/setup-db.js
+node scripts/setup-env.js
+
+# 4. Jalankan seluruh server
 chmod +x start.sh && ./start.sh
 ```
 
 ---
 
-### 🐳 4. Menggunakan Docker Compose (Database & Proxy Backend):
-File `docker-compose.yml` menyediakan basis data PostgreSQL (Port 2027) dan Proxy REST API (Port 2028) secara mandiri:
+### 🐳 4. Menggunakan Docker Compose:
 ```bash
-# 1. Nyalakan Database & Proxy API Gateway dalam kontainer:
+# 1. Nyalakan Database PostgreSQL & Proxy API Gateway dalam kontainer:
 docker compose up -d
 
-# 2. Jalankan portal web (contoh: Portal Transparansi Publik):
+# 2. Jalankan dashboard aplikasi:
 npm run dev --prefix apps/transparansi-anggaran/apps/web-next
 ```
-*(Bagi pengguna umum/awam di Windows, kami sangat merekomendasikan menggunakan file **`start-all.bat`** karena tidak memerlukan Docker Desktop yang berat).*
 
 ---
 
-## 🛠️ Otomasi Environment (`.env.local`) — 100% Mandiri Tanpa Cloud Supabase!
+## 🛠️ Otomasi Environment (`.env.local`) — 100% Mandiri Tanpa Supabase Cloud!
 
-> 💡 **Apakah Perlu Akun Supabase? TIDAK!**
-> Sistem ini **100% Self-Hosted** menggunakan database PostgreSQL lokal kita sendiri. Variabel `NEXT_PUBLIC_SUPABASE_URL` terhubung ke **Proxy REST API Lokal (Port 2028)**.
+> 💡 **Apakah Perlu Akun Supabase Cloud? TIDAK!**
+> Sistem ini **100% Self-Hosted** menggunakan database PostgreSQL lokal kita sendiri. Variabel `NEXT_PUBLIC_SUPABASE_URL` terhubung ke **Proxy REST API Gateway Lokal (Port 2028)**.
 
-Untuk membuat seluruh file `.env.local` di ke-6 folder aplikasi sekaligus secara otomatis, jalankan:
+Untuk membuat seluruh file `.env.local` di semua folder aplikasi secara otomatis, jalankan:
 ```bash
-# Untuk Localhost:
+# Untuk Localhost (Port 2028):
 node scripts/setup-env.js
 
 # Untuk VPS dengan IP / Domain:
 node scripts/setup-env.js http://IP_VPS_ANDA:2028
 ```
 
-## 🗺️ Peta 9 Port & Akses Dashboard
-
-| Port | Peran Pengguna / Dashboard | Direktori Aplikasi | Tautan Akses Cepat |
-|:---:|---|---|:---:|
-| **2020** | **Portal Transparansi Publik** (Masyarakat & Orang Tua) | `apps/transparansi-anggaran/apps/web-next` | [http://localhost:2020](http://localhost:2020) |
-| **2021** | **Dashboard Kementerian** (Kemenkeu & Kemendikdasmen) | `apps/dashboard-kementerian` | [http://localhost:2021/dashboard](http://localhost:2021/dashboard) |
-| **2022** | **Dashboard Bank Penyalur** (Mandiri, BRI, BNI, BSI, BPD) | `apps/dashboard-bank` | [http://localhost:2022/dashboard](http://localhost:2022/dashboard) |
-| **2023** | **Dashboard Auditor BPK** (Pengawasan & Deteksi Anomali AI) | `apps/dashboard-auditor` | [http://localhost:2023/dashboard](http://localhost:2023/dashboard) |
-| **2024** | **Dashboard Institusi Pendidikan** (Kepala Sekolah & Bendahara) | `apps/dashboard-institusi-pendidikan` | [http://localhost:2024/dashboard](http://localhost:2024/dashboard) |
-| **2025** | **Dashboard APBD Provinsi Lampung** (Pemda & Dinas Pendidikan) | `apps/dashboard-apbd` | [http://localhost:2025/dashboard](http://localhost:2025/dashboard) |
-| **2026** | **Dashboard Admin** (Super-Admin Console & Manajemen Pengguna) | `apps/dashboard-admin` | [http://localhost:2026](http://localhost:2026) |
-| **2027** | **Database PostgreSQL 16** (35 Tabel Relasional Mandiri) | `pgsql/bin` / System Postgres | `localhost:2027` |
-| **2028** | **Proxy REST API Server** (Protokol PostgREST Sub-10ms) | `proxy/proxy.js` | [http://localhost:2028](http://localhost:2028) |
-
 ---
 
-## 📸 Tangkapan Layar Aplikasi
+## 📝 Log Update & Riwayat Pembaruan Kode (Changelog)
 
-| Portal | Port | Tangkapan Layar |
-|---|:---:|---|
-| **Portal Transparansi Publik** | `:2020` | ![Portal Transparansi](screenshots/port-2020-transparansi.png) |
-| **Detail Institusi Publik (024029)** | `:2020` | ![Detail Sekolah](screenshots/port-2020-sekolah-024029.png) |
-| **Dashboard Kementerian (APBN)** | `:2021` | ![Dashboard Kementerian](screenshots/port-2021-kementerian.png) |
-| **Dashboard Bank Penyalur** | `:2022` | ![Dashboard Bank](screenshots/port-2022-bank.png) |
-| **Dashboard Auditor BPK** | `:2023` | ![Dashboard Auditor](screenshots/port-2023-auditor.png) |
-| **Dashboard Institusi Pendidikan** | `:2024` | ![Dashboard Sekolah](screenshots/port-2024-institusi-pendidikan.png) |
-| **Dashboard APBD Provinsi Lampung** | `:2025` | ![Dashboard APBD](screenshots/port-2027-apbd-lampung.png) |
+Berikut adalah ringkasan pembaruan arsitektur dan peningkatan fitur sistem:
+
+### 🟢 1. Fitur Indikator Status Database Real-Time (Live Latency & Health Check)
+- **Implementasi**: Menambahkan indikator status koneksi database lokal di seluruh header dashboard (`Port 2021`, `Port 2022`, `Port 2023`, `Port 2024`, dan `Port 2025`).
+- **Fitur Live Ping**: Melakukan auto-ping berkala setiap 10 detik dan setiap jendela browser aktif.
+- **Tampilan Visual**:
+  - `DB Lokal Aktif (100%) [X ms]` dengan ikon hijau ketika database PostgreSQL & Proxy terhubung.
+  - `DB Reconnecting... [X ms]` dengan ikon merah saat koneksi database terputus.
+
+### 🟢 2. Penyelarasan Desain & Margin CSS Seluruh Halaman Publik (Port 2020)
+- **Standarisasi Kontainer**: Menyelaraskan seluruh 6 halaman publik (`/audit`, `/provinces`, `/statistics`, `/reporting`, `/about`, dan `/faq`) menggunakan kontainer standar `max-w-7xl mx-auto px-4 md:px-8` dengan wrapper `min-h-screen bg-slate-50 pt-4 pb-16`.
+- **Konsistensi Visual**: Jarak margin kiri-kanan dan padding header di seluruh halaman kini 100% sejajar dengan halaman `/aliran-dana`.
+
+### 🟢 3. Otomasi Cascading Delete di PostgreSQL
+- **Trigger Database**: Menambahkan trigger `trg_cascade_delete_tahun_anggaran` pada tabel `tahun_anggaran`.
+- **Cascade Deletion**: Ketika suatu tahun anggaran dihapus melalui Dashboard Kementerian, sistem secara otomatis menghapus seluruh rekaman terkait pada tabel `apbd_yearly_data`, `csr_yearly_data`, `apbn_yearly_data`, `provincial_allocations`, `district_allocations`, dan `alokasi_provinsi`.
+
+### 🟢 4. Sinkronisasi Data Baku Multi-Tahun & Rule 2027
+- **Pembersihan Data Lama**: Menghapus seluruh array hardcode tahun historis lama (2020–2025) di `lib/data/index.ts`.
+- **Selector Tahun**: Sinkronisasi 100% ke database riil PostgreSQL (`tahun_anggaran`).
+- **Aturan Tahun 2027**:
+  - Total Anggaran & Realisasi Belanja: **`Rp 0`** (0% penyerapan).
+  - Saldo Kas di Bank sisa tahun 2026 otomatis di-*carry-forward* sebagai saldo awal rekening.
+
+### 🟢 5. Skrip Pembersihan Cache Next.js & Turbopack
+- **Skrip `node scripts/clean-cache.js`**: Menghentikan proses dev server secara aman dan menghapus seluruh folder cache `.next` di 7 aplikasi dashboard untuk menjamin *clean compilation state*.
+
+### 🟢 6. Penyempurnaan Skrip Peluncur 9 Port (`start-all.bat` / `start-all.ps1`)
+- Menggunakan perintah `npm run dev` secara konsisten pada setiap aplikasi.
+- Penyesuaian port: PostgreSQL di Port `2027` dan Proxy REST API Gateway di Port `2028`.
+- Pemanasan halaman (*warm-up compilation*) otomatis sebelum membuka browser.
 
 ---
 
@@ -170,17 +210,6 @@ node scripts/setup-env.js http://IP_VPS_ANDA:2028
 
 ---
 
-## 📊 Aturan Baku Multi-Tahun Anggaran
-
-1. **Tahun 2026 (Tahun Anggaran Berjalan Aktif)**:
-   - Menampilkan data pagu alokasi, realisasi belanja, dan persentase penyerapan secara riil dari database.
-2. **Tahun 2027 (Tahun Anggaran Perencanaan Baru)**:
-   - Alokasi Baru: **`Rp 0`**
-   - Realisasi Belanja: **`Rp 0`** (0.0% penyerapan)
-   - **Saldo Kas di Bank (Sisa Tahun 2026)**: Diakumulasi dan dibawa maju (*Carry-Forward*) sebagai saldo awal rekening berjalan.
-
----
-
 ## 🌐 Menghubungkan ke Domain / Subdomain / IP Publik
 
 Setiap dashboard dapat dihubungkan ke domain publik menggunakan Reverse Proxy Nginx & SSL HTTPS Let's Encrypt:
@@ -189,16 +218,25 @@ Setiap dashboard dapat dihubungkan ke domain publik menggunakan Reverse Proxy Ng
 - `https://bank.domain.com` &rarr; Port 2022
 - `https://auditor.domain.com` &rarr; Port 2023
 - `https://sekolah.domain.com` &rarr; Port 2024
-- `https://api.domain.com` &rarr; Port 2026
-- `https://apbd.domain.com` &rarr; Port 2027
+- `https://apbd.domain.com` &rarr; Port 2025
+- `https://admin.domain.com` &rarr; Port 2026
+- `https://api.domain.com` &rarr; Port 2028
 
 > 📘 **Panduan lengkap konfigurasi file Nginx `.conf`, SSL Certbot gratis, dan PM2 tersedia di: [deploy_guide.md](deploy_guide.md)**.
 
 ---
 
-## 🔍 Skrip Pemeriksaan Kesehatan (Health Check)
+## 🔍 Skrip Utilitas Penting
+
 ```bash
+# 1. Bersihkan seluruh cache .next dan Turbopack:
+node scripts/clean-cache.js
+
+# 2. Verifikasi status kesehatan seluruh port:
 node scripts/check_all_ports.js
+
+# 3. Ekspor dan kompres ulang database ke database_dump.sql.gz:
+node scripts/export_and_compress_db.js
 ```
 
 ---

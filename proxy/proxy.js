@@ -131,6 +131,19 @@ app.post('/rest/v1/rpc/:function', async (req, res) => {
       return res.json(Array.from(uniqueKecs).sort().map(k => ({ kec_name: k })));
     }
 
+    else if (func === 'get_regency_school_counts') {
+      const p_province_id = body.p_province_id;
+      if (!p_province_id) return res.status(400).json({ error: 'p_province_id required' });
+      const dbRes = await pool.query(
+        `SELECT regency_id, COUNT(*)::integer as count 
+         FROM public.schools 
+         WHERE regency_id IN (SELECT id FROM public.regencies WHERE province_id = $1) 
+         GROUP BY regency_id`,
+        [p_province_id]
+      );
+      return res.json(dbRes.rows);
+    }
+
     else if (func === 'get_jenjang_summary') {
       const p_jenjang = body.p_jenjang || 'PAUD';
       const dbRes = await pool.query(`

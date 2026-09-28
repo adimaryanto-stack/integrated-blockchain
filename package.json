@@ -10,7 +10,8 @@
     "dev:auditor": "npm run dev --prefix apps/dashboard-auditor",
     "dev:institusi": "npm run dev --prefix apps/dashboard-institusi-pendidikan",
     "dev:apbd": "npm run dev --prefix apps/dashboard-apbd",
-    "dev:admin": "npm run dev --prefix apps/dashboard-admin"
+    "dev:admin": "npm run dev --prefix apps/dashboard-admin",
+    "dev:dashboard-publik": "npm run dev --prefix apps/dashboard-publik"
   },
   "dependencies": {
     "axios": "^1.18.1",

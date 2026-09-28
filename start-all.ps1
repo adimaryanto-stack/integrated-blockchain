@@ -103,10 +103,10 @@ Write-Host "`n[5/6] Memulai seluruh 7 portal dashboard..." -ForegroundColor Yell
 
 $apps = @(
     @{ name = "Transparansi Publik";     port = 2020; path = "$ROOT\apps\transparansi-anggaran\apps\web-next"; cmd = "npm run dev" },
-    @{ name = "Dashboard Kementerian";   port = 2021; path = "$ROOT\apps\dashboard-kementerian";              cmd = "npx next dev -p 2021" },
-    @{ name = "Dashboard Bank";          port = 2022; path = "$ROOT\apps\dashboard-bank";                     cmd = "npx next dev -p 2022" },
+    @{ name = "Dashboard Kementerian";   port = 2021; path = "$ROOT\apps\dashboard-kementerian";              cmd = "npm run dev" },
+    @{ name = "Dashboard Bank";          port = 2022; path = "$ROOT\apps\dashboard-bank";                     cmd = "npm run dev" },
     @{ name = "Dashboard Auditor";       port = 2023; path = "$ROOT\apps\dashboard-auditor";                  cmd = "npm run dev" },
-    @{ name = "Institusi Pendidikan";    port = 2024; path = "$ROOT\apps\dashboard-institusi-pendidikan";     cmd = "npx next dev -p 2024" },
+    @{ name = "Institusi Pendidikan";    port = 2024; path = "$ROOT\apps\dashboard-institusi-pendidikan";     cmd = "npm run dev" },
     @{ name = "Dashboard APBD Lampung";  port = 2025; path = "$ROOT\apps\dashboard-apbd";                     cmd = "npm run dev" },
     @{ name = "Dashboard Admin";         port = 2026; path = "$ROOT\apps\dashboard-admin";                    cmd = "npm run dev" }
 )

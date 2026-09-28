@@ -16,6 +16,7 @@ database_dump.sql
 # Next.js build output
 .next/
 out/
+dist/
 
 # Production build
 build/
@@ -47,3 +48,5 @@ scratch/
 walkthrough.md
 implementation_plan.md
 task.md
+mcp_config.json
+apps/dashboard-publik/
