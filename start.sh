@@ -48,7 +48,7 @@ else
 fi
 
 # 5. Start Dashboards
-echo -e "\n[4/4] Starting All 7 Dashboards..."
+echo -e "\n[4/4] Starting All 8 Dashboards..."
 
 start_app() {
     local name="$1"
@@ -69,6 +69,7 @@ start_app() {
     fi
 }
 
+start_app "Portal Publik Civic-Tech"  "apps/dashboard-publik"                   2019 "npm run dev"
 start_app "Transparansi Publik"     "apps/transparansi-anggaran/apps/web-next" 2020 "npx next dev"
 start_app "Dashboard Kementerian"   "apps/dashboard-kementerian"              2021 "npx next dev"
 start_app "Dashboard Bank"          "apps/dashboard-bank"                     2022 "npx next dev"
@@ -78,8 +79,9 @@ start_app "Dashboard APBD Lampung"  "apps/dashboard-apbd"                     20
 start_app "Dashboard Admin"         "apps/dashboard-admin"                    2026 "npm run dev"
 
 echo -e "\n=================================================================="
-echo " 🎉 ALL 9 SERVICES & PORTS ARE ACTIVE!"
+echo " 🎉 ALL 10 SERVICES & PORTS ARE ACTIVE!"
 echo "=================================================================="
+echo "  Portal Publik Civic-Tech -> http://localhost:2019"
 echo "  Transparansi Publik      -> http://localhost:2020"
 echo "  Dashboard Kementerian    -> http://localhost:2021/dashboard"
 echo "  Dashboard Bank           -> http://localhost:2022/dashboard"

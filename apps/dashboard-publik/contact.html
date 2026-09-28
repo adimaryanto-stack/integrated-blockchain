@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hubungi Kami — SiTransparan</title>
+  <meta name="description" content="Kontak resmi sekretariat transparansi anggaran pendidikan dan pusat layanan informasi publik."/>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  
+  <link rel="stylesheet" href="/styles/main.css"/>
+  <link rel="stylesheet" href="/styles/transparansi-2020.css"/>
+
+  <style>
+    .contact-card {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: var(--shadow-sm);
+    }
+    .contact-info-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .contact-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: #EFF6FF;
+      color: var(--color-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="brand-logo">
+        <div class="logo-badge">
+          <span class="material-symbols-outlined" style="font-size: 22px;">account_balance</span>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 17px; font-weight: 800; line-height: 1.1; color: #0f172a;">Transparansi Anggaran</span>
+          <span style="font-size: 10px; font-weight: 700; color: var(--color-primary); letter-spacing: 0.05em;">SITRANSPARAN CIVIC-TECH</span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="main-nav">
+        <a href="index.html" class="nav-link">Beranda</a>
+        
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-trigger" type="button">
+            <span>Data</span>
+            <span class="material-symbols-outlined" style="font-size: 18px;">expand_more</span>
+          </button>
+          <div class="nav-dropdown-menu">
+            <a href="aliran-dana.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">account_tree</span>
+              <span>Aliran Dana APBN</span>
+            </a>
+            <a href="audit.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">security</span>
+              <span>Audit & Anomali</span>
+            </a>
+            <a href="compare.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">compare_arrows</span>
+              <span>Bandingkan Sekolah</span>
+            </a>
+            <a href="peta-regional.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">public</span>
+              <span>Peta Regional</span>
+            </a>
+            <a href="provinces.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">map</span>
+              <span>38 Provinsi</span>
+            </a>
+            <a href="statistics.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">bar_chart</span>
+              <span>Statistik Nasional</span>
+            </a>
+            <a href="funding.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">payments</span>
+              <span>Sumber Pendanaan</span>
+            </a>
+            <a href="detail-anggaran.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">receipt_long</span>
+              <span>Detail Program BOS</span>
+            </a>
+          </div>
+        </div>
+
+        <a href="reporting.html" class="nav-link">Laporkan</a>
+        <a href="tentang.html" class="nav-link">Tentang</a>
+        <a href="faq.html" class="nav-link">FAQ</a>
+        <a href="contact.html" class="nav-link active">Kontak</a>
+      </nav>
+
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <a href="pantau-anggaran.html" class="btn-watchlist-pill" title="Lihat item yang Anda pantau">
+          <span>Pantau Anggaran</span>
+          <span class="watchlist-count" id="headerWatchlistCount">0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top: 36px; padding-bottom: 72px;">
+    <!-- Title Area -->
+    <div style="text-align: center; max-width: 640px; margin: 0 auto 36px;">
+      <div class="badge-tag" style="background: var(--color-primary-light); color: var(--color-primary); border-color: rgba(29, 78, 216, 0.2); margin-bottom: 8px;">
+        PUSAT LAYANAN & SEKRETARIAT
+      </div>
+      <h1 style="font-size: 34px; font-weight: 800; color: #0f172a; margin-bottom: 12px;">
+        Hubungi Tim SiTransparan
+      </h1>
+      <p style="font-size: 15px; color: var(--color-text-muted); line-height: 1.6;">
+        Sampaikan masukan, pengajuan kerja sama data, atau pertanyaan teknis kepada sekretariat jenderal kami.
+      </p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 2fr 3fr; gap: 32px; align-items: flex-start;">
+      <!-- Office Details Column -->
+      <div class="contact-card">
+        <h3 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 24px;">Sekretariat Utama</h3>
+
+        <div class="contact-info-item">
+          <div class="contact-icon-box">
+            <span class="material-symbols-outlined">location_on</span>
+          </div>
+          <div>
+            <div style="font-weight: 700; color: #0f172a; font-size: 14px;">Alamat Kantor</div>
+            <p style="font-size: 13px; color: var(--color-text-muted); line-height: 1.6; margin-top: 4px;">
+              Gedung C Lantai 4, Kompleks Kemendikbudristek<br>
+              Jl. Jenderal Sudirman, Senayan, Jakarta Pusat 10270
+            </p>
+          </div>
+        </div>
+
+        <div class="contact-info-item">
+          <div class="contact-icon-box">
+            <span class="material-symbols-outlined">mail</span>
+          </div>
+          <div>
+            <div style="font-weight: 700; color: #0f172a; font-size: 14px;">Email Korespondensi</div>
+            <p style="font-size: 13px; color: var(--color-text-muted); margin-top: 4px;">
+              pengaduan@kemendikbud.go.id
+            </p>
+          </div>
+        </div>
+
+        <div class="contact-info-item">
+          <div class="contact-icon-box">
+            <span class="material-symbols-outlined">call</span>
+          </div>
+          <div>
+            <div style="font-weight: 700; color: #0f172a; font-size: 14px;">Layanan Telepon</div>
+            <p style="font-size: 13px; color: var(--color-text-muted); margin-top: 4px;">
+              (021) 1234 5678 (Ext. 404)
+            </p>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid var(--color-border); padding-top: 20px; margin-top: 24px;">
+          <div style="font-size: 11px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">
+            JAM LAYANAN KONSULTASI
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 13px; color: #334155; margin-bottom: 4px;">
+            <span>Senin — Kamis:</span>
+            <strong>08:00 - 16:00 WIB</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 13px; color: #334155;">
+            <span>Jumat:</span>
+            <strong>08:00 - 16:30 WIB</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Message Form Column -->
+      <div class="contact-card">
+        <h3 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 16px;">Kirim Pesan atau Pertanyaan</h3>
+
+        <form id="contactForm" onsubmit="handleContactSubmit(event)">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+            <div>
+              <label style="display: block; font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">NAMA LENGKAP *</label>
+              <input type="text" required placeholder="Nama Anda..." style="width: 100%; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: 12px; font-size: 13px; outline: none; background: #F8FAFC;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">EMAIL RESMI *</label>
+              <input type="email" required placeholder="nama@email.com" style="width: 100%; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: 12px; font-size: 13px; outline: none; background: #F8FAFC;">
+            </div>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <label style="display: block; font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">TOPIK SUBJEK</label>
+            <select style="width: 100%; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: 12px; font-size: 13px; outline: none; background: #F8FAFC;">
+              <option>Pertanyaan Umum</option>
+              <option>Akses Basis Data & Verifikasi NPSN</option>
+              <option>Pengajuan Integrasi API Sekolah</option>
+              <option>Kritik & Saran Perbaikan</option>
+              <option>Lainnya</option>
+            </select>
+          </div>
+
+          <div style="margin-bottom: 24px;">
+            <label style="display: block; font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">ISI PESAN *</label>
+            <textarea required rows="5" placeholder="Tuliskan pertanyaan atau kebutuhan Anda secara lengkap..." style="width: 100%; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: 12px; font-size: 13px; outline: none; background: #F8FAFC; resize: vertical;"></textarea>
+          </div>
+
+          <button type="submit" id="btnContactSend" class="btn-report" style="width: 100%; justify-content: center; padding: 14px; font-size: 15px;">
+            <span class="material-symbols-outlined" style="font-size: 18px;">send</span>
+            Kirimkan Pesan Sekarang
+          </button>
+        </form>
+
+        <div id="contactSuccessMsg" style="display: none; margin-top: 20px; padding: 16px; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 12px; color: #065F46; font-size: 14px; font-weight: 600; text-align: center;">
+          ✓ Pesan Anda telah berhasil terkirim! Tim sekretariat akan merespons dalam 1x24 jam kerja.
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Site Footer -->
+  <footer style="background: #0B1329; color: #94A3B8; padding: 48px 0 24px; border-top: 1px solid #1E293B;">
+    <div class="container">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; padding-bottom: 24px; border-bottom: 1px solid #1E293B;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: var(--color-primary); display: flex; align-items: center; justify-content: center; color: #fff;">
+            <span class="material-symbols-outlined" style="font-size: 18px;">account_balance</span>
+          </div>
+          <span style="font-size: 16px; font-weight: 800; color: #F8FAFC;">SiTransparan Anggaran</span>
+        </div>
+        <div style="display: flex; gap: 20px; font-size: 13px;">
+          <a href="index.html" style="color: #94A3B8; text-decoration: none;">Beranda</a>
+          <a href="aliran-dana.html" style="color: #94A3B8; text-decoration: none;">Aliran Dana</a>
+          <a href="audit.html" style="color: #94A3B8; text-decoration: none;">Audit</a>
+          <a href="contact.html" style="color: #60A5FA; text-decoration: none; font-weight: 700;">Kontak</a>
+          <a href="tentang.html" style="color: #94A3B8; text-decoration: none;">Tentang</a>
+        </div>
+      </div>
+      <p style="font-size: 12px; color: #64748B; margin-top: 20px; text-align: center;">
+        © 2026 SiTransparan Civic-Tech.
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    function handleContactSubmit(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnContactSend');
+      btn.disabled = true;
+      btn.textContent = 'Mengirim Pesan...';
+
+      setTimeout(() => {
+        document.getElementById('contactForm').reset();
+        document.getElementById('contactSuccessMsg').style.display = 'block';
+        btn.textContent = 'Pesan Berhasil Terkirim';
+      }, 800);
+    }
+  </script>
+</body>
+</html>

@@ -38,12 +38,13 @@ async function testPostgres() {
 }
 
 async function run() {
-  console.log('=== HEALTH CHECK FOR ALL 9 PORTS ===\n');
+  console.log('=== HEALTH CHECK FOR ALL 10 PORTS ===\n');
 
   const pgRes = await testPostgres();
   console.log(`Port 2027 (PostgreSQL DB)    : ${pgRes.status} (${pgRes.timeMs}ms) - Database: ${pgRes.info?.current_database}, Public Tables: ${pgRes.info?.table_count || 0}`);
 
   const endpoints = [
+    { port: 2019, name: 'Portal Publik Civic-Tech', path: '/' },
     { port: 2020, name: 'Transparansi Publik', path: '/' },
     { port: 2021, name: 'Dashboard Kementerian', path: '/dashboard' },
     { port: 2022, name: 'Dashboard Bank', path: '/dashboard' },

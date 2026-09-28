@@ -5,6 +5,7 @@ const { execSync } = require('child_process');
 const rootDir = path.resolve(__dirname, '..');
 
 const apps = [
+  'apps/dashboard-publik',
   'apps/transparansi-anggaran/apps/web-next',
   'apps/dashboard-kementerian',
   'apps/dashboard-bank',
@@ -18,8 +19,8 @@ console.log('====================================================');
 console.log(' Membersihkan Cache Next.js & Turbopack');
 console.log('====================================================');
 
-console.log('\n[1/3] Menghentikan proses dev server pada port 2020-2026...');
-const ports = [2020, 2021, 2022, 2023, 2024, 2025, 2026];
+console.log('\n[1/3] Menghentikan proses dev server pada port 2019-2026...');
+const ports = [2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
 for (const p of ports) {
   try {
     const out = execSync(`netstat -ano | findstr :${p} | findstr LISTENING`, { encoding: 'utf8' });

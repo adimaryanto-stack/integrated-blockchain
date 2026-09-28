@@ -3,11 +3,11 @@ $PGSQL_BIN = "$ROOT\pgsql\bin"
 $PGSQL_DATA = "$ROOT\pgsql\data"
 
 Write-Host "==================================================================" -ForegroundColor Cyan
-Write-Host " Menghentikan Seluruh 9 Layanan Integrated Blockchain..." -ForegroundColor Cyan
+Write-Host " Menghentikan Seluruh 10 Layanan Integrated Blockchain..." -ForegroundColor Cyan
 Write-Host "==================================================================" -ForegroundColor Cyan
 
-# 1. Hentikan aplikasi pada port 2020-2026, 2028
-$targetPorts = @(2020, 2021, 2022, 2023, 2024, 2025, 2026, 2028)
+# 1. Hentikan aplikasi pada port 2019-2026, 2028
+$targetPorts = @(2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026, 2028)
 foreach ($p in $targetPorts) {
     $conns = Get-NetTCPConnection -LocalPort $p -ErrorAction SilentlyContinue | Where-Object { $_.State -eq 'Listen' }
     foreach ($c in $conns) {

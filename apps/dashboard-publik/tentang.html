@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Metodologi & Sumber Data Resmi — SiTransparan</title>
+  <meta name="description" content="Informasi metodologi perhitungan, sumber data resmi kementerian, dan kanal pelaporan temuan anggaran pendidikan."/>
+  
+  <link rel="stylesheet" href="/styles/main.css"/>
+  <link rel="stylesheet" href="/styles/transparansi-2020.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <style>
+    .info-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      margin-bottom: 32px;
+      box-shadow: var(--shadow-sm);
+    }
+    .faq-item {
+      padding: 18px 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .faq-item:last-child {
+      border-bottom: none;
+    }
+    .faq-question {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--color-text-main);
+      margin-bottom: 6px;
+    }
+    .faq-answer {
+      font-size: 14px;
+      color: var(--color-text-muted);
+      line-height: 1.6;
+    }
+    .form-group {
+      margin-bottom: 18px;
+    }
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--color-text-main);
+      margin-bottom: 6px;
+    }
+    .form-control {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border);
+      font-size: 14px;
+      outline: none;
+      background: var(--color-bg);
+      transition: all var(--transition-fast);
+    }
+    .form-control:focus {
+      background: #fff;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="brand-logo">
+        <div class="logo-badge">
+          <span class="material-symbols-outlined" style="font-size: 22px;">account_balance</span>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 17px; font-weight: 800; line-height: 1.1; color: #0f172a;">Transparansi Anggaran</span>
+          <span style="font-size: 10px; font-weight: 700; color: var(--color-primary); letter-spacing: 0.05em;">SITRANSPARAN CIVIC-TECH</span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="main-nav">
+        <a href="index.html" class="nav-link">Beranda</a>
+        
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-trigger" type="button">
+            <span>Data</span>
+            <span class="material-symbols-outlined" style="font-size: 18px;">expand_more</span>
+          </button>
+          <div class="nav-dropdown-menu">
+            <a href="aliran-dana.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">account_tree</span>
+              <span>Aliran Dana APBN</span>
+            </a>
+            <a href="audit.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">security</span>
+              <span>Audit & Anomali</span>
+            </a>
+            <a href="compare.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">compare_arrows</span>
+              <span>Bandingkan Sekolah</span>
+            </a>
+            <a href="provinces.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">map</span>
+              <span>38 Provinsi</span>
+            </a>
+            <a href="statistics.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">bar_chart</span>
+              <span>Statistik Nasional</span>
+            </a>
+            <a href="funding.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">payments</span>
+              <span>Sumber Pendanaan</span>
+            </a>
+            <a href="peta-regional.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">public</span>
+              <span>Peta Regional</span>
+            </a>
+            <a href="detail-anggaran.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">receipt_long</span>
+              <span>Detail Program BOS</span>
+            </a>
+          </div>
+        </div>
+
+        <a href="reporting.html" class="nav-link">Laporkan</a>
+        <a href="tentang.html" class="nav-link active">Tentang</a>
+        <a href="faq.html" class="nav-link">FAQ</a>
+        <a href="contact.html" class="nav-link">Kontak</a>
+      </nav>
+
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <a href="pantau-anggaran.html" class="btn-watchlist-pill" title="Lihat item yang Anda pantau">
+          <span>Pantau Anggaran</span>
+          <span class="watchlist-count">0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top: 36px; padding-bottom: 60px;">
+    <!-- Intro Banner -->
+    <div style="margin-bottom: 32px;">
+      <div class="badge-tag">TRANSPARANSI & AKUNTABILITAS PUBLIK</div>
+      <h1 style="font-size: 32px; font-weight: 800; color: var(--color-text-main); margin-bottom: 8px;">
+        Metodologi & Sumber Data Resmi
+      </h1>
+      <p style="font-size: 15px; color: var(--color-text-muted); max-width: 800px;">
+        Menjelaskan prinsip keterbukaan informasi, landasan regulasi, formula kalkulasi indikator, dan jadwal sinkronisasi data pendidikan.
+      </p>
+    </div>
+
+    <!-- Section 1: Sumber Data Resmi -->
+    <div id="sumber-data" class="info-card">
+      <h2 class="section-title" style="font-size: 22px; margin-bottom: 6px;">Sumber Data Resmi Pemerintah</h2>
+      <p class="section-subtitle" style="margin-bottom: 24px;">Seluruh data yang disajikan diperoleh melalui integrasi API terbuka dan publikasi berkala lembaga resmi:</p>
+
+      <div class="dual-section-grid" style="margin-bottom: 0;">
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div class="feed-item">
+            <div class="feed-icon green">🏛️</div>
+            <div class="feed-content">
+              <h4 class="feed-headline">Kementerian Keuangan Republik Indonesia (Kemenkeu)</h4>
+              <p class="feed-desc">Data Nota Keuangan APBN, Buku Alokasi Transfer ke Daerah (TKD), dan realisasi Sistem Akuntansi Bendahara Umum Negara (SABUN).</p>
+            </div>
+          </div>
+
+          <div class="feed-item">
+            <div class="feed-icon blue">🎓</div>
+            <div class="feed-content">
+              <h4 class="feed-headline">Kemendikbudristek (Dapodik & ARKAS)</h4>
+              <p class="feed-desc">Data Pokok Pendidikan (Dapodik) untuk jumlah peserta didik, satuan pendidikan penerima, dan Aplikasi Rencana Kegiatan dan Anggaran Sekolah (ARKAS).</p>
+            </div>
+          </div>
+
+          <div class="feed-item">
+            <div class="feed-icon amber">📖</div>
+            <div class="feed-content">
+              <h4 class="feed-headline">Kementerian Agama (EMIS Madrasah)</h4>
+              <p class="feed-desc">Data pendanaan Bantuan Operasional Pendidikan Madrasah (BOP/BOS Madrasah) dan pesantren.</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="background: var(--color-bg); padding: 24px; border-radius: var(--radius-lg); border: 1px solid var(--color-border);">
+          <h4 style="font-size: 16px; font-weight: 800; color: var(--color-text-main); margin-bottom: 10px;">Jadwal Sinkronisasi Data</h4>
+          <p style="font-size: 13px; color: var(--color-text-muted); line-height: 1.6; margin-bottom: 16px;">
+            - <strong>Data Pagu APBN:</strong> Tahunan (Januari)<br/>
+            - <strong>Data Penyaluran BOS/BOP:</strong> Per Tahap (Maret, Juli, Oktober)<br/>
+            - <strong>Data Realisasi TKD:</strong> Bulanan (Sinkronisasi Kemenkeu)<br/>
+            - <strong>Data PIP & Beasiswa:</strong> Mingguan per SK Penyaluran
+          </p>
+          <div style="font-size: 11px; font-weight: 700; color: var(--color-primary); background: var(--color-primary-light); padding: 6px 12px; border-radius: 99px; display: inline-block;">
+            Terakhir disinkronisasi: 16 Agustus 2026
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Rumus & Metrik -->
+    <div id="rumus" class="info-card">
+      <h2 class="section-title" style="font-size: 22px; margin-bottom: 6px;">Rumus & Formula Indikator</h2>
+      <p class="section-subtitle" style="margin-bottom: 20px;">Bagaimana setiap metrik dihitung:</p>
+
+      <div class="kpi-grid">
+        <div style="background: var(--color-bg); padding: 18px; border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+          <div style="font-size: 11px; font-weight: 700; color: var(--color-primary); text-transform: uppercase;">Mandatory Spending 20%</div>
+          <div style="font-size: 14px; font-weight: 700; margin: 6px 0;">(Alokasi Pendidikan / Total Belanja Negara) × 100%</div>
+          <p style="font-size: 12px; color: var(--color-text-muted);">Sesuai Pasal 31 UUD 1945.</p>
+        </div>
+
+        <div style="background: var(--color-bg); padding: 18px; border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+          <div style="font-size: 11px; font-weight: 700; color: var(--color-secondary); text-transform: uppercase;">Tingkat Penyerapan</div>
+          <div style="font-size: 14px; font-weight: 700; margin: 6px 0;">(Total Realisasi / Pagu Anggaran) × 100%</div>
+          <p style="font-size: 12px; color: var(--color-text-muted);">Mengukur efektivitas eksekusi anggaran.</p>
+        </div>
+
+        <div style="background: var(--color-bg); padding: 18px; border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+          <div style="font-size: 11px; font-weight: 700; color: var(--color-accent); text-transform: uppercase;">Alokasi Per Siswa</div>
+          <div style="font-size: 14px; font-weight: 700; margin: 6px 0;">Total Anggaran Daerah / Jumlah Siswa Aktif</div>
+          <p style="font-size: 12px; color: var(--color-text-muted);">Indeks keadilan fiskal pendidikan wilayah.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: FAQ -->
+    <div id="faq" class="info-card">
+      <h2 class="section-title" style="font-size: 22px; margin-bottom: 20px;">Pertanyaan Umum (FAQ)</h2>
+
+      <div class="faq-item">
+        <div class="faq-question">Apakah data di SiTransparan dapat digunakan untuk riset dan publikasi jurnal?</div>
+        <div class="faq-answer">Ya, seluruh data berlisensi <strong>Creative Commons Attribution (CC-BY 4.0)</strong> sehingga dapat diunduh, dikutip, dan dianalisis secara bebas dengan mencantumkan rujukan SiTransparan.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question">Bagaimana jika sekolah saya belum menerima dana BOS tahap berjalan?</div>
+        <div class="faq-answer">Pastikan pihak sekolah telah menyelesaikan pelaporan ARKAS tahap sebelumnya dan data rekening terverifikasi aktif di sistem Ditjen PAUD Dikdasmen.</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <div>© 2026 SiTransparan Indonesia • Standar Akuntabilitas Terbuka</div>
+        <div><a href="index.html" style="color: #8C9F95;">Kembali ke Beranda &rarr;</a></div>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module" src="/scripts/app.js"></script>
+</body>
+</html>

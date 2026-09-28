@@ -1,0 +1,536 @@
+/* ==========================================================================
+   Cursor-Tracking Hero & Custom Cursor — Maskot Aksara
+   Imported from http://localhost:3000/#data
+   ========================================================================== */
+
+:root {
+  /* Warna merah HARUS sama persis dengan background frame WebP (#DC1F1A) */
+  --hero-red: #dc1f1a;
+  --hero-red-deep: #a81410;
+  --hero-ink: #fff8f0;
+  --hero-navy: #16213e;
+  --hero-navy-deep: #0e1730;
+  --hero-gold: #f4c95d;
+}
+
+/* --------------------------------------------------------------------------
+   Hero Container & Canvas
+   -------------------------------------------------------------------------- */
+.public-hero {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  min-height: 560px;
+  overflow: hidden;
+  background: var(--hero-red);
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  font-family: var(--font-family, "Plus Jakarta Sans", sans-serif);
+}
+
+.cursor-hero {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--hero-red);
+  overflow: hidden;
+}
+
+.cursor-hero__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.cursor-hero__face-anchor {
+  position: absolute;
+  top: 34%;
+  left: 62%;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.cursor-hero__loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hero-ink);
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+  background: var(--hero-red);
+  z-index: 5;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.cursor-hero__loading.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cursor-hero__loading {
+    display: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Floating Pill Nav
+   -------------------------------------------------------------------------- */
+.public-hero__nav {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 20px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 999px;
+  background: rgba(22, 33, 62, 0.35);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 248, 240, 0.15);
+  z-index: 20;
+}
+
+.public-hero__nav-link {
+  padding: 8px 18px;
+  border-radius: 999px;
+  color: var(--hero-ink);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 160ms ease, color 160ms ease;
+  cursor: pointer;
+}
+
+.public-hero__nav-link:hover,
+.public-hero__nav-link:focus-visible,
+.public-hero__nav-link.active {
+  background: rgba(255, 248, 240, 0.18);
+  color: #ffffff;
+}
+
+.public-hero__nav-link:focus-visible {
+  outline: 2px solid var(--hero-gold);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Hero Content (Bottom Left)
+   -------------------------------------------------------------------------- */
+.public-hero__content {
+  position: absolute;
+  left: 6%;
+  bottom: 9%;
+  max-width: 380px;
+  z-index: 20;
+  color: var(--hero-ink);
+}
+
+.public-hero__eyebrow {
+  margin: 0 0 2px;
+  font-size: 1.05rem;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.public-hero__name {
+  margin: 0 0 12px;
+  font-family: "Caveat", cursive;
+  font-size: clamp(3.2rem, 7vw, 4.8rem);
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.25);
+  letter-spacing: 0.02em;
+}
+
+.public-hero__bio {
+  margin: 0 0 24px;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  opacity: 0.92;
+}
+
+.public-hero__actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.public-hero__button {
+  border: none;
+  border-radius: 999px;
+  padding: 12px 24px;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.public-hero__button:hover {
+  transform: translateY(-2px);
+}
+
+.public-hero__button:focus-visible {
+  outline: 2px solid var(--hero-gold);
+  outline-offset: 2px;
+}
+
+.public-hero__button--primary {
+  background: var(--hero-navy);
+  color: var(--hero-ink);
+  box-shadow: 0 4px 14px rgba(22, 33, 62, 0.35);
+}
+
+.public-hero__button--primary:hover {
+  background: var(--hero-navy-deep);
+  box-shadow: 0 6px 20px rgba(22, 33, 62, 0.45);
+}
+
+.public-hero__button--ghost {
+  background: rgba(255, 248, 240, 0.1);
+  color: var(--hero-ink);
+  border: 1px solid rgba(255, 248, 240, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.public-hero__button--ghost:hover {
+  background: rgba(255, 248, 240, 0.2);
+}
+
+/* --------------------------------------------------------------------------
+   Custom Magnetic Cursor
+   -------------------------------------------------------------------------- */
+html.public-hero__native-cursor-hidden,
+html.public-hero__native-cursor-hidden body {
+  cursor: none !important;
+}
+
+html.public-hero__native-cursor-hidden a,
+html.public-hero__native-cursor-hidden button,
+html.public-hero__native-cursor-hidden input,
+html.public-hero__native-cursor-hidden select,
+html.public-hero__native-cursor-hidden [role="button"] {
+  cursor: none !important;
+}
+
+.public-hero__cursor-dot,
+.public-hero__cursor-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 999999;
+  transform: translate(-50%, -50%);
+  will-change: transform;
+}
+
+.public-hero__cursor-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--hero-ink);
+  box-shadow: 0 0 12px 2px rgba(244, 201, 93, 0.65);
+  transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.public-hero__cursor-ring {
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid rgba(255, 248, 240, 0.65);
+  transition: width 160ms ease, height 160ms ease, border-color 160ms ease;
+}
+
+.public-hero__cursor-ring--active {
+  width: 52px;
+  height: 52px;
+  border-color: var(--hero-gold) !important;
+  background: rgba(244, 201, 93, 0.08);
+}
+
+/* Adaptive cursor when scrolling past red hero onto light background */
+body.cursor--dark-mode .public-hero__cursor-dot {
+  background: #1D4ED8;
+  box-shadow: 0 0 10px rgba(29, 78, 216, 0.6);
+}
+
+body.cursor--dark-mode .public-hero__cursor-ring {
+  border-color: rgba(29, 78, 216, 0.5);
+}
+
+body.cursor--dark-mode .public-hero__cursor-ring--active {
+  border-color: #1D4ED8 !important;
+  background: rgba(29, 78, 216, 0.08);
+}
+
+@media (pointer: coarse) {
+  .public-hero__cursor-dot,
+  .public-hero__cursor-ring {
+    display: none !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Mobile Responsiveness
+   -------------------------------------------------------------------------- */
+@media (max-width: 640px) {
+  .public-hero__content {
+    left: 6%;
+    right: 6%;
+    bottom: 6%;
+    max-width: none;
+  }
+
+  .public-hero .cursor-hero__face-anchor {
+    top: 26%;
+    left: 50%;
+  }
+
+  .public-hero__nav {
+    top: calc(env(safe-area-inset-top, 0px) + 12px);
+    width: calc(100% - 32px);
+    justify-content: center;
+  }
+
+  .public-hero__nav-link {
+    padding: 7px 12px;
+    font-size: 0.82rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   AI Audit Interactive Modal
+   -------------------------------------------------------------------------- */
+.ai-audit-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.ai-audit-modal.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.ai-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.ai-modal-container {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(22, 33, 62, 0.1);
+  overflow: hidden;
+  transform: translateY(16px) scale(0.97);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ai-audit-modal.is-open .ai-modal-container {
+  transform: translateY(0) scale(1);
+}
+
+.ai-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  background: #dc1f1a;
+  color: #fff;
+}
+
+.ai-modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ai-modal-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #16213e;
+  border: 2px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #f4c95d;
+  font-size: 16px;
+}
+
+.ai-modal-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.ai-modal-desc {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: rgba(255, 248, 240, 0.85);
+}
+
+.ai-modal-close {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.ai-modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.ai-modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: #fdfdfd;
+}
+
+.ai-message {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ai-message--bot .ai-message-bubble {
+  background: #f3f5f8;
+  color: #1e293b;
+  border-radius: 14px 14px 14px 2px;
+  padding: 12px 16px;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  border: 1px solid #e2e8f0;
+}
+
+.ai-message--user {
+  align-self: flex-end;
+}
+
+.ai-message--user .ai-message-bubble {
+  background: #dc1f1a;
+  color: #ffffff;
+  border-radius: 14px 14px 2px 14px;
+  padding: 12px 16px;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.ai-quick-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.ai-prompt-chip {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.ai-prompt-chip:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #b91c1c;
+}
+
+.ai-modal-footer {
+  padding: 14px 20px;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+}
+
+.ai-input-form {
+  display: flex;
+  gap: 8px;
+}
+
+.ai-input-text {
+  flex: 1;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.ai-input-text:focus {
+  border-color: #dc1f1a;
+  box-shadow: 0 0 0 3px rgba(220, 31, 26, 0.12);
+}
+
+.ai-btn-send {
+  background: #dc1f1a;
+  color: #ffffff;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 22px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.16s ease;
+}
+
+.ai-btn-send:hover {
+  background: #b91c1c;
+}
+
+/* Scroll alignment with sticky header */
+#data {
+  scroll-margin-top: 72px;
+}
+
+#beranda {
+  scroll-margin-top: 0;
+}

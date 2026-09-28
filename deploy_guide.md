@@ -1,23 +1,24 @@
 # 📖 Panduan Lengkap Instalasi & Deployment (Linux VPS, macOS, & Windows)
 ## Integrated Blockchain - Platform Transparansi Anggaran Pendidikan Indonesia
 
-> **Panduan teknis langkah demi langkah untuk menjalankan masing-masing dari 6 dashboard aplikasi, database PostgreSQL, dan Proxy REST API gateway, serta menghubungkannya ke IP Publik, Custom Domain / Subdomain, dan SSL HTTPS.**
+> **Panduan teknis langkah demi langkah untuk menjalankan masing-masing dari 8 portal aplikasi dashboard, database PostgreSQL, dan Proxy REST API gateway, serta menghubungkannya ke IP Publik, Custom Domain / Subdomain, dan SSL HTTPS.**
 
 ---
 
-## 📌 Peta 9 Port & Direktori Aplikasi
+## 📌 Peta 10 Port & Direktori Aplikasi
 
 | No | Nama Layanan / Dashboard | Port | Direktori Sumber | Target Domain / Subdomain (Contoh) |
 |:---:|---|:---:|---|---|
-| **1** | **Portal Transparansi Publik** | `:2020` | `apps/transparansi-anggaran/apps/web-next` | `https://transparansi.domain.com` |
-| **2** | **Dashboard Kementerian (APBN)** | `:2021` | `apps/dashboard-kementerian` | `https://kementerian.domain.com` |
-| **3** | **Dashboard Bank Penyalur** | `:2022` | `apps/dashboard-bank` | `https://bank.domain.com` |
-| **4** | **Dashboard Auditor BPK** | `:2023` | `apps/dashboard-auditor` | `https://auditor.domain.com` |
-| **5** | **Dashboard Institusi Pendidikan** | `:2024` | `apps/dashboard-institusi-pendidikan` | `https://sekolah.domain.com` |
-| **6** | **Dashboard APBD Provinsi Lampung** | `:2025` | `apps/dashboard-apbd` | `https://apbd.domain.com` |
-| **7** | **Dashboard Admin (Super-Console)** | `:2026` | `apps/dashboard-admin` | `https://admin.domain.com` |
-| **8** | **Database PostgreSQL 16** | `:2027` | `pgsql/data` / PostgreSQL Server | `postgresql://127.0.0.1:2027/postgres` |
-| **9** | **Proxy REST API Server** | `:2028` | `proxy/proxy.js` | `https://api.domain.com` |
+| **1** | **Portal Publik Redesign (Civic-Tech Vite)** | `:2019` | `apps/dashboard-publik` | `https://publik.domain.com` |
+| **2** | **Portal Transparansi Publik (Next.js)** | `:2020` | `apps/transparansi-anggaran/apps/web-next` | `https://transparansi.domain.com` |
+| **3** | **Dashboard Kementerian (APBN)** | `:2021` | `apps/dashboard-kementerian` | `https://kementerian.domain.com` |
+| **4** | **Dashboard Bank Penyalur** | `:2022` | `apps/dashboard-bank` | `https://bank.domain.com` |
+| **5** | **Dashboard Auditor BPK** | `:2023` | `apps/dashboard-auditor` | `https://auditor.domain.com` |
+| **6** | **Dashboard Institusi Pendidikan** | `:2024` | `apps/dashboard-institusi-pendidikan` | `https://sekolah.domain.com` |
+| **7** | **Dashboard APBD Provinsi Lampung** | `:2025` | `apps/dashboard-apbd` | `https://apbd.domain.com` |
+| **8** | **Dashboard Admin (Super-Console)** | `:2026` | `apps/dashboard-admin` | `https://admin.domain.com` |
+| **9** | **Database PostgreSQL 16** | `:2027` | `pgsql/data` / PostgreSQL Server | `postgresql://127.0.0.1:2027/postgres` |
+| **10** | **Proxy REST API Server** | `:2028` | `proxy/proxy.js` | `https://api.domain.com` |
 
 ---
 
@@ -193,7 +194,22 @@ sudo nano /etc/nginx/sites-available/blockchain-dashboards.conf
 Tempelkan konfigurasi berikut (Ganti `domain.com` dengan nama domain Anda):
 
 ```nginx
-# 1. Portal Transparansi Publik (Port 2020)
+# 1. Portal Publik Redesign Civic-Tech (Port 2019)
+server {
+    server_name publik.domain.com;
+    location / {
+        proxy_pass http://127.0.0.1:2019;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# 2. Portal Transparansi Publik Next.js (Port 2020)
 server {
     server_name transparansi.domain.com;
     location / {
@@ -332,7 +348,7 @@ Untuk mengaktifkan gembok hijau HTTPS pada seluruh subdomain dalam 1 perintah:
 sudo apt install -y certbot python3-certbot-nginx
 
 # Pasang SSL gratis otomatis ke seluruh subdomain
-sudo certbot --nginx -d transparansi.domain.com -d kementerian.domain.com -d bank.domain.com -d auditor.domain.com -d sekolah.domain.com -d apbd.domain.com -d admin.domain.com -d api.domain.com
+sudo certbot --nginx -d publik.domain.com -d transparansi.domain.com -d kementerian.domain.com -d bank.domain.com -d auditor.domain.com -d sekolah.domain.com -d apbd.domain.com -d admin.domain.com -d api.domain.com
 ```
 
 Certbot akan otomatis memperbarui sertifikat SSL setiap 90 hari.

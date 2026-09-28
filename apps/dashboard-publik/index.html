@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Transparansi Anggaran — Platform Transparansi Dana Pendidikan Indonesia</title>
+  <meta name="description" content="Akses terbuka dan visualisasi interaktif aliran dana pendidikan APBN & APBD: BOS, PIP, KIP Kuliah, Tunjangan Guru, hingga penyaluran ke seluruh sekolah Indonesia."/>
+  
+  <!-- Critical Asset Preloading for Instant First-Paint -->
+  <link rel="preload" as="image" type="image/webp" href="/frames/center.webp" fetchpriority="high"/>
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com"/>
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com"/>
+
+  <link rel="stylesheet" href="/styles/main.css"/>
+  <link rel="stylesheet" href="/styles/cursor-hero.css"/>
+  <link rel="stylesheet" href="/styles/transparansi-2020.css"/>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+</head>
+<body>
+
+  <!-- Custom Magnetic Cursor (Dot & Ring) -->
+  <div id="cursorRing" class="public-hero__cursor-ring" aria-hidden="true"></div>
+  <div id="cursorDot" class="public-hero__cursor-dot" aria-hidden="true"></div>
+
+  <!-- Cursor-Tracking Hero Section — Maskot Aksara -->
+  <section id="beranda" class="public-hero">
+    <div class="cursor-hero">
+      <canvas id="cursorHeroCanvas" class="cursor-hero__canvas" aria-hidden="true"></canvas>
+      <div class="cursor-hero__face-anchor"></div>
+      <div id="cursorHeroLoading" class="cursor-hero__loading" role="status">Memuat karakter Aksara…</div>
+    </div>
+
+    <!-- Floating Nav Capsule -->
+    <nav class="public-hero__nav" aria-label="Navigasi utama">
+      <a href="#beranda" class="public-hero__nav-link active">Beranda</a>
+      <a href="#data" class="public-hero__nav-link">Data Anggaran</a>
+      <a href="#aktivitas-nasional" class="public-hero__nav-link">Aktivitas</a>
+      <a href="#flow-section" class="public-hero__nav-link">Aliran Dana</a>
+      <a href="#ai-audit" class="public-hero__nav-link" id="navAiAudit">Tanya AI</a>
+    </nav>
+
+    <!-- Bottom-Left Content -->
+    <div class="public-hero__content">
+      <p class="public-hero__eyebrow">Halo, aku</p>
+      <h1 class="public-hero__name">Aksara</h1>
+      <p class="public-hero__bio">
+        Aku bantu kamu menelusuri ke mana uang APBN pendidikan benar-benar mengalir — dari kementerian sampai ke sekolahmu secara transparan dan real-time.
+      </p>
+      <div class="public-hero__actions">
+        <a href="#data" class="public-hero__button public-hero__button--primary" id="btnLihatData">
+          Cari Data Sekolah
+        </a>
+        <button type="button" class="public-hero__button public-hero__button--ghost" id="btnTanyaAudit">
+          Tanya AI audit
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Site Header (Sticky when scrolling) -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="#beranda" class="brand-logo">
+        <div class="logo-badge">
+          <span class="material-symbols-outlined" style="font-size: 22px;">account_balance</span>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 17px; font-weight: 800; line-height: 1.1; color: #0f172a;">Transparansi Anggaran</span>
+          <span style="font-size: 10px; font-weight: 700; color: var(--color-primary); letter-spacing: 0.05em;">SITRANSPARAN CIVIC-TECH</span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation with Dropdown Menu -->
+      <nav class="main-nav">
+        <a href="#beranda" class="nav-link">Beranda</a>
+        
+        <!-- Dropdown Menu Data -->
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-trigger active" type="button">
+            <span>Data</span>
+            <span class="material-symbols-outlined" style="font-size: 18px;">expand_more</span>
+          </button>
+          <div class="nav-dropdown-menu">
+            <a href="aliran-dana.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">account_tree</span>
+              <span>Aliran Dana APBN</span>
+            </a>
+            <a href="audit.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">security</span>
+              <span>Audit & Anomali 5W1H</span>
+            </a>
+            <a href="compare.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">compare_arrows</span>
+              <span>Bandingkan Sekolah</span>
+            </a>
+            <a href="provinces.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">map</span>
+              <span>38 Provinsi</span>
+            </a>
+            <a href="statistics.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">bar_chart</span>
+              <span>Statistik Nasional</span>
+            </a>
+            <a href="funding.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">payments</span>
+              <span>Sumber Pendanaan</span>
+            </a>
+            <a href="peta-regional.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">public</span>
+              <span>Peta Regional</span>
+            </a>
+            <a href="detail-anggaran.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">receipt_long</span>
+              <span>Detail Program BOS</span>
+            </a>
+          </div>
+        </div>
+
+        <a href="reporting.html" class="nav-link">Laporkan</a>
+        <a href="tentang.html" class="nav-link">Tentang</a>
+        <a href="faq.html" class="nav-link">FAQ</a>
+        <a href="contact.html" class="nav-link">Kontak</a>
+      </nav>
+
+      <!-- Header Actions -->
+      <div class="header-actions" style="display: flex; align-items: center; gap: 12px;">
+        <a href="pantau-anggaran.html" class="btn-watchlist-pill" title="Lihat item yang Anda pantau">
+          <span>Pantau Anggaran</span>
+          <span class="watchlist-count">0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ====================================================================
+         HERO SECTION FROM LOCALHOST:2020: Wujudkan Transparansi Anggaran Sekolah
+         ==================================================================== -->
+    <section id="data" class="transparansi-hero-2020">
+      <div class="container transparansi-hero-content">
+        <div class="transparansi-hero-badge">
+          <span>✦</span> BASIS DATA RESMI APBN & POSTGRESQL 16 TERVERIFIKASI
+        </div>
+        <h2 class="transparansi-hero-title">
+          Wujudkan Transparansi Anggaran Sekolah
+        </h2>
+        <p class="transparansi-hero-subtitle">
+          Akses terbuka untuk memantau penggunaan dana pendidikan di seluruh Indonesia demi masa depan yang lebih baik dan bebas korupsi.
+        </p>
+
+        <!-- Live School Search Box with Autocomplete -->
+        <div class="school-search-box-wrap">
+          <form id="schoolSearchForm" class="school-search-input-group">
+            <span class="material-symbols-outlined search-prefix-icon">search</span>
+            <input 
+              id="schoolSearchInput" 
+              type="text" 
+              class="school-search-input" 
+              placeholder="Cari nama sekolah atau NPSN... (contoh: SDN 1 PESAWARAN)" 
+              autocomplete="off"
+            />
+            <button type="submit" class="btn-search-2020">
+              <span>Cari</span>
+            </button>
+          </form>
+
+          <!-- Autocomplete Dropdown Popup -->
+          <div id="schoolSuggestionsPopup" class="school-suggestions-popup" style="display: none;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         REAL-TIME METRIC CARDS (Spacious Full-Width Section — Biru Seragam SMP)
+         ==================================================================== -->
+    <section class="hero-stats-section">
+      <div class="container">
+        <div class="hero-stats-2020-grid">
+          <!-- Card 1: Total Dana Terlacak -->
+          <div class="stat-card-2020">
+            <div class="stat-card-2020-icon">
+              <span class="material-symbols-outlined">payments</span>
+            </div>
+            <div class="stat-card-2020-body">
+              <p class="stat-card-2020-label">TOTAL DANA TERLACAK</p>
+              <div class="stat-card-2020-val-group">
+                <span id="liveTotalTracked" class="stat-card-2020-val">Rp 46.591.209.369.638</span>
+                <span class="stat-card-2020-badge live">
+                  <span class="material-symbols-outlined" style="font-size: 15px;">trending_up</span> Live
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Sekolah Terdaftar -->
+          <div class="stat-card-2020">
+            <div class="stat-card-2020-icon">
+              <span class="material-symbols-outlined">school</span>
+            </div>
+            <div class="stat-card-2020-body">
+              <p class="stat-card-2020-label">SEKOLAH TERDAFTAR</p>
+              <div class="stat-card-2020-val-group">
+                <span id="liveSchoolCount" class="stat-card-2020-val">468.724</span>
+                <span class="stat-card-2020-badge verified">
+                  <span class="material-symbols-outlined" style="font-size: 15px;">verified</span> Verified
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         AKTIVITAS NASIONAL SECTION (Real-Time Marquee Ticker Feed)
+         ==================================================================== -->
+    <section id="aktivitas-nasional" class="aktivitas-nasional-section">
+      <div class="container aktivitas-nasional-layout">
+        <!-- Left Column -->
+        <div class="aktivitas-nasional-header">
+          <div class="aktivitas-nasional-badge">
+            <span class="pulse-dot"></span> REAL-TIME NOTIFIKASI
+          </div>
+          <h3 class="aktivitas-nasional-title">
+            <span class="material-symbols-outlined header-icon">notifications_active</span>
+            Aktivitas Nasional
+          </h3>
+          <p class="aktivitas-nasional-desc">
+            Pantau langsung pergerakan transparansi anggaran di seluruh Indonesia. Terus awasi dan berpartisipasi!
+          </p>
+          <div class="aktivitas-live-chip">
+            <span class="pulse-dot"></span>
+            <span>Live Feed PostgreSQL 2027</span>
+          </div>
+        </div>
+
+        <!-- Right Column: Auto-Scrolling Marquee Ticker -->
+        <div class="timeline-card-container">
+          <div id="aktivitasTimelineViewport" class="timeline-marquee-viewport" title="Arahkan kursor untuk menjeda scroll">
+            <div id="aktivitasTimelineTrack" class="timeline-marquee-track">
+              <!-- Loading Skeleton -->
+              <div class="timeline-activity-item">
+                <div class="timeline-activity-content">
+                  <div style="height: 16px; background: #e2e8f0; border-radius: 4px; width: 60%; margin-bottom: 8px;"></div>
+                  <div style="height: 12px; background: #f1f5f9; border-radius: 4px; width: 85%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         PILAR TRANSPARANSI KAMI SECTION (3 Pillar Cards)
+         ==================================================================== -->
+    <section class="pilar-section-2020">
+      <div class="container">
+        <div class="pilar-header">
+          <h3 class="pilar-title">Pilar Transparansi Kami</h3>
+          <p class="pilar-subtitle">Kami berkomitmen memastikan setiap rupiah anggaran pendidikan dapat dipertanggungjawabkan secara terbuka kepada publik.</p>
+        </div>
+        <div class="pilar-grid-3">
+          <!-- Pillar 1 -->
+          <div class="pilar-card">
+            <div class="pilar-icon-wrap">
+              <span class="material-symbols-outlined">database</span>
+            </div>
+            <h4 class="pilar-card-title">Data Akurat</h4>
+            <p class="pilar-card-desc">Data diambil langsung dari sumber resmi Kemendikbud dan divalidasi secara sistematis untuk akurasi tinggi.</p>
+          </div>
+
+          <!-- Pillar 2 -->
+          <div class="pilar-card">
+            <div class="pilar-icon-wrap">
+              <span class="material-symbols-outlined">update</span>
+            </div>
+            <h4 class="pilar-card-title">Update Real-time</h4>
+            <p class="pilar-card-desc">Pembaruan data dilakukan secara berkala setiap periode anggaran untuk memantau arus kas yang aktif.</p>
+          </div>
+
+          <!-- Pillar 3 -->
+          <div class="pilar-card">
+            <div class="pilar-icon-wrap">
+              <span class="material-symbols-outlined">description</span>
+            </div>
+            <h4 class="pilar-card-title">Laporan Publik</h4>
+            <p class="pilar-card-desc">Masyarakat dapat mengunduh laporan penggunaan dana sekolah secara lengkap dan mudah dipahami.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         KEY FINANCIAL SNAPSHOT (4 KPI Cards)
+         ==================================================================== -->
+    <section class="kpi-section">
+      <div class="container">
+        <div class="kpi-grid">
+          <!-- KPI 1 -->
+          <div class="kpi-card primary">
+            <div class="kpi-header">
+              <span class="kpi-label">Total Alokasi Pendidikan</span>
+              <span class="kpi-badge positive">20.0% APBN</span>
+            </div>
+            <div class="kpi-value">Rp757,8 T</div>
+            <p class="kpi-description">Alokasi konstitusional pendidikan tertinggi sepanjang sejarah APBN Indonesia.</p>
+            <div class="kpi-progress-bar">
+              <div class="kpi-progress-fill" style="width: 100%;"></div>
+            </div>
+          </div>
+
+          <!-- KPI 2 -->
+          <div class="kpi-card secondary">
+            <div class="kpi-header">
+              <span class="kpi-label">Realisasi Belanja DB</span>
+              <span class="kpi-badge neutral">71.5% Terserap</span>
+            </div>
+            <div class="kpi-value">Rp46,5 T</div>
+            <p class="kpi-description">Rp71,5 dari setiap Rp100 alokasi telah tersalurkan secara transparan.</p>
+            <div class="kpi-progress-bar">
+              <div class="kpi-progress-fill" style="width: 71.5%; background: var(--color-secondary);"></div>
+            </div>
+          </div>
+
+          <!-- KPI 3 -->
+          <div class="kpi-card accent">
+            <div class="kpi-header">
+              <span class="kpi-label">Penerima Manfaat</span>
+              <span class="kpi-badge" style="background: rgba(244,185,66,0.18); color: #B45309;">Siswa & Mhs</span>
+            </div>
+            <div class="kpi-value">53,2 Jt</div>
+            <p class="kpi-description">Peserta didik aktif dari jenjang PAUD, SD, SMP, SMA, SMK hingga Perguruan Tinggi.</p>
+            <div class="kpi-progress-bar">
+              <div class="kpi-progress-fill" style="width: 88%; background: var(--color-accent);"></div>
+            </div>
+          </div>
+
+          <!-- KPI 4 -->
+          <div class="kpi-card purple">
+            <div class="kpi-header">
+              <span class="kpi-label">Satuan Pendidikan</span>
+              <span class="kpi-badge" style="background: rgba(124,58,237,0.12); color: #7C3AED;">468.724 Satuan</span>
+            </div>
+            <div class="kpi-value">468 Rb+</div>
+            <p class="kpi-description">Sekolah negeri, swasta, dan madrasah yang menerima transfer langsung.</p>
+            <div class="kpi-progress-bar">
+              <div class="kpi-progress-fill" style="width: 92%; background: #7C3AED;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         BUDGET FLOW TOPOLOGY (Sankey-style Interactive Flow)
+         ==================================================================== -->
+    <section id="flow-section" class="flow-section container">
+      <div class="section-title-wrap">
+        <div>
+          <h2 class="section-title">Topologi Aliran Dana Pendidikan 2026</h2>
+          <p class="section-subtitle">Klik salah satu kotak aliran di bawah untuk melihat rincian penyaluran ke instansi dan program.</p>
+        </div>
+        <div class="flow-controls">
+          <button class="flow-tab-btn active">Semua Aliran (APBN)</button>
+          <a href="peta-regional.html" class="flow-tab-btn">Peta Transfer Daerah &rarr;</a>
+        </div>
+      </div>
+
+      <div class="sankey-grid">
+        <!-- Kolom 1: Sumber Kas -->
+        <div class="sankey-column">
+          <div class="sankey-column-header">1. Sumber Kas Negara</div>
+          <div class="sankey-node selected" data-title="APBN (Pajak & PNBP)" data-amount="Rp665,0 T" data-share="87.8% dari total" data-desc="Penerimaan perpajakan dan PNBP pemerintah pusat yang dialokasikan mandatory 20% untuk pendidikan.">
+            <div class="sankey-node-title">
+              <span>APBN Murni</span>
+              <span style="font-size:10px; color:var(--color-primary);">Pusat</span>
+            </div>
+            <div class="sankey-node-amount">Rp665,0 T</div>
+            <div class="sankey-node-meta">87.8% dari total anggaran</div>
+          </div>
+          <div class="sankey-node" data-title="APBD Matching Fund" data-amount="Rp92,8 T" data-share="12.2% dari total" data-desc="Alokasi wajib 20% dari Anggaran Pendapatan dan Belanja Daerah provinsi dan kabupaten/kota.">
+            <div class="sankey-node-title">
+              <span>APBD Matching</span>
+              <span style="font-size:10px; color:var(--color-secondary);">Daerah</span>
+            </div>
+            <div class="sankey-node-amount">Rp92,8 T</div>
+            <div class="sankey-node-meta">12.2% matching fund</div>
+          </div>
+        </div>
+
+        <!-- Kolom 2: Penyalur / Kementerian -->
+        <div class="sankey-column">
+          <div class="sankey-column-header">2. Kementerian & Penyalur</div>
+          <div class="sankey-node" data-title="Transfer ke Daerah (TKD)" data-amount="Rp396,5 T" data-share="52.3% Porsi Terbesar" data-desc="Dana DAU, DAK Fisik, DAK Non-Fisik (BOS), dan Tunjangan Guru ASN Daerah disalurkan langsung ke daerah/sekolah.">
+            <div class="sankey-node-title">
+              <span>Transfer Daerah (TKD)</span>
+            </div>
+            <div class="sankey-node-amount">Rp396,5 T</div>
+            <div class="sankey-node-meta">DAU, DAK, BOS Daerah (52.3%)</div>
+          </div>
+          <div class="sankey-node" data-title="Dana Abadi Pendidikan (LPDP)" data-amount="Rp200,0 T" data-share="26.4% Akumulasi Investasi" data-desc="Hasil kelola investasi dana abadi untuk beasiswa S2/S3, riset strategis, dan dana abadi perguruan tinggi.">
+            <div class="sankey-node-title">
+              <span>Dana Abadi (LPDP)</span>
+            </div>
+            <div class="sankey-node-amount">Rp200,0 T</div>
+            <div class="sankey-node-meta">Investasi jangka panjang</div>
+          </div>
+          <div class="sankey-node" data-title="Kemendikbudristek" data-amount="Rp98,9 T" data-share="13.1% Belanja K/L" data-desc="Pendidikan tinggi, kurikulum, pelatihan guru, vokasi, dan bantuan sarana prasarana.">
+            <div class="sankey-node-title">
+              <span>Kemendikbudristek</span>
+            </div>
+            <div class="sankey-node-amount">Rp98,9 T</div>
+            <div class="sankey-node-meta">Dikdasmen, Dikti, Vokasi</div>
+          </div>
+          <div class="sankey-node" data-title="Kementerian Agama" data-amount="Rp62,4 T" data-share="8.2% Pendidikan Keagamaan" data-desc="Operasional Madrasah (MI, MTs, MA), Pesantren, dan Perguruan Tinggi Keagamaan.">
+            <div class="sankey-node-title">
+              <span>Kemenag (Madrasah)</span>
+            </div>
+            <div class="sankey-node-amount">Rp62,4 T</div>
+            <div class="sankey-node-meta">Madrasah & Pesantren</div>
+          </div>
+        </div>
+
+        <!-- Kolom 3: Program Prioritas -->
+        <div class="sankey-column">
+          <div class="sankey-column-header">3. Program Prioritas</div>
+          <div class="sankey-node" data-title="BOS Reguler & BOP PAUD" data-amount="Rp59,1 T" data-share="100% Langsung ke Rekening Sekolah" data-desc="Bantuan operasional bagi 217.420 sekolah negeri dan swasta tanpa potongan birokrasi.">
+            <div class="sankey-node-title">
+              <span>BOS & BOP PAUD</span>
+            </div>
+            <div class="sankey-node-amount">Rp59,1 T</div>
+            <div class="sankey-node-meta">217.420 Sekolah Langsung</div>
+          </div>
+          <div class="sankey-node" data-title="Gaji & Tunjangan Guru" data-amount="Rp285,4 T" data-share="Tunjangan Profesi & ASN" data-desc="Kesejahteraan 3,1 juta guru dan dosen se-Indonesia (ASN & Non-ASN).">
+            <div class="sankey-node-title">
+              <span>Gaji & TPG Guru</span>
+            </div>
+            <div class="sankey-node-amount">Rp285,4 T</div>
+            <div class="sankey-node-meta">3,1 Juta Tenaga Pendidik</div>
+          </div>
+          <div class="sankey-node" data-title="Program Indonesia Pintar (PIP)" data-amount="Rp13,4 T" data-share="18,6 Juta Siswa Rentan" data-desc="Bantuan tunai langsung ke rekening SimPel siswa dari keluarga pra-sejahtera.">
+            <div class="sankey-node-title">
+              <span>PIP (Bantuan Siswa)</span>
+            </div>
+            <div class="sankey-node-amount">Rp13,4 T</div>
+            <div class="sankey-node-meta">18,6 Jt Siswa Kurang Mampu</div>
+          </div>
+          <div class="sankey-node" data-title="KIP Kuliah Merdeka" data-amount="Rp13,9 T" data-share="985.000 Mahasiswa" data-desc="Pembebasan UKT dan subsidi biaya hidup bulanan untuk mahasiswa berprestasi.">
+            <div class="sankey-node-title">
+              <span>KIP Kuliah</span>
+            </div>
+            <div class="sankey-node-amount">Rp13,9 T</div>
+            <div class="sankey-node-meta">985 Rb Mahasiswa Aktif</div>
+          </div>
+        </div>
+
+        <!-- Kolom 4: Penerima Manfaat -->
+        <div class="sankey-column">
+          <div class="sankey-column-header">4. Penerima Akhir</div>
+          <div class="sankey-node" data-title="53,2 Juta Peserta Didik" data-amount="Langsung" data-share="Terpenuhi Kebutuhan Belajar" data-desc="Mendapatkan akses pendidikan bebas biaya, buku kurikulum gratis, dan tunjangan belajar.">
+            <div class="sankey-node-title">
+              <span>Peserta Didik</span>
+            </div>
+            <div class="sankey-node-amount">53,2 Juta</div>
+            <div class="sankey-node-meta">Siswa & Mahasiswa</div>
+          </div>
+          <div class="sankey-node" data-title="468.000+ Sekolah & Satuan" data-amount="Operasional" data-share="Fasilitas & Layanan" data-desc="Mendukung kegiatan belajar harian, laboratorium, sanitasi, dan ujian berbasis komputer.">
+            <div class="sankey-node-title">
+              <span>Sekolah & Madrasah</span>
+            </div>
+            <div class="sankey-node-amount">468.724</div>
+            <div class="sankey-node-meta">Satuan Pendidikan Terverifikasi</div>
+          </div>
+          <div class="sankey-node" data-title="3,1 Juta Tenaga Pendidik" data-amount="Kesejahteraan" data-share="Tunjangan Terverifikasi" data-desc="Guru, Kepala Sekolah, Pengawas, dan Dosen bersertifikat.">
+            <div class="sankey-node-title">
+              <span>Guru & Dosen</span>
+            </div>
+            <div class="sankey-node-amount">3,1 Juta</div>
+            <div class="sankey-node-meta">Tenaga Pengajar</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Node Detail Interactive Box -->
+      <div id="flowInfoDrawer" class="flow-info-drawer">
+        <div>
+          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--color-primary); margin-bottom: 2px;">Node Aliran Terpilih</div>
+          <h4 style="font-size: 18px; font-weight: 800; color: var(--color-text-main);">APBN (Pajak & PNBP)</h4>
+          <p style="font-size: 13px; color: var(--color-text-muted); margin-top: 2px;">Penerimaan perpajakan dan PNBP pemerintah pusat yang dialokasikan mandatory 20% untuk pendidikan.</p>
+        </div>
+        <div class="drawer-details">
+          <div class="drawer-stat-item">
+            <span class="drawer-stat-label">Nominal Alokasi</span>
+            <span class="drawer-stat-val">Rp665,0 T</span>
+          </div>
+          <div class="drawer-stat-item">
+            <span class="drawer-stat-label">Porsi / Status</span>
+            <span class="drawer-stat-val" style="color: var(--color-secondary);">87.8% dari total</span>
+          </div>
+          <a href="detail-anggaran.html?node=APBN" class="btn-search" style="padding: 8px 18px; font-size: 13px;">
+            Lihat Rincian &rarr;
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         EXPLORE PROGRAMS SECTION
+         ==================================================================== -->
+    <section id="programs-section" class="programs-section">
+      <div class="container">
+        <div class="filter-bar">
+          <div>
+            <h2 class="section-title" style="font-size: 22px;">Jelajahi Program Pembiayaan Pendidikan</h2>
+            <p class="section-subtitle">Pilih kategori untuk melihat data rincian alokasi dan capaian penerima.</p>
+          </div>
+          <div class="filter-chips">
+            <button class="chip-btn active" onclick="filterPrograms('Semua', this)">Semua Program</button>
+            <button class="chip-btn" onclick="filterPrograms('Operasional', this)">Operasional Sekolah</button>
+            <button class="chip-btn" onclick="filterPrograms('Bantuan Siswa', this)">Bantuan Siswa</button>
+            <button class="chip-btn" onclick="filterPrograms('Pendidikan Tinggi', this)">Kuliah & Riset</button>
+            <button class="chip-btn" onclick="filterPrograms('Infrastruktur', this)">Sarpras / Gedung</button>
+          </div>
+        </div>
+
+        <div id="programsGrid" class="programs-grid">
+          <!-- Program Card 1: BOS -->
+          <div class="program-card" data-category="Operasional">
+            <div>
+              <div class="program-category">Operasional Sekolah</div>
+              <h3 class="program-name">BOS Reguler & BOP PAUD 2026</h3>
+              <p class="program-desc">Pendanaan langsung ke rekening 217.420 sekolah tanpa perantara untuk operasional belajar mengajar, buku kurikulum, dan listrik/air.</p>
+            </div>
+            <div>
+              <div class="program-stats">
+                <div>
+                  <div class="program-stat-label">Total Alokasi</div>
+                  <div class="program-stat-val">Rp59,1 Triliun</div>
+                </div>
+                <div>
+                  <div class="program-stat-label">Realisasi (Q3)</div>
+                  <div class="program-stat-val">Rp44,3 T (75%)</div>
+                </div>
+              </div>
+              <div class="program-footer">
+                <a href="detail-anggaran.html?id=bos-reguler" class="btn-detail">Lihat Rincian &rarr;</a>
+                <button class="btn-bookmark" data-id="bos-reguler">☆ Pantau</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Program Card 2: PIP -->
+          <div class="program-card" data-category="Bantuan Siswa">
+            <div>
+              <div class="program-category">Bantuan Siswa Kurang Mampu</div>
+              <h3 class="program-name">Program Indonesia Pintar (PIP)</h3>
+              <p class="program-desc">Bantuan tunai langsung untuk 18,6 juta siswa dari keluarga pra-sejahtera agar tidak ada anak Indonesia yang putus sekolah.</p>
+            </div>
+            <div>
+              <div class="program-stats">
+                <div>
+                  <div class="program-stat-label">Total Alokasi</div>
+                  <div class="program-stat-val">Rp13,4 Triliun</div>
+                </div>
+                <div>
+                  <div class="program-stat-label">Penerima Manfaat</div>
+                  <div class="program-stat-val">18,6 Juta Siswa</div>
+                </div>
+              </div>
+              <div class="program-footer">
+                <a href="detail-anggaran.html?id=pip-kemendikbud" class="btn-detail">Lihat Rincian &rarr;</a>
+                <button class="btn-bookmark" data-id="pip-kemendikbud">☆ Pantau</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Program Card 3: KIP Kuliah -->
+          <div class="program-card" data-category="Pendidikan Tinggi">
+            <div>
+              <div class="program-category">Pendidikan Tinggi</div>
+              <h3 class="program-name">KIP Kuliah Merdeka 2026</h3>
+              <p class="program-desc">Pembebasan UKT penuh dan subsidi biaya hidup bulanan hingga Rp1,4 juta bagi 985.000 mahasiswa berprestasi.</p>
+            </div>
+            <div>
+              <div class="program-stats">
+                <div>
+                  <div class="program-stat-label">Total Alokasi</div>
+                  <div class="program-stat-val">Rp13,9 Triliun</div>
+                </div>
+                <div>
+                  <div class="program-stat-label">Penerima Aktif</div>
+                  <div class="program-stat-val">985.000 Mhs</div>
+                </div>
+              </div>
+              <div class="program-footer">
+                <a href="detail-anggaran.html?id=kip-kuliah" class="btn-detail">Lihat Rincian &rarr;</a>
+                <button class="btn-bookmark" data-id="kip-kuliah">☆ Pantau</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Program Card 4: DAK Fisik -->
+          <div class="program-card" data-category="Infrastruktur">
+            <div>
+              <div class="program-category">Infrastruktur & Sarpras</div>
+              <h3 class="program-name">DAK Fisik Penuntasan Sarpras</h3>
+              <p class="program-desc">Pembangunan ruang kelas baru, rehabilitasi sekolah rusak berat, dan penyediaan sanitasi bersih di daerah 3T.</p>
+            </div>
+            <div>
+              <div class="program-stats">
+                <div>
+                  <div class="program-stat-label">Total Alokasi</div>
+                  <div class="program-stat-val">Rp18,2 Triliun</div>
+                </div>
+                <div>
+                  <div class="program-stat-label">Target Fisik</div>
+                  <div class="program-stat-val">12.400 Ruang</div>
+                </div>
+              </div>
+              <div class="program-footer">
+                <a href="detail-anggaran.html?id=dak-fisik" class="btn-detail">Lihat Rincian &rarr;</a>
+                <button class="btn-bookmark" data-id="dak-fisik">☆ Pantau</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Program Card 5: Tunjangan Guru -->
+          <div class="program-card" data-category="Operasional">
+            <div>
+              <div class="program-category">Kesejahteraan Guru</div>
+              <h3 class="program-name">Tunjangan Profesi Guru (TPG)</h3>
+              <p class="program-desc">Penyaluran tunjangan profesi dan tunjangan khusus bagi 1,4 juta guru bersertifikasi secara langsung setiap triwulan.</p>
+            </div>
+            <div>
+              <div class="program-stats">
+                <div>
+                  <div class="program-stat-label">Total Alokasi</div>
+                  <div class="program-stat-val">Rp56,8 Triliun</div>
+                </div>
+                <div>
+                  <div class="program-stat-label">Penerima Guru</div>
+                  <div class="program-stat-val">1,4 Juta Guru</div>
+                </div>
+              </div>
+              <div class="program-footer">
+                <a href="detail-anggaran.html?id=tunjangan-profesi" class="btn-detail">Lihat Rincian &rarr;</a>
+                <button class="btn-bookmark" data-id="tunjangan-profesi">☆ Pantau</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Program Card 6: Beasiswa LPDP -->
+          <div class="program-card" data-category="Pendidikan Tinggi">
+            <div>
+              <div class="program-category">Riset & Pascasarjana</div>
+              <h3 class="program-name">Dana Abadi & Beasiswa LPDP</h3>
+              <p class="program-desc">Pembiayaan studi S2 & S3 di universitas terbaik dunia dan pendanaan proyek riset strategis dari hasil kelolaan Dana Abadi.</p>
+            </div>
+            <div>
+              <div class="program-stats">
+                <div>
+                  <div class="program-stat-label">Yield Investasi</div>
+                  <div class="program-stat-val">Rp20,0 Triliun</div>
+                </div>
+                <div>
+                  <div class="program-stat-label">Awardee Aktif</div>
+                  <div class="program-stat-val">34.000 Alumni/Mhs</div>
+                </div>
+              </div>
+              <div class="program-footer">
+                <a href="detail-anggaran.html?id=beasiswa-lpdp" class="btn-detail">Lihat Rincian &rarr;</a>
+                <button class="btn-bookmark" data-id="beasiswa-lpdp">☆ Pantau</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         MARI BERSAMA AWASI DANA PENDIDIKAN CTA BANNER (From localhost:2020)
+         ==================================================================== -->
+    <section class="cta-banner-2020">
+      <div class="container">
+        <div class="cta-banner-card">
+          <div class="cta-banner-text">
+            <h3 class="cta-banner-heading">Mari Bersama Awasi Dana Pendidikan</h3>
+            <p class="cta-banner-sub">Laporkan ketidaksesuaian atau pantau sekolah di sekitar Anda sekarang juga untuk masa depan pendidikan yang berintegritas.</p>
+          </div>
+          <div class="cta-banner-actions">
+            <a href="#data" class="btn-cta-primary">
+              <span class="material-symbols-outlined">search</span>
+              Mulai Pantau
+            </a>
+            <button type="button" class="btn-cta-ghost" onclick="document.getElementById('navAiAudit').click()">
+              Tanya AI Aksara
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Site Footer (Unified with 2020 Info) -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+            <div class="logo-badge" style="width: 32px; height: 32px; font-size: 14px;">
+              <span class="material-symbols-outlined" style="font-size: 18px;">account_balance</span>
+            </div>
+            <h4 style="margin: 0; font-size: 18px; color: #ffffff;">Transparansi Anggaran</h4>
+          </div>
+          <p>Misi kami adalah menciptakan ekosistem pendidikan yang transparan melalui keterbukaan data anggaran APBN/APBD. Kami percaya akuntabilitas adalah kunci utama kemajuan bangsa.</p>
+        </div>
+        <div class="footer-col">
+          <h5>Eksplorasi Data</h5>
+          <ul class="footer-links">
+            <li><a href="aliran-dana.html">Aliran Dana APBN</a></li>
+            <li><a href="audit.html">Audit & Anomali 5W1H</a></li>
+            <li><a href="compare.html">Bandingkan Sekolah</a></li>
+            <li><a href="provinces.html">38 Provinsi</a></li>
+            <li><a href="statistics.html">Statistik Nasional</a></li>
+            <li><a href="funding.html">Sumber Pendanaan</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h5>Layanan & Edukasi</h5>
+          <ul class="footer-links">
+            <li><a href="faq.html">Tanya Jawab (FAQ)</a></li>
+            <li><a href="tentang.html">Metodologi & Data</a></li>
+            <li><a href="peta-regional.html">Peta Sebaran Sekolah</a></li>
+            <li><a href="detail-anggaran.html">Detail Program BOS</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h5>Kontak & Partisipasi</h5>
+          <ul class="footer-links">
+            <li><a href="reporting.html">Lapor Temuan Anggaran</a></li>
+            <li><a href="contact.html">Kontak Sekretariat</a></li>
+            <li><a href="pantau-anggaran.html">Daftar Pantau Anggaran</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>© 2026 Transparansi Anggaran Pendidikan Indonesia</div>
+        <div>Diperbarui: 16 Agustus 2026 • Aksara Engine v2.0</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- AI Audit Modal Dialog -->
+  <div id="aiAuditModal" class="ai-audit-modal" aria-hidden="true" role="dialog" aria-labelledby="aiModalTitle">
+    <div class="ai-modal-backdrop" id="aiModalBackdrop"></div>
+    <div class="ai-modal-container">
+      <div class="ai-modal-header">
+        <div class="ai-modal-title-group">
+          <div class="ai-modal-avatar">
+            <span class="ai-avatar-badge">✦</span>
+          </div>
+          <div>
+            <h3 id="aiModalTitle" class="ai-modal-title">Tanya Aksara — AI Audit Anggaran</h3>
+            <p class="ai-modal-desc">Asisten AI interaktif pemantauan APBN Pendidikan 2026</p>
+          </div>
+        </div>
+        <button type="button" class="ai-modal-close" id="aiModalClose" aria-label="Tutup dialog">&times;</button>
+      </div>
+
+      <div class="ai-modal-body" id="aiModalBody">
+        <div class="ai-message ai-message--bot">
+          <div class="ai-message-bubble">
+            Halo! Aku <strong>Aksara</strong>. Kamu bisa tanyakan apa saja seputar APBN Pendidikan 2026 senilai <strong>Rp757,8 Triliun</strong> — mulai dari dana BOS sekolahmu, beasiswa PIP & KIP Kuliah, tunjangan guru, hingga transfer ke daerahmu.
+          </div>
+        </div>
+        <div class="ai-quick-prompts">
+          <button type="button" class="ai-prompt-chip" data-prompt="Berapa total alokasi dan realisasi APBN pendidikan 2026?">
+            📊 Total Alokasi & Realisasi
+          </button>
+          <button type="button" class="ai-prompt-chip" data-prompt="Berapa alokasi dana BOS per siswa tahun 2026?">
+            🏫 Dana BOS per Siswa
+          </button>
+          <button type="button" class="ai-prompt-chip" data-prompt="Bagaimana aliran dana dari kas negara sampai ke sekolah?">
+            🌊 Alur Penyaluran Dana
+          </button>
+          <button type="button" class="ai-prompt-chip" data-prompt="Berapa penerima beasiswa PIP dan KIP Kuliah?">
+            🎓 PIP & KIP Kuliah
+          </button>
+        </div>
+      </div>
+
+      <div class="ai-modal-footer">
+        <form id="aiAuditForm" class="ai-input-form">
+          <input 
+            type="text" 
+            id="aiInputText" 
+            class="ai-input-text" 
+            placeholder="Tanyakan hal spesifik (mis. BOS, PIP, transfer daerah, guru)..." 
+            autocomplete="off"
+          />
+          <button type="submit" class="ai-btn-send">Kirim</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vite Module Bundles -->
+  <script type="module" src="/scripts/db-client.js"></script>
+  <script type="module" src="/scripts/cursor-hero.js"></script>
+  <script type="module" src="/scripts/app.js"></script>
+  <script>
+    function filterPrograms(category, btn) {
+      document.querySelectorAll('.chip-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const cards = document.querySelectorAll('.program-card');
+      cards.forEach(card => {
+        const cat = card.getAttribute('data-category');
+        if (category === 'Semua' || cat.toLowerCase().includes(category.toLowerCase())) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+    window.filterPrograms = filterPrograms;
+  </script>
+</body>
+</html>

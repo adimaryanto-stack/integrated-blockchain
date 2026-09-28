@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Formulir Pelaporan — SiTransparan</title>
+  <meta name="description" content="Kanal informasi pengaduan masyarakat untuk dugaan penyimpangan dana pendidikan melalui portal resmi penegak hukum Republik Indonesia."/>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  
+  <link rel="stylesheet" href="/styles/main.css"/>
+  <link rel="stylesheet" href="/styles/transparansi-2020.css"/>
+
+  <style>
+    .form-container-box {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: 24px;
+      padding: 36px;
+      box-shadow: var(--shadow-sm);
+    }
+    .input-group {
+      margin-bottom: 20px;
+    }
+    .input-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 6px;
+    }
+    .input-control {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      font-size: 14px;
+      outline: none;
+      background: #F8FAFC;
+      transition: all 0.2s ease;
+    }
+    .input-control:focus {
+      background: #ffffff;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
+    }
+    .portal-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #ffffff;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+    .portal-btn:hover {
+      opacity: 0.92;
+      transform: translateY(-1px);
+    }
+    .portal-btn-kpk {
+      background: #1D4ED8;
+    }
+    .portal-btn-bpk {
+      background: #1E3A8A;
+    }
+    .portal-btn-lapor {
+      background: #2563EB;
+    }
+    .input-control:disabled {
+      background: #F1F5F9;
+      color: #94A3B8;
+      cursor: not-allowed;
+      border-color: #CBD5E1;
+    }
+    .btn-report:disabled {
+      background: #94A3B8 !important;
+      color: #F8FAFC !important;
+      cursor: not-allowed !important;
+      opacity: 0.8;
+      box-shadow: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="brand-logo">
+        <div class="logo-badge">
+          <span class="material-symbols-outlined" style="font-size: 22px;">account_balance</span>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 17px; font-weight: 800; line-height: 1.1; color: #0f172a;">Transparansi Anggaran</span>
+          <span style="font-size: 10px; font-weight: 700; color: var(--color-primary); letter-spacing: 0.05em;">SITRANSPARAN CIVIC-TECH</span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="main-nav">
+        <a href="index.html" class="nav-link">Beranda</a>
+        
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-trigger" type="button">
+            <span>Data</span>
+            <span class="material-symbols-outlined" style="font-size: 18px;">expand_more</span>
+          </button>
+          <div class="nav-dropdown-menu">
+            <a href="aliran-dana.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">account_tree</span>
+              <span>Aliran Dana APBN</span>
+            </a>
+            <a href="audit.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">security</span>
+              <span>Audit & Anomali</span>
+            </a>
+            <a href="compare.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">compare_arrows</span>
+              <span>Bandingkan Sekolah</span>
+            </a>
+            <a href="peta-regional.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">public</span>
+              <span>Peta Regional</span>
+            </a>
+            <a href="provinces.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">map</span>
+              <span>38 Provinsi</span>
+            </a>
+            <a href="statistics.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">bar_chart</span>
+              <span>Statistik Nasional</span>
+            </a>
+            <a href="funding.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">payments</span>
+              <span>Sumber Pendanaan</span>
+            </a>
+            <a href="detail-anggaran.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">receipt_long</span>
+              <span>Detail Program BOS</span>
+            </a>
+          </div>
+        </div>
+
+        <a href="reporting.html" class="nav-link active">Laporkan</a>
+        <a href="tentang.html" class="nav-link">Tentang</a>
+        <a href="faq.html" class="nav-link">FAQ</a>
+        <a href="contact.html" class="nav-link">Kontak</a>
+      </nav>
+
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <a href="pantau-anggaran.html" class="btn-watchlist-pill" title="Lihat item yang Anda pantau">
+          <span>Pantau Anggaran</span>
+          <span class="watchlist-count" id="headerWatchlistCount">0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top: 36px; padding-bottom: 72px;">
+    <!-- Title Area -->
+    <div style="margin-bottom: 32px; max-width: 800px;">
+      <div class="badge-tag" style="background: #FEF3C7; color: #B45309; border-color: rgba(245, 158, 11, 0.3);">
+        <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle; margin-right: 4px;">block</span>
+        FITUR PELAPORAN SEDANG DINONAKTIFKAN
+      </div>
+      <h1 style="font-size: 32px; font-weight: 800; color: #0f172a; margin: 8px 0;">
+        Formulir Pelaporan Dugaan Kejanggalan Anggaran
+      </h1>
+      <p style="font-size: 15px; color: var(--color-text-muted); line-height: 1.6;">
+        Fitur formulir pelaporan mandiri saat ini sedang dinonaktifkan. Anda dapat memantau data resmi atau menghubungi kanal penegak hukum resmi yang tersedia.
+      </p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 3fr 2fr; gap: 32px; align-items: flex-start;">
+      <!-- Form Column -->
+      <div class="form-container-box">
+        <!-- Disabled Notice Banner -->
+        <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-left: 4px solid #F59E0B; border-radius: 14px; padding: 18px 20px; margin-bottom: 24px; display: flex; align-items: flex-start; gap: 14px;">
+          <span class="material-symbols-outlined" style="color: #D97706; font-size: 26px; margin-top: 2px;">lock</span>
+          <div>
+            <h4 style="font-size: 15px; font-weight: 800; color: #92400E; margin: 0 0 4px 0;">Fitur Pelaporan Publik Sedang Dinonaktifkan</h4>
+            <p style="font-size: 13.5px; color: #B45309; margin: 0; line-height: 1.55;">
+              Pengiriman formulir aduan publik mandiri melalui sistem ini telah dinonaktifkan sementara. Untuk menyampaikan aduan dugaan penyimpangan anggaran pendidikan, silakan gunakan kanal pengaduan langsung penegak hukum resmi (KPK / BPK RI) pada panel di sebelah kanan.
+            </p>
+          </div>
+        </div>
+
+        <form id="reportForm" onsubmit="handleReportSubmit(event)">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="input-group">
+              <label class="input-label">NAMA PELAPOR (OPSIONAL / ANONIM)</label>
+              <input type="text" id="repName" placeholder="Contoh: Anonim / Nama Anda" class="input-control" disabled>
+            </div>
+
+            <div class="input-group">
+              <label class="input-label">NOMOR KONTAK / TELEPON (OPSIONAL)</label>
+              <input type="text" id="repWa" placeholder="Nomor kontak Anda (Opsional)" class="input-control" disabled>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">INFORMASI SINGKAT 5W1H *</label>
+            <textarea id="rep5w1h" required rows="3" class="input-control" placeholder="What: Dugaan penggelembungan belanja...&#10;Where: Sekolah / NPSN...&#10;When: Periode..." disabled></textarea>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">PENJELASAN LENGKAP KRONOLOGI *</label>
+            <textarea id="repDesc" required rows="4" class="input-control" placeholder="Jelaskan secara mendalam fakta yang Anda ketahui di lapangan..." disabled></textarea>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="input-group">
+              <label class="input-label">ESTIMASI NOMINAL DUGAAN (RP)</label>
+              <input type="text" id="repAmount" placeholder="Contoh: 50000000" class="input-control" disabled>
+            </div>
+
+            <div class="input-group">
+              <label class="input-label">TAUTAN BUKTI DOKUMEN / FOTO</label>
+              <input type="text" id="repLink" placeholder="https://drive.google.com/..." class="input-control" disabled>
+            </div>
+          </div>
+
+          <button type="button" id="btnSubmitReport" class="btn-report" disabled style="width: 100%; justify-content: center; padding: 14px; font-size: 15px; margin-top: 8px;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">block</span>
+            Fitur Pelaporan Dinonaktifkan
+          </button>
+        </form>
+
+        <!-- Result Box -->
+        <div id="reportSuccessBox" style="display: none; margin-top: 24px; padding: 20px; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 16px;">
+          <div style="display: flex; align-items: center; gap: 10px; color: #065F46; font-weight: 800; font-size: 16px; margin-bottom: 6px;">
+            <span class="material-symbols-outlined" style="font-size: 24px;">check_circle</span>
+            Laporan Berhasil Tercatat!
+          </div>
+          <p style="font-size: 13px; color: #047857; line-height: 1.6;">
+            Aduan Anda telah tersimpan secara terenkripsi pada basis data PostgreSQL SiTransparan. Anda juga dapat meneruskan temuan ini langsung ke lembaga penegak hukum resmi:
+          </p>
+          <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+            <a href="https://www.kpk.go.id/id/layanan-publik/pengaduan-masyarakat" target="_blank" rel="noopener noreferrer" class="portal-btn portal-btn-kpk">
+              <span class="material-symbols-outlined" style="font-size: 18px;">open_in_new</span>
+              <span>Portal Pengaduan KPK</span>
+            </a>
+            <a href="https://www.bpk.go.id/page/pengaduan-masyarakat" target="_blank" rel="noopener noreferrer" class="portal-btn portal-btn-bpk">
+              <span class="material-symbols-outlined" style="font-size: 18px;">open_in_new</span>
+              <span>Portal Pengaduan BPK RI</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info & Channel Sidebar -->
+      <div>
+        <div style="background: #ffffff; border: 1px solid var(--color-border); border-radius: 20px; padding: 28px; margin-bottom: 24px; box-shadow: var(--shadow-sm);">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; color: var(--color-primary);">
+            <span class="material-symbols-outlined" style="font-size: 24px;">verified_user</span>
+            <h3 style="font-size: 17px; font-weight: 800; color: #0f172a;">Jaminan Kerahasiaan</h3>
+          </div>
+          <p style="font-size: 13px; color: var(--color-text-muted); line-height: 1.6;">
+            Identitas pelapor dilindungi oleh Undang-Undang Perlindungan Saksi dan Korban (LPSK). Anda berhak melaporkan secara sepenuhnya anonim tanpa perlu mencantumkan nama asli.
+          </p>
+        </div>
+
+        <div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 20px; padding: 28px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <span class="material-symbols-outlined" style="color: var(--color-primary); font-size: 22px;">gavel</span>
+            <h3 style="font-size: 16px; font-weight: 800; color: var(--color-primary); margin: 0;">
+              Kanal Cepat Penegak Hukum
+            </h3>
+          </div>
+          <p style="font-size: 13px; color: #1E3A8A; line-height: 1.6; margin-bottom: 18px;">
+            Laporan indikasi penyimpangan anggaran pendidikan dapat disampaikan langsung kepada lembaga penegak hukum resmi Republik Indonesia melalui saluran portal resmi berikut:
+          </p>
+          
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <!-- KPK Official Channel -->
+            <div style="background: #FFFFFF; border: 1px solid #DBEAFE; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 13.5px; font-weight: 800; color: #0F172A;">Komisi Pemberantasan Korupsi (KPK)</span>
+                <span style="font-size: 11px; font-weight: 700; background: #FEF2F2; color: #DC2626; padding: 2px 8px; border-radius: 999px;">Call Center 198</span>
+              </div>
+              <p style="font-size: 12px; color: #64748B; margin: 0; line-height: 1.5;">
+                Pengaduan tindak pidana korupsi APBN/APBD pendidikan melalui portal resmi Pengaduan Masyarakat (Dumas KPK).
+              </p>
+              <a href="https://www.kpk.go.id/id/layanan-publik/pengaduan-masyarakat" target="_blank" rel="noopener noreferrer" class="portal-btn portal-btn-kpk" style="width: 100%;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">open_in_new</span>
+                <span>Buka Portal Pengaduan Resmi KPK</span>
+              </a>
+            </div>
+
+            <!-- BPK RI Official Channel -->
+            <div style="background: #FFFFFF; border: 1px solid #DBEAFE; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 13.5px; font-weight: 800; color: #0F172A;">Badan Pemeriksa Keuangan (BPK RI)</span>
+                <span style="font-size: 11px; font-weight: 700; background: #EFF6FF; color: #1D4ED8; padding: 2px 8px; border-radius: 999px;">Layanan Resmi</span>
+              </div>
+              <p style="font-size: 12px; color: #64748B; margin: 0; line-height: 1.5;">
+                Pusat Pengelolaan Informasi & Keluhan Terpadu Pengelolaan Keuangan Negara Republik Indonesia.
+              </p>
+              <a href="https://www.bpk.go.id/page/pengaduan-masyarakat" target="_blank" rel="noopener noreferrer" class="portal-btn portal-btn-bpk" style="width: 100%;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">open_in_new</span>
+                <span>Buka Portal Pengaduan BPK RI</span>
+              </a>
+            </div>
+
+            <!-- SP4N LAPOR Official Channel -->
+            <div style="background: #FFFFFF; border: 1px solid #DBEAFE; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 13.5px; font-weight: 800; color: #0F172A;">SP4N LAPOR! RI</span>
+                <span style="font-size: 11px; font-weight: 700; background: #F1F5F9; color: #475569; padding: 2px 8px; border-radius: 999px;">Kanal Nasional</span>
+              </div>
+              <p style="font-size: 12px; color: #64748B; margin: 0; line-height: 1.5;">
+                Sistem Pengelolaan Pengaduan Pelayanan Publik Nasional terintegrasi dengan Kemendikbudristek & Kemenkeu.
+              </p>
+              <a href="https://www.lapor.go.id" target="_blank" rel="noopener noreferrer" class="portal-btn portal-btn-lapor" style="width: 100%;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">open_in_new</span>
+                <span>Buka Layanan SP4N-LAPOR!</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Site Footer -->
+  <footer style="background: #0B1329; color: #94A3B8; padding: 48px 0 24px; border-top: 1px solid #1E293B;">
+    <div class="container">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; padding-bottom: 24px; border-bottom: 1px solid #1E293B;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: var(--color-primary); display: flex; align-items: center; justify-content: center; color: #fff;">
+            <span class="material-symbols-outlined" style="font-size: 18px;">account_balance</span>
+          </div>
+          <span style="font-size: 16px; font-weight: 800; color: #F8FAFC;">SiTransparan Anggaran</span>
+        </div>
+        <div style="display: flex; gap: 20px; font-size: 13px;">
+          <a href="index.html" style="color: #94A3B8; text-decoration: none;">Beranda</a>
+          <a href="aliran-dana.html" style="color: #94A3B8; text-decoration: none;">Aliran Dana</a>
+          <a href="audit.html" style="color: #94A3B8; text-decoration: none;">Audit</a>
+          <a href="reporting.html" style="color: #60A5FA; text-decoration: none; font-weight: 700;">Laporkan</a>
+          <a href="tentang.html" style="color: #94A3B8; text-decoration: none;">Tentang</a>
+        </div>
+      </div>
+      <p style="font-size: 12px; color: #64748B; margin-top: 20px; text-align: center;">
+        © 2026 SiTransparan Civic-Tech.
+      </p>
+    </div>
+  </footer>
+
+  <script type="module" src="/scripts/db-client.js"></script>
+  <script>
+    function prefillFromUrl() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const desc = urlParams.get('desc');
+      const npsn = urlParams.get('npsn');
+      const name = urlParams.get('name');
+      const amount = urlParams.get('amount');
+      const reason = urlParams.get('reason');
+      const date = urlParams.get('date');
+
+      if (desc || npsn || amount) {
+        document.getElementById('rep5w1h').value = `WHAT: Dugaan kejanggalan pada "${desc || 'anggaran sekolah'}"\nWHERE: ${name || 'Sekolah'} (NPSN: ${npsn || '-'})\nWHEN: ${date || 'Tahun 2026'}\nWHY: ${reason || 'Deviasi anomali terdeteksi oleh sistem'}`;
+        document.getElementById('repDesc').value = `Ditemukan indikasi ketidaksesuaian anggaran untuk item "${desc || ''}" di ${name || 'sekolah'} dengan rincian: ${reason || ''}.`;
+        if (amount) document.getElementById('repAmount').value = amount;
+      }
+    }
+
+    function handleReportSubmit(e) {
+      if (e) e.preventDefault();
+      alert('Fitur pelaporan mandiri saat ini sedang dinonaktifkan. Silakan gunakan kanal resmi KPK atau BPK.');
+      return false;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      prefillFromUrl();
+    });
+  </script>
+</body>
+</html>

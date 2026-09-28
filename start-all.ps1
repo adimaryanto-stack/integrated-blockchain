@@ -5,7 +5,7 @@ $PGSQL_BIN = "$ROOT\pgsql\bin"
 $PGSQL_DATA = "$ROOT\pgsql\data"
 
 Write-Host "==================================================================" -ForegroundColor Cyan
-Write-Host " Integrated Blockchain - Peluncur Otomatis & Verifikator 9 Port" -ForegroundColor Cyan
+Write-Host " Integrated Blockchain - Peluncur Otomatis & Verifikator 10 Port" -ForegroundColor Cyan
 Write-Host "==================================================================" -ForegroundColor Cyan
 
 # --- 0. Prasyarat: Cek Node.js & npm ---
@@ -19,9 +19,9 @@ if (-not $nodeCheck -or -not $npmCheck) {
     exit 1
 }
 
-# --- 1. Membersihkan port 2020-2028 bila ada sisa proses lama ---
-Write-Host "`n[1/6] Memeriksa dan membersihkan port 2020-2028..." -ForegroundColor Yellow
-$targetPorts = @(2020, 2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028)
+# --- 1. Membersihkan port 2019-2028 bila ada sisa proses lama ---
+Write-Host "`n[1/6] Memeriksa dan membersihkan port 2019-2028..." -ForegroundColor Yellow
+$targetPorts = @(2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028)
 foreach ($p in $targetPorts) {
     $conns = Get-NetTCPConnection -LocalPort $p -ErrorAction SilentlyContinue | Where-Object { $_.State -eq 'Listen' }
     foreach ($c in $conns) {
@@ -98,10 +98,11 @@ $proxyJob = Start-Process -FilePath "node" -ArgumentList "proxy.js" -WorkingDire
 Write-Host "      Proxy API Server aktif di port 2028 (PID: $($proxyJob.Id))" -ForegroundColor Green
 Start-Sleep 1
 
-# --- 5. Memulai Seluruh 7 Portal Aplikasi Dashboard ---
-Write-Host "`n[5/6] Memulai seluruh 7 portal dashboard..." -ForegroundColor Yellow
+# --- 5. Memulai Seluruh 8 Portal Aplikasi Dashboard ---
+Write-Host "`n[5/6] Memulai seluruh 8 portal dashboard..." -ForegroundColor Yellow
 
 $apps = @(
+    @{ name = "Portal Publik Civic-Tech"; port = 2019; path = "$ROOT\apps\dashboard-publik";                   cmd = "npm run dev" },
     @{ name = "Transparansi Publik";     port = 2020; path = "$ROOT\apps\transparansi-anggaran\apps\web-next"; cmd = "npm run dev" },
     @{ name = "Dashboard Kementerian";   port = 2021; path = "$ROOT\apps\dashboard-kementerian";              cmd = "npm run dev" },
     @{ name = "Dashboard Bank";          port = 2022; path = "$ROOT\apps\dashboard-bank";                     cmd = "npm run dev" },
@@ -135,6 +136,7 @@ Write-Host "`n[6/6] Memverifikasi status kesehatan dan memanaskan portal web..."
 Write-Host "      (Next.js sedang mengompilasi halaman web untuk pertama kali, mohon tunggu sebentar...)" -ForegroundColor Gray
 
 $allPortsList = @(
+    @{ name = "Portal Publik Civic-Tech"; port = 2019; url = "http://localhost:2019" },
     @{ name = "Transparansi Publik";     port = 2020; url = "http://localhost:2020" },
     @{ name = "Dashboard Kementerian";   port = 2021; url = "http://localhost:2021/dashboard" },
     @{ name = "Dashboard Bank";          port = 2022; url = "http://localhost:2022/dashboard" },

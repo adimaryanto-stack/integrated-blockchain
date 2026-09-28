@@ -16,6 +16,7 @@ graph TD
     end
 
     subgraph "PRESENTATION LAYER"
+        Port2019["Port 2019<br/>Portal Publik Civic-Tech (Vite)<br/>(apps/dashboard-publik)"]
         Port2020["Port 2020<br/>Dashboard Transparansi Publik<br/>(apps/transparansi-anggaran)"]
         Port2021["Port 2021<br/>Dashboard Kementerian<br/>(apps/dashboard-kementerian)"]
         Port2022["Port 2022<br/>Dashboard Bank Penyalur<br/>(apps/dashboard-bank)"]
@@ -33,12 +34,14 @@ graph TD
         Port2027["Port 2027<br/>PostgreSQL 16 Relational Engine<br/>(35+ Tables / Single Source of Truth)"]
     end
 
+    ClientPublik -->|HTTP:2019| Port2019
     ClientPublik -->|HTTP:2020| Port2020
     ClientKemen -->|HTTP:2021| Port2021
     ClientBank -->|HTTP:2022| Port2022
     ClientAudit -->|HTTP:2023| Port2023
     ClientSekolah -->|HTTP:2024| Port2024
 
+    Port2019 -->|REST / PostgREST| Port2028
     Port2020 -->|REST / PostgREST| Port2028
     Port2021 -->|REST / PostgREST| Port2028
     Port2022 -->|REST / PostgREST| Port2028

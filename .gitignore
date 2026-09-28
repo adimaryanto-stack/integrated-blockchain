@@ -48,5 +48,5 @@ scratch/
 walkthrough.md
 implementation_plan.md
 task.md
-mcp_config.json
-apps/dashboard-publik/
+**/mcp_config.json
+apps/dashboard-publik/mcp_config.json

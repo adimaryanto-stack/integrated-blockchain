@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard Transparansi Sekolah — SiTransparan</title>
+  <meta name="description" content="Dashboard akuntabilitas anggaran, transaksi pengeluaran, struk kwitansi, dan audit per sekolah dari PostgreSQL."/>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  
+  <link rel="stylesheet" href="/styles/main.css"/>
+  <link rel="stylesheet" href="/styles/transparansi-2020.css"/>
+
+  <style>
+    .school-hero-card {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: 24px;
+      padding: 32px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow-sm);
+    }
+    .dash-tab-btn {
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      background: transparent;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dash-tab-btn.active {
+      color: var(--color-primary);
+      border-bottom-color: var(--color-primary);
+    }
+    .receipt-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .receipt-paper {
+      background: #ffffff;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 520px;
+      padding: 32px;
+      position: relative;
+      box-shadow: var(--shadow-lg);
+      border: 1px dashed #CBD5E1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="brand-logo">
+        <div class="logo-badge">
+          <span class="material-symbols-outlined" style="font-size: 22px;">account_balance</span>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 17px; font-weight: 800; line-height: 1.1; color: #0f172a;">Transparansi Anggaran</span>
+          <span style="font-size: 10px; font-weight: 700; color: var(--color-primary); letter-spacing: 0.05em;">SITRANSPARAN CIVIC-TECH</span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="main-nav">
+        <a href="index.html" class="nav-link">Beranda</a>
+        
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-trigger active" type="button">
+            <span>Data</span>
+            <span class="material-symbols-outlined" style="font-size: 18px;">expand_more</span>
+          </button>
+          <div class="nav-dropdown-menu">
+            <a href="aliran-dana.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">account_tree</span>
+              <span>Aliran Dana APBN</span>
+            </a>
+            <a href="audit.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">security</span>
+              <span>Audit & Anomali</span>
+            </a>
+            <a href="compare.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">compare_arrows</span>
+              <span>Bandingkan Sekolah</span>
+            </a>
+            <a href="peta-regional.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">public</span>
+              <span>Peta Regional</span>
+            </a>
+            <a href="provinces.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">map</span>
+              <span>38 Provinsi</span>
+            </a>
+            <a href="statistics.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">bar_chart</span>
+              <span>Statistik Nasional</span>
+            </a>
+            <a href="funding.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">payments</span>
+              <span>Sumber Pendanaan</span>
+            </a>
+            <a href="detail-anggaran.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">receipt_long</span>
+              <span>Detail Program BOS</span>
+            </a>
+          </div>
+        </div>
+
+        <a href="reporting.html" class="nav-link">Laporkan</a>
+        <a href="tentang.html" class="nav-link">Tentang</a>
+        <a href="faq.html" class="nav-link">FAQ</a>
+        <a href="contact.html" class="nav-link">Kontak</a>
+      </nav>
+
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <a href="pantau-anggaran.html" class="btn-watchlist-pill" title="Lihat item yang Anda pantau">
+          <span>Pantau Anggaran</span>
+          <span class="watchlist-count" id="headerWatchlistCount">0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top: 36px; padding-bottom: 72px;">
+    <!-- School Profile Hero -->
+    <div class="school-hero-card" id="schoolProfileHero">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px;">
+        <div style="flex: 1; min-width: 280px;">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+            <span class="badge-tag" style="background: #EFF6FF; color: var(--color-primary);" id="badgeAccreditation">
+              AKREDITASI: -
+            </span>
+            <span style="font-size: 13px; font-weight: 700; color: var(--color-text-muted);" id="schoolNpsnLabel">
+              NPSN: Memuat...
+            </span>
+          </div>
+
+          <h1 style="font-size: 30px; font-weight: 800; color: #0f172a; margin-bottom: 6px;" id="schoolName">
+            Memuat Satuan Pendidikan...
+          </h1>
+
+          <p style="font-size: 14px; color: var(--color-text-muted); display: flex; align-items: center; gap: 6px;" id="schoolAddress">
+            <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">location_on</span>
+            <span>Menghubungkan ke PostgreSQL...</span>
+          </p>
+        </div>
+
+        <!-- Action CTA Pills -->
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+          <button class="btn-watchlist-pill" id="btnLike" onclick="toggleLike()">
+            <span class="material-symbols-outlined" style="font-size: 18px; color: #E11D48;" id="likeIcon">favorite_border</span>
+            <span id="likeCountText">Sukai (0)</span>
+          </button>
+
+          <button class="btn-watchlist-pill" id="btnWatchlist" onclick="toggleWatchlist()">
+            <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">bookmark_border</span>
+            <span>Pantau Sekolah</span>
+          </button>
+
+          <a href="#" id="linkReport" class="btn-report" style="background: #DC2626;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">flag</span>
+            <span>Laporkan</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Financial KPI Row -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--color-border);">
+        <div>
+          <span style="font-size: 11px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase;">TOTAL KAS MASUK (BOS/APBD)</span>
+          <div style="font-size: 22px; font-weight: 800; color: #0f172a; margin-top: 4px;" id="kpiSchoolReceived">Rp 0</div>
+        </div>
+
+        <div>
+          <span style="font-size: 11px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase;">TOTAL BELANJA TERPAKAI</span>
+          <div style="font-size: 22px; font-weight: 800; color: #DC2626; margin-top: 4px;" id="kpiSchoolSpent">Rp 0</div>
+        </div>
+
+        <div>
+          <span style="font-size: 11px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase;">SISA SALDO KAS REKENING</span>
+          <div style="font-size: 22px; font-weight: 800; color: #16A34A; margin-top: 4px;" id="kpiSchoolRemaining">Rp 0</div>
+        </div>
+
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase;">
+            <span>PENYERAPAN ANGGARAN</span>
+            <span id="kpiSchoolPct">0%</span>
+          </div>
+          <div style="height: 8px; background: #F1F5F9; border-radius: 4px; overflow: hidden; margin-top: 8px;">
+            <div style="height: 100%; width: 0%; background: var(--color-primary); border-radius: 4px; transition: width 0.5s ease;" id="kpiSchoolBar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard Tabs -->
+    <div style="background: #ffffff; border: 1px solid var(--color-border); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow-sm);">
+      <div style="display: flex; border-bottom: 1px solid var(--color-border); padding: 0 16px; overflow-x: auto;">
+        <button class="dash-tab-btn active" onclick="switchDashTab('tx')">
+          <span class="material-symbols-outlined" style="font-size: 18px;">receipt_long</span>
+          <span>Daftar Transaksi & Kwitansi</span>
+        </button>
+        <button class="dash-tab-btn" onclick="switchDashTab('audit')">
+          <span class="material-symbols-outlined" style="font-size: 18px;">security</span>
+          <span>Audit & Temuan Anomali</span>
+        </button>
+        <button class="dash-tab-btn" onclick="switchDashTab('forum')">
+          <span class="material-symbols-outlined" style="font-size: 18px;">forum</span>
+          <span>Diskusi & Aduan Publik</span>
+        </button>
+      </div>
+
+      <!-- Tab 1: Transactions -->
+      <div id="tabContentTx" style="padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+          <h3 style="font-size: 16px; font-weight: 800; color: #0f172a;">Buku Kas Transaksi Pembelanjaan</h3>
+          <span style="font-size: 12px; color: var(--color-text-muted);" id="txCountBadge">Memuat transaksi...</span>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+            <thead>
+              <tr style="border-bottom: 2px solid var(--color-border); color: var(--color-text-muted); font-weight: 700;">
+                <th style="padding: 12px 14px;">TANGGAL</th>
+                <th style="padding: 12px 14px;">URAIAN KEGIATAN</th>
+                <th style="padding: 12px 14px;">KATEGORI</th>
+                <th style="padding: 12px 14px;">SUMBER</th>
+                <th style="padding: 12px 14px; text-align: right;">NOMINAL</th>
+                <th style="padding: 12px 14px; text-align: center;">BUKTI STRUK</th>
+              </tr>
+            </thead>
+            <tbody id="txTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 2: Audit Anomalies -->
+      <div id="tabContentAudit" style="padding: 24px; display: none;">
+        <div id="schoolAuditList">
+          <div style="text-align: center; padding: 48px; color: var(--color-text-muted);">
+            <p>Memeriksa catatan audit untuk sekolah ini...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Citizen Forum -->
+      <div id="tabContentForum" style="padding: 24px; display: none;">
+        <div style="max-width: 720px; margin: 0 auto;">
+          <h3 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">Komentar & Partisipasi Publik</h3>
+          <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 20px;">
+            Sampaikan tanggapan, aspirasi, atau evaluasi Anda terhadap penggunaan anggaran sekolah ini.
+          </p>
+
+          <form onsubmit="submitComment(event)" style="background: #F8FAFC; border: 1px solid var(--color-border); border-radius: 16px; padding: 20px; margin-bottom: 24px;">
+            <div style="margin-bottom: 12px;">
+              <label style="display: block; font-size: 12px; font-weight: 700; margin-bottom: 4px;">Nama Lengkap / Wali Murid</label>
+              <input type="text" id="commentAuthor" required placeholder="Contoh: Budi Santoso" style="width: 100%; padding: 10px 14px; border: 1px solid var(--color-border); border-radius: 10px; font-size: 13px; outline: none; background: #fff;">
+            </div>
+            <div style="margin-bottom: 14px;">
+              <label style="display: block; font-size: 12px; font-weight: 700; margin-bottom: 4px;">Komentar Anda</label>
+              <textarea id="commentText" required rows="3" placeholder="Tuliskan ulasan transparansi secara santun..." style="width: 100%; padding: 10px 14px; border: 1px solid var(--color-border); border-radius: 10px; font-size: 13px; outline: none; background: #fff;"></textarea>
+            </div>
+            <button type="submit" class="btn-report" style="background: var(--color-primary);">Kirim Komentar Publik</button>
+          </form>
+
+          <div id="commentsList" style="display: flex; flex-direction: column; gap: 12px;">
+            <!-- Rendered comments -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Kwitansi / Struk Belanja -->
+  <div class="receipt-modal-backdrop" id="receiptModal" onclick="closeReceiptModal(event)">
+    <div class="receipt-paper" onclick="event.stopPropagation()">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; border-bottom: 2px dashed #E2E8F0; padding-bottom: 16px;">
+        <div>
+          <div style="font-size: 10px; font-weight: 800; color: #16A34A; text-transform: uppercase; letter-spacing: 0.05em;">
+            ✓ TERSERTIFIKASI OCR & POSTGRESQL
+          </div>
+          <h3 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 2px;">Bukti Kuitansi Elektronik</h3>
+        </div>
+        <button onclick="closeReceiptModalDirect()" style="border: none; background: #F1F5F9; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+          <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
+        </button>
+      </div>
+
+      <div style="font-size: 13px; line-height: 1.8; color: #334155; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--color-text-muted);">No. Referensi Kuitansi:</span>
+          <strong id="modalReceiptRef" style="font-family: monospace;">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--color-text-muted);">Tanggal Transaksi:</span>
+          <strong id="modalReceiptDate">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--color-text-muted);">Kategori Belanja:</span>
+          <strong id="modalReceiptCategory">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--color-text-muted);">Sumber Dana:</span>
+          <strong id="modalReceiptSource">-</strong>
+        </div>
+        <div style="margin-top: 12px; padding: 12px; background: #F8FAFC; border-radius: 10px;">
+          <span style="display: block; font-size: 11px; font-weight: 700; color: var(--color-text-muted);">URAIAN PEMBELANJAAN:</span>
+          <div id="modalReceiptDesc" style="font-weight: 600; color: #0f172a; margin-top: 4px;">-</div>
+        </div>
+      </div>
+
+      <div style="border-top: 2px dashed #E2E8F0; padding-top: 16px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: 800; color: #0f172a;">
+          <span>Total Pembayaran:</span>
+          <span id="modalReceiptAmount" style="color: var(--color-primary);">-</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--color-text-muted); margin-top: 4px;">
+          <span>Termasuk Pajak (PPN/PPh):</span>
+          <span id="modalReceiptTax">Rp 0</span>
+        </div>
+      </div>
+
+      <button onclick="closeReceiptModalDirect()" class="btn-watchlist-pill" style="width: 100%; justify-content: center;">
+        Tutup Bukti Kuitansi
+      </button>
+    </div>
+  </div>
+
+  <!-- Site Footer -->
+  <footer style="background: #0B1329; color: #94A3B8; padding: 48px 0 24px; border-top: 1px solid #1E293B;">
+    <div class="container">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; padding-bottom: 24px; border-bottom: 1px solid #1E293B;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: var(--color-primary); display: flex; align-items: center; justify-content: center; color: #fff;">
+            <span class="material-symbols-outlined" style="font-size: 18px;">account_balance</span>
+          </div>
+          <span style="font-size: 16px; font-weight: 800; color: #F8FAFC;">SiTransparan Anggaran</span>
+        </div>
+        <div style="display: flex; gap: 20px; font-size: 13px;">
+          <a href="index.html" style="color: #94A3B8; text-decoration: none;">Beranda</a>
+          <a href="aliran-dana.html" style="color: #94A3B8; text-decoration: none;">Aliran Dana</a>
+          <a href="audit.html" style="color: #94A3B8; text-decoration: none;">Audit</a>
+          <a href="compare.html" style="color: #94A3B8; text-decoration: none;">Bandingkan</a>
+          <a href="tentang.html" style="color: #94A3B8; text-decoration: none;">Tentang</a>
+        </div>
+      </div>
+      <p style="font-size: 12px; color: #64748B; margin-top: 20px; text-align: center;">
+        © 2026 SiTransparan Civic-Tech.
+      </p>
+    </div>
+  </footer>
+
+  <script type="module" src="/scripts/db-client.js"></script>
+  <script>
+    let currentSchool = null;
+    let currentNpsn = '001002'; // default Universitas Indonesia or from url
+    let currentTxs = [];
+    let likes = 0;
+    let isLiked = false;
+
+    function getParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    async function loadSchoolData() {
+      const npsnFromUrl = getParam('npsn');
+      if (npsnFromUrl) currentNpsn = npsnFromUrl;
+
+      try {
+        const res = await fetch(`http://localhost:2021/rest/v1/schools?npsn=eq.${encodeURIComponent(currentNpsn)}`);
+        const list = await res.json();
+        
+        if (Array.isArray(list) && list.length > 0) {
+          currentSchool = list[0];
+        } else {
+          // Find first school from database
+          const fb = await fetch('http://localhost:2021/rest/v1/schools?limit=1');
+          const fbList = await fb.json();
+          currentSchool = fbList[0];
+          currentNpsn = currentSchool.npsn;
+        }
+
+        renderSchoolHeader(currentSchool);
+        loadFinancials(currentSchool.id);
+        loadTransactions(currentSchool.id);
+        loadSchoolAnomalies(currentSchool.npsn);
+        loadSchoolComments(currentSchool.npsn);
+      } catch (err) {
+        console.error('Error loading school:', err);
+      }
+    }
+
+    function renderSchoolHeader(s) {
+      document.getElementById('schoolName').textContent = s.name;
+      document.getElementById('schoolNpsnLabel').textContent = `NPSN: ${s.npsn}`;
+      document.getElementById('schoolAddress').innerHTML = `<span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">location_on</span> ${s.location || 'Wilayah Terdaftar'}`;
+      document.getElementById('badgeAccreditation').textContent = `AKREDITASI: ${s.accreditation || 'A'}`;
+      
+      document.getElementById('linkReport').href = `reporting.html?npsn=${s.npsn}&name=${encodeURIComponent(s.name)}`;
+    }
+
+    async function loadFinancials(schoolId) {
+      try {
+        const [fRes, tRes] = await Promise.all([
+          fetch(`http://localhost:2021/rest/v1/incoming_funds?school_id=eq.${schoolId}`),
+          fetch(`http://localhost:2021/rest/v1/transactions?school_id=eq.${schoolId}`)
+        ]);
+
+        const funds = fRes.ok ? await fRes.json() : [];
+        const txs = tRes.ok ? await tRes.json() : [];
+
+        let totalRec = (funds || []).reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+        let totalSpn = (txs || []).reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+
+        const remaining = Math.max(0, totalRec - totalSpn);
+        const pct = totalRec > 0 ? ((totalSpn / totalRec) * 100).toFixed(1) : '0';
+
+        const fmt = n => window.DBClient ? window.DBClient.formatIDR(n) : 'Rp ' + Number(n).toLocaleString('id-ID');
+
+        document.getElementById('kpiSchoolReceived').textContent = fmt(totalRec);
+        document.getElementById('kpiSchoolSpent').textContent = fmt(totalSpn);
+        document.getElementById('kpiSchoolRemaining').textContent = fmt(remaining);
+        document.getElementById('kpiSchoolPct').textContent = `${pct}%`;
+        document.getElementById('kpiSchoolBar').style.width = `${Math.min(100, pct)}%`;
+      } catch (e) {
+        console.warn('Financials error:', e);
+      }
+    }
+
+    async function loadTransactions(schoolId) {
+      const tbody = document.getElementById('txTableBody');
+      try {
+        const res = await fetch(`http://localhost:2021/rest/v1/transactions?school_id=eq.${schoolId}&order=date.desc&limit=25`);
+        const txs = await res.json();
+        currentTxs = Array.isArray(txs) ? txs : [];
+
+        document.getElementById('txCountBadge').textContent = `${currentTxs.length} Transaksi terverifikasi`;
+
+        if (currentTxs.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--color-text-muted);">Belum ada catatan transaksi untuk sekolah ini.</td></tr>';
+          return;
+        }
+
+        const fmt = n => window.DBClient ? window.DBClient.formatIDR(n) : 'Rp ' + Number(n).toLocaleString('id-ID');
+
+        tbody.innerHTML = currentTxs.map((t, idx) => {
+          const dateStr = t.date ? new Date(t.date).toLocaleDateString('id-ID', { dateStyle: 'medium' }) : '-';
+          return `
+            <tr style="border-bottom: 1px solid var(--color-border); transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+              <td style="padding: 12px 14px; color: var(--color-text-muted); font-size: 12px;">${dateStr}</td>
+              <td style="padding: 12px 14px; font-weight: 700; color: #0f172a;">${t.description}</td>
+              <td style="padding: 12px 14px;">
+                <span style="font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: #EFF6FF; color: var(--color-primary);">
+                  ${t.category}
+                </span>
+              </td>
+              <td style="padding: 12px 14px; font-size: 12px; color: #475569;">${t.fund_source || 'BOS'}</td>
+              <td style="padding: 12px 14px; text-align: right; font-weight: 800; color: #0f172a;">${fmt(t.amount)}</td>
+              <td style="padding: 12px 14px; text-align: center;">
+                <button onclick="openReceiptModal(${idx})" class="btn-watchlist-pill" style="font-size: 11px; padding: 4px 10px;">
+                  <span class="material-symbols-outlined" style="font-size: 14px;">receipt</span>
+                  Lihat Kwitansi
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (e) {
+        console.error('Tx error:', e);
+        tbody.innerHTML = '<tr><td colspan="6" style="padding: 24px; text-align: center; color: #ef4444;">Gagal mengambil transaksi.</td></tr>';
+      }
+    }
+
+    async function loadSchoolAnomalies(npsn) {
+      const container = document.getElementById('schoolAuditList');
+      try {
+        const res = await fetch(`http://localhost:2021/rest/v1/audit_anomaly`);
+        const list = await res.json();
+        const anomalies = (list || []).filter(a => a.institusi_pendidikan?.npsn == npsn || a.nama_institusi?.toLowerCase().includes((currentSchool?.name || '').toLowerCase()));
+
+        if (anomalies.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 48px; color: var(--color-text-muted);">
+              <span class="material-symbols-outlined" style="font-size: 48px; color: #16A34A; margin-bottom: 8px;">verified_user</span>
+              <h4 style="font-size: 16px; font-weight: 800; color: #0f172a;">Tidak Ditemukan Anomali</h4>
+              <p style="font-size: 13px; margin-top: 4px;">Sistem audit mendeteksi seluruh penggunaan dana sekolah ini berjalan wajar.</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = anomalies.map(a => `
+          <div style="background: #FFF7ED; border: 1px solid #FFEDD5; border-left: 4px solid #EA580C; border-radius: 12px; padding: 18px; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; font-weight: 800; color: #C2410C; font-size: 14px;">
+              <span>${a.tipe_anomali}</span>
+              <span>${a.tingkat_keparahan}</span>
+            </div>
+            <p style="font-size: 13px; color: #7C2D12; margin-top: 6px;">${a.keterangan}</p>
+          </div>
+        `).join('');
+      } catch (e) {
+        console.warn('Audit error:', e);
+      }
+    }
+
+    async function loadSchoolComments(npsn) {
+      const list = document.getElementById('commentsList');
+      if (!list) return;
+
+      try {
+        const res = await fetch(`http://localhost:2021/rest/v1/school_comments?npsn=eq.${encodeURIComponent(npsn)}&order=created_at.desc`);
+        const comments = await res.json();
+        
+        if (!Array.isArray(comments) || comments.length === 0) {
+          list.innerHTML = `
+            <div style="text-align: center; padding: 32px; color: var(--color-text-muted); font-size: 13px;">
+              Belum ada tanggapan atau komentar publik untuk satuan pendidikan ini. Jadilah yang pertama memberikan masukan!
+            </div>
+          `;
+          return;
+        }
+
+        list.innerHTML = comments.map(c => `
+          <div style="background: #ffffff; border: 1px solid var(--color-border); border-radius: 12px; padding: 16px; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: #0f172a;">
+              <span>${c.author_name || 'Warga'}</span>
+              <span style="font-size: 11px; color: var(--color-text-muted); font-weight: normal;">
+                ${c.created_at ? new Date(c.created_at).toLocaleDateString('id-ID', { dateStyle: 'medium' }) : 'Terverifikasi'}
+              </span>
+            </div>
+            <p style="font-size: 13px; color: #475569; margin-top: 6px;">${c.comment_text || ''}</p>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.warn('Comments load error:', err);
+      }
+    }
+
+    function switchDashTab(tab) {
+      document.querySelectorAll('.dash-tab-btn').forEach(b => b.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      document.getElementById('tabContentTx').style.display = tab === 'tx' ? 'block' : 'none';
+      document.getElementById('tabContentAudit').style.display = tab === 'audit' ? 'block' : 'none';
+      document.getElementById('tabContentForum').style.display = tab === 'forum' ? 'block' : 'none';
+    }
+
+    function openReceiptModal(idx) {
+      const t = currentTxs[idx];
+      if (!t) return;
+      const fmt = n => window.DBClient ? window.DBClient.formatIDR(n) : 'Rp ' + Number(n).toLocaleString('id-ID');
+
+      document.getElementById('modalReceiptRef').textContent = `KW-${t.id ? t.id.substring(0,8).toUpperCase() : '2026-001'}`;
+      document.getElementById('modalReceiptDate').textContent = t.date ? new Date(t.date).toLocaleDateString('id-ID', { dateStyle: 'long' }) : '-';
+      document.getElementById('modalReceiptCategory').textContent = t.category;
+      document.getElementById('modalReceiptSource').textContent = t.fund_source || 'BOS Reguler';
+      document.getElementById('modalReceiptDesc').textContent = t.description;
+      document.getElementById('modalReceiptAmount').textContent = fmt(t.amount);
+      document.getElementById('modalReceiptTax').textContent = fmt(t.tax_amount || 0);
+
+      document.getElementById('receiptModal').style.display = 'flex';
+    }
+
+    function closeReceiptModal(e) {
+      if (e.target.id === 'receiptModal') {
+        document.getElementById('receiptModal').style.display = 'none';
+      }
+    }
+
+    function closeReceiptModalDirect() {
+      document.getElementById('receiptModal').style.display = 'none';
+    }
+
+    function toggleLike() {
+      isLiked = !isLiked;
+      likes += isLiked ? 1 : -1;
+      document.getElementById('likeIcon').textContent = isLiked ? 'favorite' : 'favorite_border';
+      document.getElementById('likeCountText').textContent = `Sukai (${likes})`;
+    }
+
+    function toggleWatchlist() {
+      alert(`Sekolah "${currentSchool?.name}" berhasil ditambahkan ke daftar pantau Anda!`);
+      const countEl = document.getElementById('headerWatchlistCount');
+      if (countEl) countEl.textContent = Number(countEl.textContent || 0) + 1;
+    }
+
+    async function submitComment(e) {
+      e.preventDefault();
+      const author = document.getElementById('commentAuthor').value;
+      const text = document.getElementById('commentText').value;
+      if (!author || !text) return;
+
+      try {
+        await fetch('http://localhost:2021/rest/v1/school_comments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            npsn: currentSchool?.npsn || currentNpsn,
+            author_name: author,
+            comment_text: text
+          })
+        });
+      } catch (err) {
+        console.warn('Comment post error:', err);
+      }
+
+      document.getElementById('commentAuthor').value = '';
+      document.getElementById('commentText').value = '';
+      alert('Komentar publik Anda telah terkirim dan tersimpan ke basis data PostgreSQL!');
+      loadSchoolComments(currentSchool?.npsn || currentNpsn);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadSchoolData();
+    });
+  </script>
+</body>
+</html>

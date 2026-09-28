@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FAQ — SiTransparan</title>
+  <meta name="description" content="Pertanyaan yang sering diajukan seputar transparansi dana BOS dan anggaran sekolah."/>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  
+  <link rel="stylesheet" href="/styles/main.css"/>
+  <link rel="stylesheet" href="/styles/transparansi-2020.css"/>
+
+  <style>
+    /* ── Search & Filter ── */
+    .faq-search-box {
+      position: relative;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    .faq-search-box .search-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--color-text-muted);
+      font-size: 22px;
+      pointer-events: none;
+    }
+    .faq-search-input {
+      width: 100%;
+      padding: 14px 20px 14px 48px;
+      border: 1px solid var(--color-border);
+      border-radius: 14px;
+      font-size: 15px;
+      outline: none;
+      background: #ffffff;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
+    }
+    .faq-search-input:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
+    }
+
+    .faq-category-pills {
+      display: flex;
+      justify-content: flex-start;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+    .faq-pill {
+      padding: 7px 16px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 700;
+      border: 1px solid var(--color-border);
+      background: #ffffff;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .faq-pill:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+    .faq-pill.active {
+      background: var(--color-primary);
+      color: #ffffff;
+      border-color: var(--color-primary);
+      box-shadow: 0 4px 12px rgba(29, 78, 216, 0.2);
+    }
+
+    /* ── Accordion List ── */
+    .faq-list-wrap {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .faq-accordion-item {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: var(--shadow-sm);
+    }
+    .faq-accordion-item:hover {
+      border-color: #93C5FD;
+    }
+    .faq-accordion-item.open {
+      border-color: var(--color-primary);
+      box-shadow: 0 4px 14px rgba(29, 78, 216, 0.08);
+    }
+    .faq-accordion-header {
+      padding: 18px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 15px;
+      color: #0f172a;
+      user-select: none;
+      transition: background 0.15s ease;
+    }
+    .faq-accordion-header:hover {
+      background: #F8FAFC;
+    }
+    .faq-icon-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #EFF6FF;
+      color: var(--color-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+    }
+    .faq-accordion-item.open .faq-icon-circle {
+      background: var(--color-primary);
+      color: #ffffff;
+      transform: rotate(180deg);
+    }
+    .faq-accordion-body {
+      padding: 0 22px 18px;
+      font-size: 14px;
+      color: #475569;
+      line-height: 1.65;
+      display: none;
+      border-top: 1px solid #F1F5F9;
+      padding-top: 14px;
+    }
+    .faq-accordion-item.open .faq-accordion-body {
+      display: block;
+    }
+
+    /* ── CTA Box ── */
+    .faq-cta-card {
+      width: 100%;
+      margin: 40px 0 0;
+      background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+      border: 1px solid #BFDBFE;
+      border-radius: 18px;
+      padding: 30px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="brand-logo">
+        <div class="logo-badge">
+          <span class="material-symbols-outlined" style="font-size: 22px;">account_balance</span>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 17px; font-weight: 800; line-height: 1.1; color: #0f172a;">Transparansi Anggaran</span>
+          <span style="font-size: 10px; font-weight: 700; color: var(--color-primary); letter-spacing: 0.05em;">SITRANSPARAN CIVIC-TECH</span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="main-nav">
+        <a href="index.html" class="nav-link">Beranda</a>
+        
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-trigger" type="button">
+            <span>Data</span>
+            <span class="material-symbols-outlined" style="font-size: 18px;">expand_more</span>
+          </button>
+          <div class="nav-dropdown-menu">
+            <a href="aliran-dana.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">account_tree</span>
+              <span>Aliran Dana APBN</span>
+            </a>
+            <a href="audit.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">security</span>
+              <span>Audit & Anomali</span>
+            </a>
+            <a href="compare.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">compare_arrows</span>
+              <span>Bandingkan Sekolah</span>
+            </a>
+            <a href="peta-regional.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">public</span>
+              <span>Peta Regional</span>
+            </a>
+            <a href="provinces.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">map</span>
+              <span>38 Provinsi</span>
+            </a>
+            <a href="statistics.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">bar_chart</span>
+              <span>Statistik Nasional</span>
+            </a>
+            <a href="funding.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">payments</span>
+              <span>Sumber Pendanaan</span>
+            </a>
+            <a href="detail-anggaran.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">receipt_long</span>
+              <span>Detail Program BOS</span>
+            </a>
+          </div>
+        </div>
+
+        <a href="reporting.html" class="nav-link">Laporkan</a>
+        <a href="tentang.html" class="nav-link">Tentang</a>
+        <a href="faq.html" class="nav-link active">FAQ</a>
+        <a href="contact.html" class="nav-link">Kontak</a>
+      </nav>
+
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <a href="pantau-anggaran.html" class="btn-watchlist-pill" title="Lihat item yang Anda pantau">
+          <span>Pantau Anggaran</span>
+          <span class="watchlist-count" id="headerWatchlistCount">0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top: 36px; padding-bottom: 72px;">
+    <!-- Title Area -->
+    <div style="margin-bottom: 32px;">
+      <div class="badge-tag" style="background: var(--color-primary-light); color: var(--color-primary); border-color: rgba(29, 78, 216, 0.2);">
+        PUSAT INFORMASI &amp; TANYA JAWAB
+      </div>
+      <h1 style="font-size: 32px; font-weight: 800; color: #0f172a; margin: 8px 0;">
+        Pertanyaan Umum (FAQ)
+      </h1>
+      <p style="font-size: 15px; color: var(--color-text-muted); max-width: 820px; line-height: 1.6;">
+        Temukan jawaban mengenai mekanisme transparansi dana pendidikan, modul audit, dan integritas data publik.
+      </p>
+    </div>
+
+    <!-- Search Box -->
+    <div class="faq-search-box">
+      <span class="material-symbols-outlined search-icon">search</span>
+      <input type="text" id="faqSearch" class="faq-search-input" placeholder="Ketik kata kunci pertanyaan atau topik..." oninput="applyFaqFilter()">
+    </div>
+
+    <!-- Category Pills -->
+    <div class="faq-category-pills">
+      <button class="faq-pill active" data-cat="ALL" onclick="filterCategory('ALL')">Semua Pertanyaan</button>
+      <button class="faq-pill" data-cat="platform" onclick="filterCategory('platform')">Platform &amp; Hak Akses</button>
+      <button class="faq-pill" data-cat="sekolah" onclick="filterCategory('sekolah')">Sekolah &amp; NPSN</button>
+      <button class="faq-pill" data-cat="audit" onclick="filterCategory('audit')">Audit &amp; Integritas</button>
+      <button class="faq-pill" data-cat="dana" onclick="filterCategory('dana')">Sumber Basis Data</button>
+    </div>
+
+    <!-- FAQ Accordion List -->
+    <div class="faq-list-wrap" id="faqList">
+      <!-- Item 1 -->
+      <div class="faq-accordion-item open" data-cat="platform">
+        <div class="faq-accordion-header" onclick="toggleFaq(this)">
+          <span>Apa itu Platform Transparansi Anggaran?</span>
+          <span class="faq-icon-circle">
+            <span class="material-symbols-outlined" style="font-size: 18px;">expand_more</span>
+          </span>
+        </div>
+        <div class="faq-accordion-body">
+          Platform ini adalah sistem civic-tech publik yang memungkinkan siapapun untuk memantau, memeriksa buku kas, dan mengawasi penggunaan dana pendidikan (dana BOS reguler, APBD, dan CSR) di sekolah seluruh Indonesia secara terbuka dan real-time langsung dari basis data resmi.
+        </div>
+      </div>
+
+      <!-- Item 2 -->
+      <div class="faq-accordion-item" data-cat="sekolah">
+        <div class="faq-accordion-header" onclick="toggleFaq(this)">
+          <span>Bagaimana cara mencari sekolah saya?</span>
+          <span class="faq-icon-circle">
+            <span class="material-symbols-outlined" style="font-size: 18px;">expand_more</span>
+          </span>
+        </div>
+        <div class="faq-accordion-body">
+          Gunakan fitur pencarian di halaman Beranda atau menu Bandingkan Sekolah. Anda cukup mengetikkan nama sekolah atau 8 digit nomor NPSN, lalu sistem akan menampilkan profil anggaran sekolah tersebut.
+        </div>
+      </div>
+
+      <!-- Item 3 -->
+      <div class="faq-accordion-item" data-cat="sekolah">
+        <div class="faq-accordion-header" onclick="toggleFaq(this)">
+          <span>Apa itu NPSN dan mengapa penting?</span>
+          <span class="faq-icon-circle">
+            <span class="material-symbols-outlined" style="font-size: 18px;">expand_more</span>
+          </span>
+        </div>
+        <div class="faq-accordion-body">
+          NPSN (Nomor Pokok Sekolah Nasional) adalah kode pengenal unik standar nasional untuk setiap satuan pendidikan di Indonesia. NPSN menjamin bahwa data anggaran dan transaksi terhubung tepat ke instansi yang bersangkutan tanpa risiko tertukar.
+        </div>
+      </div>
+
+      <!-- Item 4 -->
+      <div class="faq-accordion-item" data-cat="audit">
+        <div class="faq-accordion-header" onclick="toggleFaq(this)">
+          <span>Bagaimana cara kerja OCR AI untuk membaca struk belanja?</span>
+          <span class="faq-icon-circle">
+            <span class="material-symbols-outlined" style="font-size: 18px;">expand_more</span>
+          </span>
+        </div>
+        <div class="faq-accordion-body">
+          Sistem dilengkapi model AI Vision yang mengekstrak otomatis nama toko/vendor, tanggal pembelian, rincian kuantitas, harga satuan, dan total pajak dari foto kuitansi sehingga mencegah pemalsuan nota manual.
+        </div>
+      </div>
+
+      <!-- Item 5 -->
+      <div class="faq-accordion-item" data-cat="platform">
+        <div class="faq-accordion-header" onclick="toggleFaq(this)">
+          <span>Siapa saja yang memiliki hak akses terhadap data ini?</span>
+          <span class="faq-icon-circle">
+            <span class="material-symbols-outlined" style="font-size: 18px;">expand_more</span>
+          </span>
+        </div>
+        <div class="faq-accordion-body">
+          Seluruh data alokasi kas dan realisasi belanja bersifat INFORMASI PUBLIK yang dapat diakses secara gratis oleh wali murid, guru, jurnalis investigasi, dan masyarakat umum sesuai amanat Undang-Undang Keterbukaan Informasi Publik (KIP).
+        </div>
+      </div>
+
+      <!-- Item 6 -->
+      <div class="faq-accordion-item" data-cat="audit">
+        <div class="faq-accordion-header" onclick="toggleFaq(this)">
+          <span>Bagaimana jika masyarakat menemukan dugaan korupsi?</span>
+          <span class="faq-icon-circle">
+            <span class="material-symbols-outlined" style="font-size: 18px;">expand_more</span>
+          </span>
+        </div>
+        <div class="faq-accordion-body">
+          Anda dapat menggunakan menu "Laporkan" di situs ini. Laporan dapat ditujukan langsung kepada instansi pengawas berwenang secara terstruktur dan terjamin kerahasiaannya.
+        </div>
+      </div>
+
+      <!-- Item 7 -->
+      <div class="faq-accordion-item" data-cat="audit">
+        <div class="faq-accordion-header" onclick="toggleFaq(this)">
+          <span>Apa kriteria dalam Modul Audit Otomatis?</span>
+          <span class="faq-icon-circle">
+            <span class="material-symbols-outlined" style="font-size: 18px;">expand_more</span>
+          </span>
+        </div>
+        <div class="faq-accordion-body">
+          Audit AI menganalisis 4 faktor utama: (1) Transaksi tunggal bernilai di atas ambang batas wajar, (2) Pengulangan transaksi ke satu penyedia (vendor clustering), (3) Ketidaksesuaian nomor seri kuitansi, dan (4) Defisit kas pengeluaran melebihi penerimaan.
+        </div>
+      </div>
+
+      <!-- Item 8 -->
+      <div class="faq-accordion-item" data-cat="dana">
+        <div class="faq-accordion-header" onclick="toggleFaq(this)">
+          <span>Dari mana sumber basis data yang digunakan?</span>
+          <span class="faq-icon-circle">
+            <span class="material-symbols-outlined" style="font-size: 18px;">expand_more</span>
+          </span>
+        </div>
+        <div class="faq-accordion-body">
+          Basis data dihimpun dari sinkronisasi resmi data Dapodik Kemendikbudristek, laporan realisasi BOS Kementerian Keuangan, serta data alokasi APBD pemerintah daerah tingkat provinsi dan kabupaten/kota.
+        </div>
+      </div>
+
+      <!-- Item 9 -->
+      <div class="faq-accordion-item" data-cat="platform">
+        <div class="faq-accordion-header" onclick="toggleFaq(this)">
+          <span>Apakah sistem ini memungut biaya atau memerlukan langganan?</span>
+          <span class="faq-icon-circle">
+            <span class="material-symbols-outlined" style="font-size: 18px;">expand_more</span>
+          </span>
+        </div>
+        <div class="faq-accordion-body">
+          Tidak. Platform SiTransparan adalah inisiatif civic-tech nirlaba yang beroperasi 100% bebas biaya demi mendukung terciptanya ekosistem pendidikan yang bersih dan berintegritas di Indonesia.
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA Box -->
+    <div class="faq-cta-card">
+      <div style="width: 44px; height: 44px; border-radius: 12px; background: #ffffff; color: var(--color-primary); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px; box-shadow: var(--shadow-sm);">
+        <span class="material-symbols-outlined" style="font-size: 24px;">contact_support</span>
+      </div>
+      <h3 style="font-size: 20px; font-weight: 800; color: #1E3A8A; margin-bottom: 6px;">
+        Masih memiliki pertanyaan lain?
+      </h3>
+      <p style="font-size: 14px; color: #3B82F6; margin-bottom: 20px; max-width: 480px; margin-left: auto; margin-right: auto;">
+        Hubungi tim sekretariat kami atau kirimkan masukan melalui kanal kontak resmi.
+      </p>
+      <a href="contact.html" class="btn-report" style="display: inline-flex; text-decoration: none; padding: 10px 24px;">
+        <span class="material-symbols-outlined" style="font-size: 18px;">mail</span>
+        Hubungi Sekretariat
+      </a>
+    </div>
+  </main>
+
+  <!-- Site Footer -->
+  <footer style="background: #0B1329; color: #94A3B8; padding: 48px 0 24px; border-top: 1px solid #1E293B;">
+    <div class="container">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; padding-bottom: 24px; border-bottom: 1px solid #1E293B;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: var(--color-primary); display: flex; align-items: center; justify-content: center; color: #fff;">
+            <span class="material-symbols-outlined" style="font-size: 18px;">account_balance</span>
+          </div>
+          <span style="font-size: 16px; font-weight: 800; color: #F8FAFC;">SiTransparan Anggaran</span>
+        </div>
+        <div style="display: flex; gap: 20px; font-size: 13px;">
+          <a href="index.html" style="color: #94A3B8; text-decoration: none;">Beranda</a>
+          <a href="aliran-dana.html" style="color: #94A3B8; text-decoration: none;">Aliran Dana</a>
+          <a href="audit.html" style="color: #94A3B8; text-decoration: none;">Audit</a>
+          <a href="faq.html" style="color: #60A5FA; text-decoration: none; font-weight: 700;">FAQ</a>
+          <a href="tentang.html" style="color: #94A3B8; text-decoration: none;">Tentang</a>
+        </div>
+      </div>
+      <p style="font-size: 12px; color: #64748B; margin-top: 20px; text-align: center;">
+        © 2026 SiTransparan Civic-Tech.
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    let activeCategory = 'ALL';
+
+    function toggleFaq(el) {
+      const parent = el.closest('.faq-accordion-item');
+      parent.classList.toggle('open');
+    }
+
+    function filterCategory(cat) {
+      activeCategory = cat;
+      document.querySelectorAll('.faq-pill').forEach(b => {
+        b.classList.toggle('active', b.getAttribute('data-cat') === cat);
+      });
+      applyFaqFilter();
+    }
+
+    function applyFaqFilter() {
+      const q = (document.getElementById('faqSearch').value || '').trim().toLowerCase();
+      document.querySelectorAll('.faq-accordion-item').forEach(item => {
+        const itemCat = item.getAttribute('data-cat') || '';
+        const matchCat = (activeCategory === 'ALL') || (itemCat === activeCategory);
+        const matchSearch = (q === '') || item.textContent.toLowerCase().includes(q);
+
+        item.style.display = (matchCat && matchSearch) ? 'block' : 'none';
+      });
+    }
+  </script>
+</body>
+</html>

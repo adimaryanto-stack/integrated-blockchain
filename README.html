@@ -458,11 +458,11 @@
     <div class="nav-inner">
       <div class="brand-title">
         <span>🏛️ Blockchain Anggaran</span>
-        <span class="brand-badge">9 Port Aktif</span>
+        <span class="brand-badge">10 Port Aktif</span>
       </div>
       <div class="nav-links">
         <a href="#install" class="nav-link-btn">⚡ Cara Install</a>
-        <a href="#dashboards" class="nav-link-btn">🚀 7 Dashboard</a>
+        <a href="#dashboards" class="nav-link-btn">🚀 8 Portal Dashboard</a>
         <a href="#topology" class="nav-link-btn">🗺️ Topologi Port</a>
         <a href="#changelog" class="nav-link-btn">📝 Log Update</a>
         <a href="deploy_guide.md" class="nav-link-btn primary">📘 Deploy VPS</a>
@@ -477,7 +477,7 @@
       <span class="hero-tag">Sistem Tata Kelola Keuangan Pendidikan Terintegrasi</span>
       <h1 class="hero-title">Transparansi Anggaran Pendidikan Indonesia</h1>
       <p class="hero-desc">
-        Platform tata kelola keuangan pendidikan nasional terintegrasi dengan basis data mandiri (*100% Single Source of Truth PostgreSQL*), menghubungkan 7 portal spesifik untuk Kementerian, Bank Penyalur, Auditor BPK, Sekolah/Institusi, Pemda APBD, Super Admin, dan Publik.
+        Platform tata kelola keuangan pendidikan nasional terintegrasi dengan basis data mandiri (*100% Single Source of Truth PostgreSQL*), menghubungkan 8 portal spesifik untuk Kementerian, Bank Penyalur, Auditor BPK, Sekolah/Institusi, Pemda APBD, Super Admin, dan Publik.
       </p>
     </section>
 
@@ -499,7 +499,7 @@
           <ul class="step-list">
             <li>Buka folder proyek ini di Windows Explorer.</li>
             <li>Klik 2x pada file <strong><code>start-all.bat</code></strong>.</li>
-            <li>Database, proxy API, dan seluruh 7 dashboard akan menyala otomatis.</li>
+            <li>Database, proxy API, dan seluruh 8 dashboard akan menyala otomatis.</li>
             <li>Browser akan otomatis membuka ke <code>http://localhost:2020</code>.</li>
             <li>Untuk mematikan: Klik 2x <strong><code>stop-all.bat</code></strong>.</li>
           </ul>
@@ -600,11 +600,21 @@
       </div>
     </div>
 
-    <!-- Section: Akses Langsung ke 7 Dashboard -->
-    <h2 id="dashboards" class="section-title">🚀 Akses Langsung 7 Dashboard (Localhost)</h2>
+    <!-- Section: Akses Langsung ke 8 Dashboard -->
+    <h2 id="dashboards" class="section-title">🚀 Akses Langsung 8 Dashboard (Localhost)</h2>
     <p class="section-subtitle">Klik tombol di bawah untuk membuka dashboard setelah sistem dinyalakan:</p>
 
     <div class="dashboard-grid">
+      <!-- Port 2019 -->
+      <div class="dash-card">
+        <div class="dash-top">
+          <span class="dash-title">🌐 Portal Publik Redesign (Civic-Tech)</span>
+          <span class="dash-port">PORT 2019</span>
+        </div>
+        <p class="dash-desc">Portal keterbukaan anggaran modern berbasis Vite & Civic-Tech dengan storytelling data interaktif, visualisasi alur transfer dana, pemetaan regional, dan eksplorasi APBN/APBD/CSR.</p>
+        <a href="http://localhost:2019" target="_blank" class="dash-btn">Buka Portal Civic-Tech &rarr;</a>
+      </div>
+
       <!-- Port 2020 -->
       <div class="dash-card">
         <div class="dash-top">
@@ -722,7 +732,7 @@
           <span>🟢</span> Skrip Pembersihan Cache Otomatis (clean-cache.js)
         </div>
         <div class="changelog-desc">
-          Penyediaan skrip <code>node scripts/clean-cache.js</code> untuk membersihkan seluruh folder build <code>.next</code> dan cache Turbopack di 7 aplikasi dashboard dengan 1 perintah.
+          Penyediaan skrip <code>node scripts/clean-cache.js</code> untuk membersihkan seluruh folder build <code>.next</code> dan cache build di 8 aplikasi dashboard dengan 1 perintah.
         </div>
       </div>
     </div>
@@ -735,7 +745,7 @@
       <a href="PRD.md" class="doc-card">
         <div class="doc-card-icon">📋</div>
         <div class="doc-card-title">PRD (Product Requirements)</div>
-        <div class="doc-card-desc">Spesifikasi kebutuhan produk, arsitektur data, alur bisnis dana, dan hak akses 7 portal.</div>
+        <div class="doc-card-desc">Spesifikasi kebutuhan produk, arsitektur data, alur bisnis dana, dan hak akses 8 portal.</div>
       </a>
 
       <a href="MVP.md" class="doc-card">
@@ -753,7 +763,7 @@
       <a href="TOPOLOGY.md" class="doc-card">
         <div class="doc-card-icon">🗺️</div>
         <div class="doc-card-title">Topologi Arsitektur Port</div>
-        <div class="doc-card-desc">Diagram relasi database PostgreSQL, Proxy REST API Gateway, dan 7 portal dashboard.</div>
+        <div class="doc-card-desc">Diagram relasi database PostgreSQL, Proxy REST API Gateway, dan 8 portal dashboard.</div>
       </a>
 
       <a href="README.md" class="doc-card">
@@ -764,7 +774,7 @@
     </div>
 
     <!-- Section: Arsitektur & Topologi Port -->
-    <h2 id="topology" class="section-title">🗺️ Topologi 9 Port & Database Relasional</h2>
+    <h2 id="topology" class="section-title">🗺️ Topologi 10 Port & Database Relasional</h2>
     <p class="section-subtitle">Struktur isolasi layanan, protokol komunikasi, dan sumber data:</p>
 
     <div class="table-container">
@@ -779,6 +789,13 @@
           </tr>
         </thead>
         <tbody>
+          <tr>
+            <td><strong>2019</strong></td>
+            <td>Portal Publik Redesign (Civic-Tech)</td>
+            <td>Vite / ES Modules</td>
+            <td>PostgreSQL via Port 2028</td>
+            <td><span class="status-dot"></span>Online (200 OK)</td>
+          </tr>
           <tr>
             <td><strong>2020</strong></td>
             <td>Portal Transparansi Publik</td>

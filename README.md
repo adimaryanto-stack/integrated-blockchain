@@ -6,27 +6,28 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4%2F4.0-38B2AC.svg?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Sistem tata kelola dan transparansi keuangan pendidikan Indonesia terintegrasi dengan database lokal mandiri (*100% Single Source of Truth PostgreSQL*), mencakup **7 portal spesifik peran pengguna** untuk **PAUD, SD, SMP, SMA, dan Perguruan Tinggi** di 38 Provinsi dan 514 Kabupaten/Kota.
+Sistem tata kelola dan transparansi keuangan pendidikan Indonesia terintegrasi dengan database lokal mandiri (*100% Single Source of Truth PostgreSQL*), mencakup **8 portal web aplikasi** untuk **PAUD, SD, SMP, SMA, dan Perguruan Tinggi** di 38 Provinsi dan 514 Kabupaten/Kota.
 
 ---
 
-## 🌟 Pusat Navigasi & Dokumentasi Proyek
+## 🧭 Pusat Navigasi & Dokumentasi Proyek
 
 | Dokumen | Format | Deskripsi | Tautan Langsung |
 |---|:---:|---|:---:|
 | 🌐 **Panduan Visual & Interaktif** | `HTML` | Tampilan panduan grafis modern untuk pengguna umum / non-programmer. | [**Buka `README.html`**](README.html) |
 | 📋 **Product Requirements (PRD)** | `Markdown` | Spesifikasi lengkap sistem, alur bisnis dana APBN/APBD/CSR, & hak akses. | [**Buka `PRD.md`**](PRD.md) |
-| 🏆 **MVP & Laporan Verifikasi** | `Markdown` | Laporan pengujian fitur 9 port, performa latensi, dan integrasi database. | [**Buka `MVP.md`**](MVP.md) |
+| 🏆 **MVP & Laporan Verifikasi** | `Markdown` | Laporan pengujian fitur 10 port, performa latensi, dan integrasi database. | [**Buka `MVP.md`**](MVP.md) |
 | 🚀 **Panduan Deployment VPS/Mac** | `Markdown` | Tutorial step-by-step setup VPS Ubuntu/Debian, macOS, Nginx, Domain, & SSL. | [**Buka `deploy_guide.md`**](deploy_guide.md) |
-| 🗺️ **Topologi Arsitektur** | `Markdown` | Diagram relasi database PostgreSQL, Proxy REST API, dan 7 Dashboard. | [**Buka `TOPOLOGY.md`**](TOPOLOGY.md) |
+| 🗺️ **Topologi Arsitektur** | `Markdown` | Diagram relasi database PostgreSQL, Proxy REST API, dan 8 Dashboard. | [**Buka `TOPOLOGY.md`**](TOPOLOGY.md) |
 
 ---
 
-## 🗺️ Peta 9 Port & Akses Dashboard
+## 🗺️ Peta 10 Port & Akses Dashboard
 
 | Port | Peran Pengguna / Dashboard | Direktori Aplikasi | Tautan Akses Cepat | Status |
 |:---:|---|---|:---:|:---:|
-| **2020** | **Portal Transparansi Publik** (Masyarakat & Orang Tua) | `apps/transparansi-anggaran/apps/web-next` | [http://localhost:2020](http://localhost:2020) | 🟢 Aktif |
+| **2019** | **Portal Publik Redesign (Civic-Tech Vite)** | `apps/dashboard-publik` | [http://localhost:2019](http://localhost:2019) | 🟢 Aktif |
+| **2020** | **Portal Transparansi Publik (Next.js Edition)** | `apps/transparansi-anggaran/apps/web-next` | [http://localhost:2020](http://localhost:2020) | 🟢 Aktif |
 | **2021** | **Dashboard Kementerian** (Kemenkeu & Kemendikdasmen) | `apps/dashboard-kementerian` | [http://localhost:2021/dashboard](http://localhost:2021/dashboard) | 🟢 Aktif |
 | **2022** | **Dashboard Bank Penyalur** (Mandiri, BRI, BNI, BSI, BPD) | `apps/dashboard-bank` | [http://localhost:2022/dashboard](http://localhost:2022/dashboard) | 🟢 Aktif |
 | **2023** | **Dashboard Auditor BPK** (Pengawasan & Deteksi Anomali AI) | `apps/dashboard-auditor` | [http://localhost:2023/dashboard](http://localhost:2023/dashboard) | 🟢 Aktif |
@@ -55,7 +56,7 @@ Pastikan komputer Anda sudah terpasang **Node.js** (versi 18 atau lebih baru).
 3. Sistem akan bekerja secara otomatis:
    - Memeriksa file konfigurasi `.env.local` & dependensi aplikasi.
    - Menyalakan database PostgreSQL portabel (Port 2027) & Proxy API Gateway (Port 2028).
-   - Menyalakan seluruh 7 portal aplikasi dashboard secara berurutan.
+   - Menyalakan seluruh 8 portal aplikasi dashboard secara berurutan.
    - Memanaskan halaman web dan **otomatis membuka peramban (browser) ke [http://localhost:2020](http://localhost:2020)**.
 4. **Cara Mematikan Server**: Cukup **Klik 2x** pada file **`stop-all.bat`** kapan saja Anda ingin menghentikan seluruh layanan dengan aman.
 
@@ -158,9 +159,10 @@ Berikut adalah ringkasan pembaruan arsitektur dan peningkatan fitur sistem:
   - Saldo Kas di Bank sisa tahun 2026 otomatis di-*carry-forward* sebagai saldo awal rekening.
 
 ### 🟢 5. Skrip Pembersihan Cache Next.js & Turbopack
-- **Skrip `node scripts/clean-cache.js`**: Menghentikan proses dev server secara aman dan menghapus seluruh folder cache `.next` di 7 aplikasi dashboard untuk menjamin *clean compilation state*.
+- **Skrip `node scripts/clean-cache.js`**: Menghentikan proses dev server secara aman dan menghapus seluruh folder cache `.next` di 8 aplikasi dashboard untuk menjamin *clean compilation state*.
 
-### 🟢 6. Penyempurnaan Skrip Peluncur 9 Port (`start-all.bat` / `start-all.ps1`)
+### 🟢 6. Penyempurnaan Skrip Peluncur 10 Port (`start-all.bat` / `start-all.ps1`)
+- Penambahan **Port 2019** untuk **Portal Publik Civic-Tech Redesign (Vite)** (`apps/dashboard-publik`).
 - Menggunakan perintah `npm run dev` secara konsisten pada setiap aplikasi.
 - Penyesuaian port: PostgreSQL di Port `2027` dan Proxy REST API Gateway di Port `2028`.
 - Pemanasan halaman (*warm-up compilation*) otomatis sebelum membuka browser.
@@ -191,21 +193,21 @@ Berikut adalah ringkasan pembaruan arsitektur dan peningkatan fitur sistem:
        │                               │                               │
        ▼                               ▼                               ▼
 ┌──────────────────────┐   ┌──────────────────────┐   ┌──────────────────────┐
-│  Port 2020: Publik   │   │  Port 2021: Kemenkeu │   │   Port 2022: Bank    │
-│  Transparansi Warga  │   │  Distribusi Nasional │   │ Rekening & Penyaluran│
+│ Port 2019: Civic-Tech│   │  Port 2020: Publik   │   │  Port 2021: Kemenkeu │
+│ Portal Redesign Vite │   │  Transparansi Warga  │   │  Distribusi Nasional │
 └──────────────────────┘   └──────────────────────┘   └──────────────────────┘
        │                               │                               │
        ▼                               ▼                               ▼
 ┌──────────────────────┐   ┌──────────────────────┐   ┌──────────────────────┐
-│  Port 2023: Auditor  │   │ Port 2024: Sekolah   │   │ Port 2025: APBD Prov │
-│  Deteksi Anomali AI  │   │ Belanja & SPJ Digital│   │ Mandat 20% Daerah    │
+│   Port 2022: Bank    │   │  Port 2023: Auditor  │   │ Port 2024: Sekolah   │
+│ Rekening & Penyaluran│   │  Deteksi Anomali AI  │   │ Belanja & SPJ Digital│
 └──────────────────────┘   └──────────────────────┘   └──────────────────────┘
-                                       │
-                                       ▼
-                           ┌──────────────────────┐
-                           │ Port 2026: Admin     │
-                           │ Super-Admin Console  │
-                           └──────────────────────┘
+       │                               │
+       ▼                               ▼
+┌──────────────────────┐   ┌──────────────────────┐
+│ Port 2025: APBD Prov │   │ Port 2026: Admin     │
+│ Mandat 20% Daerah    │   │ Super-Admin Console  │
+└──────────────────────┘   └──────────────────────┘
 ```
 
 ---
@@ -213,14 +215,15 @@ Berikut adalah ringkasan pembaruan arsitektur dan peningkatan fitur sistem:
 ## 🌐 Menghubungkan ke Domain / Subdomain / IP Publik
 
 Setiap dashboard dapat dihubungkan ke domain publik menggunakan Reverse Proxy Nginx & SSL HTTPS Let's Encrypt:
-- `https://transparansi.domain.com` &rarr; Port 2020
-- `https://kementerian.domain.com` &rarr; Port 2021
-- `https://bank.domain.com` &rarr; Port 2022
-- `https://auditor.domain.com` &rarr; Port 2023
-- `https://sekolah.domain.com` &rarr; Port 2024
-- `https://apbd.domain.com` &rarr; Port 2025
-- `https://admin.domain.com` &rarr; Port 2026
-- `https://api.domain.com` &rarr; Port 2028
+- `https://publik.domain.com` &rarr; Port 2019 (Civic-Tech Redesign Vite)
+- `https://transparansi.domain.com` &rarr; Port 2020 (Portal Transparansi Publik Next.js)
+- `https://kementerian.domain.com` &rarr; Port 2021 (Dashboard Kementerian)
+- `https://bank.domain.com` &rarr; Port 2022 (Dashboard Bank Penyalur)
+- `https://auditor.domain.com` &rarr; Port 2023 (Dashboard Auditor BPK)
+- `https://sekolah.domain.com` &rarr; Port 2024 (Dashboard Institusi Pendidikan)
+- `https://apbd.domain.com` &rarr; Port 2025 (Dashboard APBD Lampung)
+- `https://admin.domain.com` &rarr; Port 2026 (Dashboard Admin Super-Console)
+- `https://api.domain.com` &rarr; Port 2028 (Proxy API Gateway)
 
 > 📘 **Panduan lengkap konfigurasi file Nginx `.conf`, SSL Certbot gratis, dan PM2 tersedia di: [deploy_guide.md](deploy_guide.md)**.
 

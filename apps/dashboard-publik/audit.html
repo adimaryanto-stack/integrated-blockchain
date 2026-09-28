@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Modul Audit & Deteksi Anomali — SiTransparan</title>
+  <meta name="description" content="Modul audit otomatis deteksi 5W1H transaksi mencurigakan dan anomali anggaran pendidikan dari PostgreSQL."/>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  
+  <link rel="stylesheet" href="/styles/main.css"/>
+  <link rel="stylesheet" href="/styles/transparansi-2020.css"/>
+
+  <style>
+    /* ── Audit KPI Cards ── */
+    .audit-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .audit-kpi {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .audit-kpi:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .audit-kpi::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--kpi-accent, var(--color-primary));
+    }
+    .audit-kpi-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .audit-kpi-label {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--kpi-accent, var(--color-text-muted));
+    }
+    .audit-kpi-icon {
+      font-size: 20px;
+      color: var(--kpi-accent, var(--color-text-muted));
+    }
+    .audit-kpi-value {
+      font-size: 32px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin-bottom: 4px;
+    }
+    .audit-kpi-desc {
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
+
+    /* ── Filter Bar ── */
+    .audit-filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 24px;
+      padding: 16px 20px;
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+    .audit-search-wrap {
+      flex: 1;
+      min-width: 260px;
+      position: relative;
+    }
+    .audit-search-wrap .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--color-text-muted);
+      font-size: 20px;
+      pointer-events: none;
+    }
+    .audit-search-input {
+      width: 100%;
+      padding: 11px 16px 11px 42px;
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      background: #F8FAFC;
+      transition: all 0.15s ease;
+    }
+    .audit-search-input:focus {
+      background: #ffffff;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1);
+    }
+    .audit-select {
+      padding: 11px 14px;
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #0f172a;
+      outline: none;
+      background: #F8FAFC;
+      cursor: pointer;
+      transition: border-color 0.15s ease;
+    }
+    .audit-select:focus {
+      border-color: var(--color-primary);
+    }
+
+    /* ── Audit Cards & 5W1H ── */
+    .audit-card {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
+    }
+    .audit-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+    .audit-card.sev-CRITICAL { border-left: 4px solid #DC2626; }
+    .audit-card.sev-HIGH { border-left: 4px solid #EA580C; }
+    .audit-card.sev-MEDIUM { border-left: 4px solid #CA8A04; }
+    .audit-card.sev-LOW { border-left: 4px solid #2563EB; }
+
+    .sev-badge {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 9px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .sev-badge.sev-CRITICAL { background: #FEE2E2; color: #DC2626; }
+    .sev-badge.sev-HIGH { background: #FFEDD5; color: #C2410C; }
+    .sev-badge.sev-MEDIUM { background: #FEF9C3; color: #854D0E; }
+    .sev-badge.sev-LOW { background: #DBEAFE; color: #1D4ED8; }
+
+    .status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: #F1F5F9;
+      color: #475569;
+    }
+
+    .w5h-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+      padding: 16px;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+    }
+    .w5h-item {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #334155;
+    }
+    .w5h-label {
+      font-weight: 800;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="brand-logo">
+        <div class="logo-badge">
+          <span class="material-symbols-outlined" style="font-size: 22px;">account_balance</span>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 17px; font-weight: 800; line-height: 1.1; color: #0f172a;">Transparansi Anggaran</span>
+          <span style="font-size: 10px; font-weight: 700; color: var(--color-primary); letter-spacing: 0.05em;">SITRANSPARAN CIVIC-TECH</span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="main-nav">
+        <a href="index.html" class="nav-link">Beranda</a>
+        
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-trigger active" type="button">
+            <span>Data</span>
+            <span class="material-symbols-outlined" style="font-size: 18px;">expand_more</span>
+          </button>
+          <div class="nav-dropdown-menu">
+            <a href="aliran-dana.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">account_tree</span>
+              <span>Aliran Dana APBN</span>
+            </a>
+            <a href="audit.html" class="nav-dropdown-item active">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">security</span>
+              <span>Audit & Anomali</span>
+            </a>
+            <a href="compare.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">compare_arrows</span>
+              <span>Bandingkan Sekolah</span>
+            </a>
+            <a href="peta-regional.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">public</span>
+              <span>Peta Regional</span>
+            </a>
+            <a href="provinces.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">map</span>
+              <span>38 Provinsi</span>
+            </a>
+            <a href="statistics.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">bar_chart</span>
+              <span>Statistik Nasional</span>
+            </a>
+            <a href="funding.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">payments</span>
+              <span>Sumber Pendanaan</span>
+            </a>
+            <a href="detail-anggaran.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">receipt_long</span>
+              <span>Detail Program BOS</span>
+            </a>
+          </div>
+        </div>
+
+        <a href="reporting.html" class="nav-link">Laporkan</a>
+        <a href="tentang.html" class="nav-link">Tentang</a>
+        <a href="faq.html" class="nav-link">FAQ</a>
+        <a href="contact.html" class="nav-link">Kontak</a>
+      </nav>
+
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <a href="pantau-anggaran.html" class="btn-watchlist-pill" title="Lihat item yang Anda pantau">
+          <span>Pantau Anggaran</span>
+          <span class="watchlist-count" id="headerWatchlistCount">0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top: 36px; padding-bottom: 72px;">
+    <!-- Title Area -->
+    <div style="margin-bottom: 28px;">
+      <div class="badge-tag" style="background: #FEF2F2; color: #DC2626; border-color: rgba(220, 38, 38, 0.2);">
+        MODUL AUDIT & DETEKSI ANOMALI OTOMATIS
+      </div>
+      <h1 style="font-size: 32px; font-weight: 800; color: #0f172a; margin: 8px 0;">
+        Audit Forensik Anggaran Pendidikan
+      </h1>
+      <p style="font-size: 15px; color: var(--color-text-muted); max-width: 820px; line-height: 1.6;">
+        Sistem AI mendeteksi secara otomatis potensi ketidakwajaran, mark-up harga belanja, transaksi duplikat, dan deviasi pengeluaran sekolah berdasarkan standar audit 5W1H.
+      </p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="audit-kpi-grid">
+      <div class="audit-kpi" style="--kpi-accent: #64748B;">
+        <div class="audit-kpi-header">
+          <span class="audit-kpi-label">TOTAL TEMUAN AUDIT</span>
+          <span class="material-symbols-outlined audit-kpi-icon">policy</span>
+        </div>
+        <div class="audit-kpi-value" id="statTotal">--</div>
+        <div class="audit-kpi-desc">Tercatat di basis data resmi</div>
+      </div>
+
+      <div class="audit-kpi" style="--kpi-accent: #DC2626;">
+        <div class="audit-kpi-header">
+          <span class="audit-kpi-label">CRITICAL SEVERITY</span>
+          <span class="material-symbols-outlined audit-kpi-icon">warning</span>
+        </div>
+        <div class="audit-kpi-value" style="color: #DC2626;" id="statCritical">--</div>
+        <div class="audit-kpi-desc">Memerlukan tindakan segera</div>
+      </div>
+
+      <div class="audit-kpi" style="--kpi-accent: #EA580C;">
+        <div class="audit-kpi-header">
+          <span class="audit-kpi-label">HIGH SEVERITY</span>
+          <span class="material-symbols-outlined audit-kpi-icon">error_outline</span>
+        </div>
+        <div class="audit-kpi-value" style="color: #EA580C;" id="statHigh">--</div>
+        <div class="audit-kpi-desc">Indikasi deviasi signifikan</div>
+      </div>
+
+      <div class="audit-kpi" style="--kpi-accent: #CA8A04;">
+        <div class="audit-kpi-header">
+          <span class="audit-kpi-label">STATUS INVESTIGASI</span>
+          <span class="material-symbols-outlined audit-kpi-icon">search_insights</span>
+        </div>
+        <div class="audit-kpi-value" id="statInvestigasi">--</div>
+        <div class="audit-kpi-desc">Sedang ditinjau auditor BPK/KPK</div>
+      </div>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div class="audit-filter-bar">
+      <div class="audit-search-wrap">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input type="text" id="auditSearch" class="audit-search-input" placeholder="Cari sekolah, judul anomali, atau lokasi..." oninput="filterAnomalies()">
+      </div>
+
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <select id="filterSeverity" class="audit-select" onchange="filterAnomalies()">
+          <option value="ALL">Semua Severity</option>
+          <option value="CRITICAL">🔴 Critical</option>
+          <option value="HIGH">🟠 High</option>
+          <option value="MEDIUM">🟡 Medium</option>
+          <option value="LOW">🔵 Low</option>
+        </select>
+
+        <select id="filterStatus" class="audit-select" onchange="filterAnomalies()">
+          <option value="ALL">Semua Status</option>
+          <option value="TEMUAN">Temuan Terbuka (Open)</option>
+          <option value="INVESTIGASI">Dalam Investigasi</option>
+          <option value="SELESAI">Selesai / Ditindaklanjuti</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Anomalies Feed -->
+    <div id="anomaliesList">
+      <div style="text-align: center; padding: 60px; color: var(--color-text-muted);">
+        <div class="spinner" style="margin: 0 auto 16px;"></div>
+        <p>Menghubungkan ke basis data PostgreSQL...</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Site Footer -->
+  <footer style="background: #0B1329; color: #94A3B8; padding: 48px 0 24px; border-top: 1px solid #1E293B;">
+    <div class="container">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; padding-bottom: 24px; border-bottom: 1px solid #1E293B;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: var(--color-primary); display: flex; align-items: center; justify-content: center; color: #fff;">
+            <span class="material-symbols-outlined" style="font-size: 18px;">account_balance</span>
+          </div>
+          <span style="font-size: 16px; font-weight: 800; color: #F8FAFC;">SiTransparan Anggaran</span>
+        </div>
+        <div style="display: flex; gap: 20px; font-size: 13px;">
+          <a href="index.html" style="color: #94A3B8; text-decoration: none;">Beranda</a>
+          <a href="aliran-dana.html" style="color: #94A3B8; text-decoration: none;">Aliran Dana</a>
+          <a href="audit.html" style="color: #60A5FA; text-decoration: none; font-weight: 700;">Audit</a>
+          <a href="reporting.html" style="color: #94A3B8; text-decoration: none;">Laporkan</a>
+          <a href="tentang.html" style="color: #94A3B8; text-decoration: none;">Tentang</a>
+        </div>
+      </div>
+      <p style="font-size: 12px; color: #64748B; margin-top: 20px; text-align: center;">
+        © 2026 SiTransparan Civic-Tech.
+      </p>
+    </div>
+  </footer>
+
+  <script type="module" src="/scripts/db-client.js"></script>
+  <script>
+    let allAnomalies = [];
+
+    async function loadAuditData() {
+      let data = null;
+      try {
+        const res = await fetch('http://localhost:2021/rest/v1/audit_anomaly?order=tanggal_ditemukan.desc');
+        if (res.ok) data = await res.json();
+      } catch (e) {
+        // Try fallback
+      }
+
+      if (!data || !Array.isArray(data)) {
+        try {
+          const fbRes = await fetch('http://localhost:2028/rest/v1/audit_anomaly?order=tanggal_ditemukan.desc');
+          if (fbRes.ok) data = await fbRes.json();
+        } catch (err) {
+          console.warn('Fallback to 2028 failed:', err);
+        }
+      }
+
+      if (Array.isArray(data)) {
+        allAnomalies = data;
+        updateStats();
+        renderAnomalies(allAnomalies);
+      } else {
+        document.getElementById('anomaliesList').innerHTML = `
+          <div style="background: #ffffff; border: 1px solid #FECACA; border-radius: 16px; padding: 32px; text-align: center;">
+            <span class="material-symbols-outlined" style="color: #DC2626; font-size: 40px; margin-bottom: 8px;">error</span>
+            <h3 style="font-size: 16px; font-weight: 800; color: #991B1B;">Gagal Menghubungi Server Audit</h3>
+            <p style="font-size: 13px; color: #7F1D1D; margin-top: 4px;">Pastikan backend database aktif di port 2027/2028.</p>
+          </div>
+        `;
+      }
+    }
+
+    function updateStats() {
+      document.getElementById('statTotal').textContent = allAnomalies.length;
+      document.getElementById('statCritical').textContent = allAnomalies.filter(a => a.tingkat_keparahan === 'CRITICAL').length;
+      document.getElementById('statHigh').textContent = allAnomalies.filter(a => a.tingkat_keparahan === 'HIGH').length;
+      document.getElementById('statInvestigasi').textContent = allAnomalies.filter(a => a.status === 'INVESTIGASI').length;
+    }
+
+    function renderAnomalies(items) {
+      const container = document.getElementById('anomaliesList');
+      if (items.length === 0) {
+        container.innerHTML = `
+          <div style="background: #ffffff; border: 1px solid var(--color-border); border-radius: 16px; padding: 48px; text-align: center; color: var(--color-text-muted);">
+            <span class="material-symbols-outlined" style="font-size: 48px; color: #16A34A; margin-bottom: 8px;">verified_user</span>
+            <h3 style="font-size: 16px; font-weight: 800; color: #0f172a;">Tidak Ada Temuan Audit</h3>
+            <p style="font-size: 13px; margin-top: 4px;">Tidak ditemukan data yang cocok dengan kriteria filter.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = items.map((item, idx) => {
+        const sev = item.tingkat_keparahan || 'MEDIUM';
+        const schName = item.nama_institusi || item.institusi_pendidikan?.nama_institusi || 'Satuan Pendidikan';
+        const npsn = item.institusi_pendidikan?.npsn || '';
+        const selisih = item.nominal_selisih ? (window.DBClient ? window.DBClient.formatIDR(item.nominal_selisih) : 'Rp ' + Number(item.nominal_selisih).toLocaleString('id-ID')) : 'Belum ditaksir';
+        
+        const dateStr = item.tanggal_ditemukan ? new Date(item.tanggal_ditemukan).toLocaleDateString('id-ID', { dateStyle: 'long' }) : '-';
+        
+        const reportUrl = `reporting.html?npsn=${encodeURIComponent(npsn)}&desc=${encodeURIComponent(item.tipe_anomali)}&amount=${encodeURIComponent(item.nominal_selisih || 0)}&reason=${encodeURIComponent(item.keterangan || '')}&date=${encodeURIComponent(item.tanggal_ditemukan || '')}`;
+
+        return `
+          <div class="audit-card sev-${sev}">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
+                  <span class="sev-badge sev-${sev}">
+                    ${sev}
+                  </span>
+                  <span class="status-badge">
+                    STATUS: ${item.status || 'TEMUAN'}
+                  </span>
+                  <span style="font-size: 12px; color: var(--color-text-muted);">
+                    Ditemukan: ${dateStr}
+                  </span>
+                </div>
+                <h3 style="font-size: 17px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">
+                  ${item.tipe_anomali || 'Temuan Anomali Anggaran'}
+                </h3>
+                <div style="font-size: 13px; font-weight: 600; color: var(--color-primary); display: flex; align-items: center; gap: 4px;">
+                  <span class="material-symbols-outlined" style="font-size: 16px;">school</span>
+                  ${npsn ? `<a href="dashboard.html?npsn=${npsn}" style="text-decoration: underline;">${schName} (NPSN: ${npsn})</a>` : schName}
+                </div>
+              </div>
+
+              <div style="text-align: right;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase;">NOMINAL SELISIH / RESIKO</div>
+                <div style="font-size: 18px; font-weight: 800; color: #DC2626;">${selisih}</div>
+              </div>
+            </div>
+
+            <p style="font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 16px;">
+              ${item.keterangan || 'Ketidaksesuaian alokasi biaya dilaporkan melalui sistem monitoring.'}
+            </p>
+
+            <!-- 5W1H Forensic Details -->
+            <div class="w5h-grid">
+              <div class="w5h-item">
+                <div class="w5h-label">
+                  <span class="material-symbols-outlined" style="font-size: 14px; color: var(--color-primary);">help</span>
+                  WHAT (APA MASALAHNYA)
+                </div>
+                <div>${item.audit_what || 'Penggelembungan harga belanja atau perbedaan bukti fisik.'}</div>
+              </div>
+
+              <div class="w5h-item">
+                <div class="w5h-label">
+                  <span class="material-symbols-outlined" style="font-size: 14px; color: var(--color-primary);">psychology</span>
+                  WHY (MENGAPA TERJADI)
+                </div>
+                <div>${item.audit_why || 'Harga satuan melebihi acuan standar pasar daerah (e-Katalog LKPP).'}</div>
+              </div>
+
+              <div class="w5h-item">
+                <div class="w5h-label">
+                  <span class="material-symbols-outlined" style="font-size: 14px; color: var(--color-primary);">location_on</span>
+                  WHERE (LOKASI KEJADIAN)
+                </div>
+                <div>${item.audit_where || schName}</div>
+              </div>
+
+              <div class="w5h-item">
+                <div class="w5h-label">
+                  <span class="material-symbols-outlined" style="font-size: 14px; color: var(--color-primary);">schedule</span>
+                  WHEN (WAKTU PERISTIWA)
+                </div>
+                <div>${item.audit_when || dateStr}</div>
+              </div>
+
+              <div class="w5h-item">
+                <div class="w5h-label">
+                  <span class="material-symbols-outlined" style="font-size: 14px; color: var(--color-primary);">person</span>
+                  WHO (PIHAK TERKAIT)
+                </div>
+                <div>${item.audit_who || 'Pejabat Pembuat Komitmen & Bendahara BOS'}</div>
+              </div>
+
+              <div class="w5h-item">
+                <div class="w5h-label">
+                  <span class="material-symbols-outlined" style="font-size: 14px; color: var(--color-primary);">gavel</span>
+                  HOW (REKOMENDASI AUDITOR)
+                </div>
+                <div>${item.audit_how || 'Peninjauan ulang RAB dan penyesuaian nominal pengeluaran.'}</div>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px;">
+              ${npsn ? `
+                <a href="dashboard.html?npsn=${npsn}" class="btn-watchlist-pill" style="font-size: 12px;">
+                  <span class="material-symbols-outlined" style="font-size: 16px;">dashboard</span>
+                  Buka Dashboard Sekolah
+                </a>
+              ` : ''}
+              <a href="${reportUrl}" class="btn-report" style="font-size: 12px; background: #DC2626;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">flag</span>
+                Laporkan Temuan Ini
+              </a>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterAnomalies() {
+      const q = document.getElementById('auditSearch').value.toLowerCase();
+      const sev = document.getElementById('filterSeverity').value;
+      const status = document.getElementById('filterStatus').value;
+
+      const filtered = allAnomalies.filter(item => {
+        const text = (item.tipe_anomali + ' ' + item.keterangan + ' ' + (item.nama_institusi || '') + ' ' + (item.audit_where || '')).toLowerCase();
+        const matchSearch = text.includes(q);
+        const matchSev = sev === 'ALL' || item.tingkat_keparahan === sev;
+        const matchStatus = status === 'ALL' || (item.status || '').toUpperCase() === status;
+
+        return matchSearch && matchSev && matchStatus;
+      });
+
+      renderAnomalies(filtered);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadAuditData();
+    });
+  </script>
+</body>
+</html>

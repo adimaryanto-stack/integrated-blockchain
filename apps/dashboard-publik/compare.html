@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bandingkan Dua Sekolah — SiTransparan</title>
+  <meta name="description" content="Komparasi alokasi anggaran dan pengeluaran dua sekolah di Indonesia secara berdampingan."/>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  
+  <link rel="stylesheet" href="/styles/main.css"/>
+  <link rel="stylesheet" href="/styles/transparansi-2020.css"/>
+
+  <style>
+    .compare-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 24px;
+    }
+    @media (max-width: 860px) {
+      .compare-container {
+        grid-template-columns: 1fr;
+      }
+    }
+    .school-card-box {
+      background: #ffffff;
+      border: 2px solid var(--color-border);
+      border-radius: 20px;
+      padding: 24px;
+      position: relative;
+      box-shadow: var(--shadow-sm);
+    }
+    .search-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      margin-top: 6px;
+      box-shadow: var(--shadow-lg);
+      z-index: 100;
+      max-height: 280px;
+      overflow-y: auto;
+      display: none;
+    }
+    .search-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid #F1F5F9;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .search-item:hover {
+      background: #EFF6FF;
+    }
+    .stat-comparison-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px dashed var(--color-border);
+    }
+    .category-bar-wrapper {
+      margin-bottom: 12px;
+    }
+    .category-bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .category-bar-track {
+      height: 8px;
+      background: #F1F5F9;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .category-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="brand-logo">
+        <div class="logo-badge">
+          <span class="material-symbols-outlined" style="font-size: 22px;">account_balance</span>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 17px; font-weight: 800; line-height: 1.1; color: #0f172a;">Transparansi Anggaran</span>
+          <span style="font-size: 10px; font-weight: 700; color: var(--color-primary); letter-spacing: 0.05em;">SITRANSPARAN CIVIC-TECH</span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="main-nav">
+        <a href="index.html" class="nav-link">Beranda</a>
+        
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-trigger active" type="button">
+            <span>Data</span>
+            <span class="material-symbols-outlined" style="font-size: 18px;">expand_more</span>
+          </button>
+          <div class="nav-dropdown-menu">
+            <a href="aliran-dana.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">account_tree</span>
+              <span>Aliran Dana APBN</span>
+            </a>
+            <a href="audit.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">security</span>
+              <span>Audit & Anomali</span>
+            </a>
+            <a href="compare.html" class="nav-dropdown-item active">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">compare_arrows</span>
+              <span>Bandingkan Sekolah</span>
+            </a>
+            <a href="peta-regional.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">public</span>
+              <span>Peta Regional</span>
+            </a>
+            <a href="provinces.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">map</span>
+              <span>38 Provinsi</span>
+            </a>
+            <a href="statistics.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">bar_chart</span>
+              <span>Statistik Nasional</span>
+            </a>
+            <a href="funding.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">payments</span>
+              <span>Sumber Pendanaan</span>
+            </a>
+            <a href="detail-anggaran.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">receipt_long</span>
+              <span>Detail Program BOS</span>
+            </a>
+          </div>
+        </div>
+
+        <a href="reporting.html" class="nav-link">Laporkan</a>
+        <a href="tentang.html" class="nav-link">Tentang</a>
+        <a href="faq.html" class="nav-link">FAQ</a>
+        <a href="contact.html" class="nav-link">Kontak</a>
+      </nav>
+
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <a href="pantau-anggaran.html" class="btn-watchlist-pill" title="Lihat item yang Anda pantau">
+          <span>Pantau Anggaran</span>
+          <span class="watchlist-count" id="headerWatchlistCount">0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top: 36px; padding-bottom: 72px;">
+    <!-- Title Section -->
+    <div style="text-align: center; max-width: 720px; margin: 0 auto 36px;">
+      <div class="badge-tag" style="background: var(--color-primary-light); color: var(--color-primary); border-color: rgba(29, 78, 216, 0.2); margin-bottom: 8px;">
+        KOMPARASI ANGGARAN & BELANJA SEKOLAH
+      </div>
+      <h1 style="font-size: 34px; font-weight: 800; color: #0f172a; margin-bottom: 12px;">
+        Bandingkan Transparansi Dua Sekolah
+      </h1>
+      <p style="font-size: 15px; color: var(--color-text-muted); line-height: 1.6;">
+        Ketik nama sekolah atau NPSN untuk melihat alokasi penerimaan BOS, efisiensi penyerapan kas, dan perbandingan pola belanja per kategori.
+      </p>
+    </div>
+
+    <!-- Dual Comparison Container -->
+    <div class="compare-container">
+      <!-- School 1 Column -->
+      <div class="school-card-box" id="boxSchool1">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <span class="badge-tag" style="background: #EFF6FF; color: var(--color-primary);">SEKOLAH A</span>
+          <span class="material-symbols-outlined" style="color: var(--color-primary);">school</span>
+        </div>
+
+        <div style="position: relative; margin-bottom: 20px;">
+          <input type="text" id="inputSchool1" placeholder="Ketik nama atau NPSN Sekolah 1..." autocomplete="off"
+            style="width: 100%; padding: 12px 16px; border: 2px solid var(--color-border); border-radius: 12px; font-size: 14px; font-weight: 600; outline: none;">
+          <div class="search-dropdown" id="dropdownSchool1"></div>
+        </div>
+
+        <!-- School 1 Details Area -->
+        <div id="contentSchool1">
+          <div style="text-align: center; padding: 48px 16px; color: var(--color-text-muted);">
+            <span class="material-symbols-outlined" style="font-size: 40px; color: #94A3B8; margin-bottom: 8px;">manage_search</span>
+            <p style="font-size: 14px;">Pilih sekolah pertama untuk memulai perbandingan</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- School 2 Column -->
+      <div class="school-card-box" id="boxSchool2">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <span class="badge-tag" style="background: #F0FDF4; color: #16A34A;">SEKOLAH B</span>
+          <span class="material-symbols-outlined" style="color: #16A34A;">school</span>
+        </div>
+
+        <div style="position: relative; margin-bottom: 20px;">
+          <input type="text" id="inputSchool2" placeholder="Ketik nama atau NPSN Sekolah 2..." autocomplete="off"
+            style="width: 100%; padding: 12px 16px; border: 2px solid var(--color-border); border-radius: 12px; font-size: 14px; font-weight: 600; outline: none;">
+          <div class="search-dropdown" id="dropdownSchool2"></div>
+        </div>
+
+        <!-- School 2 Details Area -->
+        <div id="contentSchool2">
+          <div style="text-align: center; padding: 48px 16px; color: var(--color-text-muted);">
+            <span class="material-symbols-outlined" style="font-size: 40px; color: #94A3B8; margin-bottom: 8px;">manage_search</span>
+            <p style="font-size: 14px;">Pilih sekolah kedua untuk melihat hasil berdampingan</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Site Footer -->
+  <footer style="background: #0B1329; color: #94A3B8; padding: 48px 0 24px; border-top: 1px solid #1E293B;">
+    <div class="container">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; padding-bottom: 24px; border-bottom: 1px solid #1E293B;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: var(--color-primary); display: flex; align-items: center; justify-content: center; color: #fff;">
+            <span class="material-symbols-outlined" style="font-size: 18px;">account_balance</span>
+          </div>
+          <span style="font-size: 16px; font-weight: 800; color: #F8FAFC;">SiTransparan Anggaran</span>
+        </div>
+        <div style="display: flex; gap: 20px; font-size: 13px;">
+          <a href="index.html" style="color: #94A3B8; text-decoration: none;">Beranda</a>
+          <a href="aliran-dana.html" style="color: #94A3B8; text-decoration: none;">Aliran Dana</a>
+          <a href="audit.html" style="color: #94A3B8; text-decoration: none;">Audit</a>
+          <a href="compare.html" style="color: #60A5FA; text-decoration: none; font-weight: 700;">Bandingkan</a>
+          <a href="tentang.html" style="color: #94A3B8; text-decoration: none;">Tentang</a>
+        </div>
+      </div>
+      <p style="font-size: 12px; color: #64748B; margin-top: 20px; text-align: center;">
+        © 2026 SiTransparan Civic-Tech.
+      </p>
+    </div>
+  </footer>
+
+  <script type="module" src="/scripts/db-client.js"></script>
+  <script>
+    let school1 = null;
+    let school2 = null;
+
+    function setupSearch(inputId, dropdownId, onSelect) {
+      const input = document.getElementById(inputId);
+      const dropdown = document.getElementById(dropdownId);
+      let timer = null;
+
+      input.addEventListener('input', () => {
+        clearTimeout(timer);
+        const q = input.value.trim();
+        if (q.length < 2) {
+          dropdown.style.display = 'none';
+          dropdown.innerHTML = '';
+          return;
+        }
+
+        timer = setTimeout(async () => {
+          dropdown.innerHTML = '<div style="padding: 12px; text-align: center; color: var(--color-text-muted); font-size: 13px;">Mencari di PostgreSQL...</div>';
+          dropdown.style.display = 'block';
+
+          try {
+            const cleanQ = encodeURIComponent(q);
+            const res = await fetch(`http://localhost:2021/rest/v1/schools?or=(name.ilike.*${cleanQ}*,npsn.ilike.*${cleanQ}*)&limit=6`);
+            const data = await res.json();
+            
+            if (!Array.isArray(data) || data.length === 0) {
+              dropdown.innerHTML = '<div style="padding: 12px; text-align: center; color: var(--color-text-muted); font-size: 13px;">Tidak ada sekolah yang cocok.</div>';
+              return;
+            }
+
+            dropdown.innerHTML = data.map(s => `
+              <div class="search-item" data-school='${JSON.stringify(s).replace(/'/g, "&apos;")}'>
+                <div style="font-weight: 700; color: #0f172a; font-size: 14px;">${s.name}</div>
+                <div style="font-size: 12px; color: var(--color-text-muted); display: flex; gap: 8px; margin-top: 2px;">
+                  <span>NPSN: <strong>${s.npsn}</strong></span>
+                  <span>•</span>
+                  <span>${s.location || 'Wilayah Terdaftar'}</span>
+                </div>
+              </div>
+            `).join('');
+
+            dropdown.querySelectorAll('.search-item').forEach(item => {
+              item.addEventListener('click', () => {
+                const s = JSON.parse(item.getAttribute('data-school'));
+                input.value = s.name;
+                dropdown.style.display = 'none';
+                onSelect(s);
+              });
+            });
+          } catch (e) {
+            console.error('Search error:', e);
+            dropdown.innerHTML = '<div style="padding: 12px; text-align: center; color: #ef4444; font-size: 13px;">Gagal memuat hasil.</div>';
+          }
+        }, 300);
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+          dropdown.style.display = 'none';
+        }
+      });
+    }
+
+    async function fetchSchoolMetrics(school) {
+      try {
+        const [fundsRes, txRes] = await Promise.all([
+          fetch(`http://localhost:2021/rest/v1/incoming_funds?school_id=eq.${school.id}`),
+          fetch(`http://localhost:2021/rest/v1/transactions?school_id=eq.${school.id}`)
+        ]);
+
+        const funds = fundsRes.ok ? await fundsRes.json() : [];
+        const txs = txRes.ok ? await txRes.json() : [];
+
+        const totalBudget = (funds || []).reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+        const totalSpent = (txs || []).reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+
+        const categoryMap = {};
+        (txs || []).forEach(tx => {
+          const cat = tx.category || 'Lainnya';
+          categoryMap[cat] = (categoryMap[cat] || 0) + Number(tx.amount || 0);
+        });
+
+        return {
+          totalBudget: totalBudget,
+          totalSpent: totalSpent,
+          categories: categoryMap
+        };
+      } catch (e) {
+        console.error('Metrics fetch error:', e);
+        return {
+          totalBudget: 0,
+          totalSpent: 0,
+          categories: {}
+        };
+      }
+    }
+
+    async function renderSchool(school, containerId, primaryColor = '#1D4ED8') {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '<div style="text-align: center; padding: 36px;"><div class="spinner" style="margin: 0 auto 12px;"></div><p style="font-size: 13px; color: var(--color-text-muted);">Menghitung data anggaran dari PostgreSQL...</p></div>';
+
+      const metrics = await fetchSchoolMetrics(school);
+      const remaining = Math.max(0, metrics.totalBudget - metrics.totalSpent);
+      const pct = metrics.totalBudget > 0 ? ((metrics.totalSpent / metrics.totalBudget) * 100).toFixed(1) : '0';
+
+      const fmt = (n) => window.DBClient ? window.DBClient.formatIDR(n) : 'Rp ' + Number(n).toLocaleString('id-ID');
+
+      container.innerHTML = `
+        <div style="border-bottom: 2px solid #F1F5F9; padding-bottom: 16px; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+            <div>
+              <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">${school.name}</h2>
+              <div style="font-size: 13px; color: var(--color-text-muted);">${school.location || 'Wilayah Terdaftar'}</div>
+            </div>
+            <span style="font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 6px; background: #EFF6FF; color: ${primaryColor};">
+              AKREDITASI: ${school.accreditation || 'A'}
+            </span>
+          </div>
+          <div style="font-size: 12px; color: var(--color-text-muted); margin-top: 6px;">
+            NPSN: <strong style="color: #0f172a;">${school.npsn}</strong>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <div class="stat-comparison-row">
+            <span style="font-size: 13px; font-weight: 600; color: var(--color-text-muted);">Total Anggaran Masuk</span>
+            <strong style="font-size: 15px; color: #0f172a;">${fmt(metrics.totalBudget)}</strong>
+          </div>
+          <div class="stat-comparison-row">
+            <span style="font-size: 13px; font-weight: 600; color: var(--color-text-muted);">Realisasi Pengeluaran</span>
+            <strong style="font-size: 15px; color: #DC2626;">${fmt(metrics.totalSpent)}</strong>
+          </div>
+          <div class="stat-comparison-row">
+            <span style="font-size: 13px; font-weight: 600; color: var(--color-text-muted);">Sisa Saldo Kas</span>
+            <strong style="font-size: 15px; color: #16A34A;">${fmt(remaining)}</strong>
+          </div>
+          <div class="stat-comparison-row" style="border-bottom: none;">
+            <span style="font-size: 13px; font-weight: 600; color: var(--color-text-muted);">Tingkat Penyerapan</span>
+            <strong style="font-size: 15px; color: ${primaryColor};">${pct}%</strong>
+          </div>
+
+          <!-- Progress Bar -->
+          <div style="height: 10px; background: #F1F5F9; border-radius: 6px; overflow: hidden; margin-top: 8px;">
+            <div style="width: ${Math.min(100, pct)}%; height: 100%; background: ${primaryColor}; border-radius: 6px;"></div>
+          </div>
+        </div>
+
+        <h4 style="font-size: 13px; font-weight: 800; color: #0f172a; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.05em;">
+          Rincian Belanja per Kategori
+        </h4>
+        <div>
+          ${Object.entries(metrics.categories).map(([cat, amt]) => {
+            const catPct = metrics.totalSpent > 0 ? ((amt / metrics.totalSpent) * 100).toFixed(1) : 0;
+            return `
+              <div class="category-bar-wrapper">
+                <div class="category-bar-label">
+                  <span style="color: #334155;">${cat}</span>
+                  <span style="color: var(--color-text-muted);">${fmt(amt)} (${catPct}%)</span>
+                </div>
+                <div class="category-bar-track">
+                  <div class="category-bar-fill" style="width: ${catPct}%; background: ${primaryColor};"></div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <div style="margin-top: 24px; text-align: center;">
+          <a href="dashboard.html?npsn=${school.npsn}" class="btn-watchlist-pill" style="display: inline-flex; width: 100%; justify-content: center;">
+            <span class="material-symbols-outlined" style="font-size: 18px;">dashboard</span>
+            Buka Dashboard Lengkap Sekolah
+          </a>
+        </div>
+      `;
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      setupSearch('inputSchool1', 'dropdownSchool1', (s) => {
+        school1 = s;
+        renderSchool(s, 'contentSchool1', '#1D4ED8');
+      });
+
+      setupSearch('inputSchool2', 'dropdownSchool2', (s) => {
+        school2 = s;
+        renderSchool(s, 'contentSchool2', '#16A34A');
+      });
+
+      // Initial load top 2 schools from PostgreSQL database (Port 2021)
+      try {
+        const res = await fetch('http://localhost:2021/rest/v1/schools?limit=2');
+        const defaultSchools = await res.json();
+        if (defaultSchools && defaultSchools.length >= 2) {
+          school1 = defaultSchools[0];
+          school2 = defaultSchools[1];
+          document.getElementById('inputSchool1').value = school1.name;
+          document.getElementById('inputSchool2').value = school2.name;
+          renderSchool(school1, 'contentSchool1', '#1D4ED8');
+          renderSchool(school2, 'contentSchool2', '#16A34A');
+        }
+      } catch (e) {
+        console.warn('Could not load initial comparison pair:', e);
+      }
+    });
+  </script>
+</body>
+</html>

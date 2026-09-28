@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title id="pageTitle">Detail Provinsi — SiTransparan</title>
+  <meta name="description" content="Detail provinsi: daftar kabupaten/kota, jumlah sekolah per jenjang, dan daftar satuan pendidikan."/>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+  <link rel="stylesheet" href="/styles/main.css"/>
+  <link rel="stylesheet" href="/styles/transparansi-2020.css"/>
+
+  <style>
+    /* ── KPI Jenjang Cards ── */
+    .jenjang-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    @media (max-width: 900px) { .jenjang-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 560px) { .jenjang-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .jenjang-card {
+      background: #fff;
+      border: 1px solid var(--color-border);
+      border-radius: 14px;
+      padding: 18px 16px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.18s, box-shadow 0.18s;
+    }
+    .jenjang-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .jenjang-card .j-label {
+      font-size: 11px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--color-text-muted); margin-bottom: 6px;
+    }
+    .jenjang-card .j-num {
+      font-size: clamp(20px, 2.5vw, 28px); font-weight: 900; color: #0f172a;
+      letter-spacing: -0.02em;
+    }
+    .jenjang-card .j-icon {
+      font-size: 22px; margin-bottom: 8px; display: block;
+    }
+
+    /* ── Regency Grid ── */
+    .regency-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .regency-card {
+      background: #fff;
+      border: 1px solid var(--color-border);
+      border-radius: 14px;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.18s;
+      box-shadow: var(--shadow-sm);
+    }
+    .regency-card:hover {
+      border-color: var(--color-primary);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+    .regency-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .regency-icon.kota { background: #E0F2FE; color: #0284C7; }
+    .regency-icon.kabupaten { background: #D1FAE5; color: #059669; }
+    .regency-name { font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 3px; }
+    .regency-meta { font-size: 12px; color: var(--color-text-muted); display: flex; gap: 10px; align-items: center; }
+    .regency-type-badge {
+      font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 5px;
+    }
+    .regency-type-badge.kota { background: #E0F2FE; color: #0284C7; }
+    .regency-type-badge.kabupaten { background: #D1FAE5; color: #059669; }
+
+    /* ── School List ── */
+    .school-filters {
+      background: #fff;
+      border: 1px solid var(--color-border);
+      border-radius: 14px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .filter-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 700px) { .filter-row { grid-template-columns: 1fr; } }
+    .filter-label {
+      font-size: 10px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--color-text-muted); margin-bottom: 5px;
+    }
+    .filter-select {
+      width: 100%; padding: 9px 12px; border: 1px solid var(--color-border);
+      border-radius: 9px; font-size: 13px; font-weight: 600;
+      color: #0f172a; background: #F8FAFC; outline: none;
+      transition: border-color 0.15s;
+    }
+    .filter-select:focus { border-color: var(--color-primary); }
+
+    .school-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 14px;
+    }
+    .school-card {
+      background: #fff;
+      border: 1px solid var(--color-border);
+      border-radius: 14px;
+      padding: 18px 20px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.18s;
+      box-shadow: var(--shadow-sm);
+    }
+    .school-card:hover { border-color: var(--color-primary); box-shadow: var(--shadow-md); }
+    .school-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: #EFF6FF; color: var(--color-primary);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-size: 22px;
+      transition: background 0.18s, color 0.18s;
+    }
+    .school-card:hover .school-icon { background: var(--color-primary); color: #fff; }
+    .school-name { font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 3px; line-height: 1.3; }
+    .school-npsn { font-size: 11px; color: var(--color-text-muted); margin-bottom: 6px; }
+    .accred-tag {
+      display: inline-flex; font-size: 10px; font-weight: 800;
+      padding: 2px 8px; border-radius: 6px;
+      background: #EFF6FF; color: var(--color-primary);
+    }
+    .loc-tag {
+      font-size: 11px; color: var(--color-text-muted);
+      background: #F8FAFC; padding: 2px 7px; border-radius: 5px;
+      max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    /* ── Section Titles ── */
+    .section-title {
+      font-size: 20px; font-weight: 800; color: #0f172a;
+      display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+    }
+    .section-count {
+      font-size: 12px; font-weight: 700; background: #F1F5F9;
+      color: var(--color-text-muted); padding: 2px 9px; border-radius: 99px;
+    }
+
+    /* ── Search Bar ── */
+    .search-bar-wrap { position: relative; }
+    .search-bar-wrap .search-icon {
+      position: absolute; left: 14px; top: 50%;
+      transform: translateY(-50%); color: var(--color-text-muted); font-size: 18px;
+    }
+    .search-bar-input {
+      width: 100%; padding: 12px 14px 12px 42px;
+      border: 1px solid var(--color-border); border-radius: 12px;
+      font-size: 14px; outline: none; background: #fff;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .search-bar-input:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(29,78,216,0.1);
+    }
+
+    /* ── Breadcrumb ── */
+    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--color-text-muted); margin-bottom: 20px; }
+    .breadcrumb a { color: var(--color-primary); font-weight: 600; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ── Load More Button ── */
+    .load-more-btn {
+      display: flex; align-items: center; gap: 8px;
+      margin: 24px auto 0; padding: 12px 28px;
+      border: 1px solid var(--color-border); border-radius: 12px;
+      background: #fff; font-size: 14px; font-weight: 700;
+      color: #0f172a; cursor: pointer; transition: all 0.15s;
+      box-shadow: var(--shadow-sm);
+    }
+    .load-more-btn:hover { border-color: var(--color-primary); color: var(--color-primary); box-shadow: var(--shadow-md); }
+    .load-more-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="brand-logo">
+        <div class="logo-badge">
+          <span class="material-symbols-outlined" style="font-size: 22px;">account_balance</span>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 17px; font-weight: 800; line-height: 1.1; color: #0f172a;">Transparansi Anggaran</span>
+          <span style="font-size: 10px; font-weight: 700; color: var(--color-primary); letter-spacing: 0.05em;">SITRANSPARAN CIVIC-TECH</span>
+        </div>
+      </a>
+
+      <nav class="main-nav">
+        <a href="index.html" class="nav-link">Beranda</a>
+
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-trigger active" type="button">
+            <span>Data</span>
+            <span class="material-symbols-outlined" style="font-size: 18px;">expand_more</span>
+          </button>
+          <div class="nav-dropdown-menu">
+            <a href="aliran-dana.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">account_tree</span>
+              <span>Aliran Dana APBN</span>
+            </a>
+            <a href="audit.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">security</span>
+              <span>Audit &amp; Anomali</span>
+            </a>
+            <a href="compare.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">compare_arrows</span>
+              <span>Bandingkan Sekolah</span>
+            </a>
+            <a href="peta-regional.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">public</span>
+              <span>Peta Regional</span>
+            </a>
+            <a href="provinces.html" class="nav-dropdown-item active">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">map</span>
+              <span>38 Provinsi</span>
+            </a>
+            <a href="statistics.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">bar_chart</span>
+              <span>Statistik Nasional</span>
+            </a>
+            <a href="funding.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">payments</span>
+              <span>Sumber Pendanaan</span>
+            </a>
+            <a href="detail-anggaran.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">receipt_long</span>
+              <span>Detail Program BOS</span>
+            </a>
+          </div>
+        </div>
+
+        <a href="reporting.html" class="nav-link">Laporkan</a>
+        <a href="tentang.html" class="nav-link">Tentang</a>
+        <a href="faq.html" class="nav-link">FAQ</a>
+        <a href="contact.html" class="nav-link">Kontak</a>
+      </nav>
+
+      <div class="header-actions">
+        <a href="pantau-anggaran.html" class="btn-watchlist-pill" title="Lihat item yang Anda pantau">
+          <span>Pantau Anggaran</span>
+          <span class="watchlist-count" id="headerWatchlistCount">0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top: 32px; padding-bottom: 72px;">
+
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb">
+      <a href="provinces.html">38 Provinsi</a>
+      <span class="material-symbols-outlined" style="font-size: 14px;">chevron_right</span>
+      <span id="breadcrumbName" style="font-weight: 700; color: #0f172a;">Memuat...</span>
+    </nav>
+
+    <!-- Province Header -->
+    <div style="margin-bottom: 28px;">
+      <div class="badge-tag" style="background: var(--color-primary-light); color: var(--color-primary);">
+        DATA PROVINSI
+      </div>
+      <h1 id="provinceName" style="font-size: clamp(26px, 4vw, 38px); font-weight: 900; color: #0f172a; margin: 8px 0 6px; letter-spacing: -0.02em;">
+        Memuat...
+      </h1>
+      <p id="provinceDesc" style="font-size: 14px; color: var(--color-text-muted);">
+        Daftar kabupaten/kota dan satuan pendidikan yang terdaftar pada basis data.
+      </p>
+    </div>
+
+    <!-- Jenjang KPI Cards -->
+    <div class="jenjang-grid" id="jenjangCards">
+      <div class="jenjang-card"><span class="j-icon">🌱</span><div class="j-label">PAUD / TK</div><div class="j-num" id="jPaud">--</div></div>
+      <div class="jenjang-card"><span class="j-icon">📚</span><div class="j-label">SD / Sederajat</div><div class="j-num" id="jSd">--</div></div>
+      <div class="jenjang-card"><span class="j-icon">📖</span><div class="j-label">SMP / Sederajat</div><div class="j-num" id="jSmp">--</div></div>
+      <div class="jenjang-card"><span class="j-icon">🎒</span><div class="j-label">SMA / SMK</div><div class="j-num" id="jSma">--</div></div>
+      <div class="jenjang-card"><span class="j-icon">🎓</span><div class="j-label">Universitas</div><div class="j-num" id="jUniv">--</div></div>
+    </div>
+
+    <!-- Quick Search -->
+    <div class="search-bar-wrap" style="margin-bottom: 32px;">
+      <span class="material-symbols-outlined search-icon">search</span>
+      <input
+        type="text"
+        class="search-bar-input"
+        id="quickSearch"
+        placeholder="Cari nama kabupaten/kota atau sekolah di provinsi ini..."
+        oninput="onQuickSearch(this.value)"
+      >
+    </div>
+
+    <!-- Regencies Section -->
+    <div style="margin-bottom: 40px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 8px;">
+        <div>
+          <h2 class="section-title">
+            <span class="material-symbols-outlined" style="color: var(--color-primary);">map</span>
+            <span id="regencyTitle">Daftar Kabupaten / Kota</span>
+            <span class="section-count" id="regencyCount">0</span>
+          </h2>
+          <p style="font-size: 13px; color: var(--color-text-muted);">Klik kabupaten/kota untuk melihat sekolah</p>
+        </div>
+      </div>
+      <div class="regency-grid" id="regencyGrid">
+        <div style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--color-text-muted);">
+          <div class="spinner" style="margin: 0 auto 12px;"></div>
+          Mengambil data dari database...
+        </div>
+      </div>
+    </div>
+
+    <hr style="border: none; border-top: 1px solid var(--color-border); margin-bottom: 36px;">
+
+    <!-- School List Section -->
+    <div>
+      <h2 class="section-title" style="margin-bottom: 4px;">
+        <span class="material-symbols-outlined" style="color: var(--color-primary);">school</span>
+        Daftar Sekolah
+        <span class="section-count" id="schoolCount">0</span>
+      </h2>
+      <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 20px;" id="schoolSubtitle">
+        Satuan pendidikan terdaftar di provinsi ini.
+      </p>
+
+      <!-- Filters -->
+      <div class="school-filters">
+        <!-- Search inside filter -->
+        <div class="search-bar-wrap">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input
+            type="text"
+            class="search-bar-input"
+            id="schoolSearch"
+            placeholder="Cari berdasarkan Nama Sekolah atau NPSN..."
+            oninput="onSchoolSearch(this.value)"
+            style="font-size: 13px; padding: 10px 14px 10px 40px;"
+          >
+        </div>
+        <!-- Dropdowns -->
+        <div class="filter-row">
+          <div>
+            <div class="filter-label">Kabupaten / Kota</div>
+            <select class="filter-select" id="filterKabupaten" onchange="applyFilters()">
+              <option value="">Semua Kabupaten / Kota</option>
+            </select>
+          </div>
+          <div>
+            <div class="filter-label">Jenjang</div>
+            <select class="filter-select" id="filterJenjang" onchange="applyFilters()">
+              <option value="">Semua Jenjang</option>
+              <option value="PAUD">PAUD / TK / KB</option>
+              <option value="SD">SD / Sederajat</option>
+              <option value="SMP">SMP / Sederajat</option>
+              <option value="SMA">SMA / SMK / Sederajat</option>
+              <option value="UNIVERSITAS">Universitas / PT</option>
+            </select>
+          </div>
+          <div>
+            <div class="filter-label">Akreditasi</div>
+            <select class="filter-select" id="filterAkreditasi" onchange="applyFilters()">
+              <option value="">Semua Akreditasi</option>
+              <option value="A">A (Unggul)</option>
+              <option value="B">B (Baik)</option>
+              <option value="C">C (Cukup)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- School Grid -->
+      <div class="school-grid" id="schoolGrid">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Load More -->
+      <div style="text-align: center;" id="loadMoreWrap">
+        <button class="load-more-btn" id="loadMoreBtn" onclick="loadMoreSchools()" style="display:none;">
+          <span class="material-symbols-outlined">expand_more</span>
+          Muat Lebih Banyak
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer style="background: #0B1329; color: #94A3B8; padding: 48px 0 24px; border-top: 1px solid #1E293B;">
+    <div class="container">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; padding-bottom: 24px; border-bottom: 1px solid #1E293B;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: var(--color-primary); display: flex; align-items: center; justify-content: center; color: #fff;">
+            <span class="material-symbols-outlined" style="font-size: 18px;">account_balance</span>
+          </div>
+          <span style="font-size: 16px; font-weight: 800; color: #F8FAFC;">SiTransparan Anggaran</span>
+        </div>
+        <div style="display: flex; gap: 20px; font-size: 13px;">
+          <a href="index.html" style="color: #94A3B8; text-decoration: none;">Beranda</a>
+          <a href="provinces.html" style="color: #60A5FA; text-decoration: none; font-weight: 700;">38 Provinsi</a>
+          <a href="peta-regional.html" style="color: #94A3B8; text-decoration: none;">Peta Regional</a>
+          <a href="statistics.html" style="color: #94A3B8; text-decoration: none;">Statistik</a>
+        </div>
+      </div>
+      <p style="font-size: 12px; color: #64748B; margin-top: 20px; text-align: center;">
+        © 2026 SiTransparan Civic-Tech.
+      </p>
+    </div>
+  </footer>
+
+  <script type="module" src="/scripts/db-client.js"></script>
+  <script>
+    const API = 'http://localhost:2028/rest/v1';
+    const SCHOOL_LIMIT = 24;
+
+    let provinceId = null;
+    let provinceCode = '';
+    let provinceName = '';
+    let allRegencies = [];
+    let allSchoolsCache = [];
+    let filteredSchools = [];
+    let schoolPage = 1;
+    let loadedSchoolIds = new Set();
+
+    /* ── Read province code from URL ── */
+    function getCode() {
+      const p = new URLSearchParams(window.location.search);
+      return p.get('code') || p.get('name') || '';
+    }
+
+    /* ── Jenjang classifier (matches port 2020 logic) ── */
+    function classifyJenjang(name) {
+      const n = (name || '').toUpperCase();
+      if (/\b(UNIVERSITAS|INSTITUT|POLITEKNIK|AKADEMI|SEKOLAH TINGGI)\b/.test(n)) return 'UNIVERSITAS';
+      if (/\b(SMA|SMAN|SMAS|SMK|SMKN|SMKS|MA|MAN|MAS)\b/.test(n)) return 'SMA';
+      if (/\b(SMP|SMPN|SMPS|MTS|MTSN|MTSS)\b/.test(n)) return 'SMP';
+      if (/\b(SD|SDN|SDS|MI|MIN|MIS)\b/.test(n)) return 'SD';
+      return 'PAUD';
+    }
+
+    /* ── Fetch province by code or name (supports 73, p-27, 27, or name) ── */
+    async function loadProvince(codeOrName) {
+      if (!codeOrName) return null;
+      const clean = decodeURIComponent(codeOrName).trim();
+
+      // 1. Try by code (e.g. 73, 11, 32)
+      try {
+        let res = await fetch(`${API}/provinces?code=eq.${encodeURIComponent(clean)}&select=id,name,code&limit=1`);
+        let data = await res.json();
+        if (Array.isArray(data) && data.length > 0) return data[0];
+      } catch (e) {}
+
+      // 2. Try by id directly (e.g. p-27)
+      try {
+        let res = await fetch(`${API}/provinces?id=eq.${encodeURIComponent(clean)}&select=id,name,code&limit=1`);
+        let data = await res.json();
+        if (Array.isArray(data) && data.length > 0) return data[0];
+      } catch (e) {}
+
+      // 3. Try with 'p-' prefix if numeric (e.g. 27 -> p-27)
+      if (/^\d+$/.test(clean)) {
+        try {
+          let res = await fetch(`${API}/provinces?id=eq.p-${encodeURIComponent(clean)}&select=id,name,code&limit=1`);
+          let data = await res.json();
+          if (Array.isArray(data) && data.length > 0) return data[0];
+        } catch (e) {}
+      }
+
+      // 4. Try by name
+      try {
+        let res = await fetch(`${API}/provinces?name=ilike.${encodeURIComponent('%' + clean + '%')}&select=id,name,code&limit=1`);
+        let data = await res.json();
+        if (Array.isArray(data) && data.length > 0) return data[0];
+      } catch (e) {}
+
+      // 5. Try stripped prefix (e.g. "Provinsi Jawa Barat" -> "Jawa Barat")
+      const stripped = clean.replace(/^(provinsi|prov\.?)\s+/i, '');
+      if (stripped !== clean) {
+        try {
+          let res = await fetch(`${API}/provinces?name=ilike.${encodeURIComponent('%' + stripped + '%')}&select=id,name,code&limit=1`);
+          let data = await res.json();
+          if (Array.isArray(data) && data.length > 0) return data[0];
+        } catch (e) {}
+      }
+
+      return null;
+    }
+
+    /* ── Fetch school counts from mv_province_school_stats ── */
+    async function loadJenjangStats(provId) {
+      const res = await fetch(`${API}/mv_province_school_stats?province_id=eq.${provId}&select=jenjang,school_count`);
+      const rows = await res.json();
+      const counts = { PAUD: 0, SD: 0, SMP: 0, SMA: 0, UNIVERSITAS: 0 };
+      if (Array.isArray(rows)) {
+        rows.forEach(r => {
+          const j = (r.jenjang || '').toUpperCase();
+          if (j in counts) counts[j] += Number(r.school_count) || 0;
+        });
+      }
+      return counts;
+    }
+
+    /* ── Fetch regencies for this province ── */
+    async function loadRegencies(provId) {
+      const res = await fetch(`${API}/regencies?province_id=eq.${provId}&select=id,name,code,type&order=name.asc`);
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    }
+
+    /* ── Fetch exact school counts per regency via RPC ── */
+    async function loadRegencySchoolCounts(provId) {
+      try {
+        const res = await fetch(`${API}/rpc/get_regency_school_counts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_province_id: provId })
+        });
+        if (res.ok) {
+          const list = await res.json();
+          const map = {};
+          if (Array.isArray(list)) {
+            list.forEach(item => { map[item.regency_id] = Number(item.count) || 0; });
+          }
+          return map;
+        }
+      } catch (e) {
+        console.warn('Failed to load regency counts:', e);
+      }
+      return {};
+    }
+
+    /* ── Fetch schools for this province via regency IDs ── */
+    async function fetchSchools(regencyIds, search = '', jenjang = '', akreditasi = '', page = 1) {
+      if (!regencyIds || regencyIds.length === 0) return [];
+      const from = (page - 1) * SCHOOL_LIMIT;
+      const to = from + SCHOOL_LIMIT - 1;
+
+      let url = `${API}/schools?select=id,name,npsn,accreditation,location,jenjang,regency_id,regencies(name)`;
+      url += `&regency_id=in.(${regencyIds.join(',')})`;
+      if (search.trim().length > 1) {
+        url += `&or=(name.ilike.%25${encodeURIComponent(search)}%25,npsn.ilike.%25${encodeURIComponent(search)}%25)`;
+      }
+      if (jenjang) url += `&jenjang=eq.${encodeURIComponent(jenjang)}`;
+      if (akreditasi) url += `&accreditation=eq.${encodeURIComponent(akreditasi)}`;
+      url += `&order=name.asc&offset=${from}&limit=${SCHOOL_LIMIT}`;
+
+      const res = await fetch(url);
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    }
+
+    /* ── Render jenjang KPI cards ── */
+    function renderJenjang(counts) {
+      const num = n => Number(n || 0).toLocaleString('id-ID');
+      document.getElementById('jPaud').textContent = num(counts.PAUD);
+      document.getElementById('jSd').textContent = num(counts.SD);
+      document.getElementById('jSmp').textContent = num(counts.SMP);
+      document.getElementById('jSma').textContent = num(counts.SMA);
+      document.getElementById('jUniv').textContent = num(counts.UNIVERSITAS);
+    }
+
+    /* ── Render regency cards ── */
+    function renderRegencies(regencies, schoolCounts = {}) {
+      const grid = document.getElementById('regencyGrid');
+      document.getElementById('regencyCount').textContent = regencies.length;
+
+      if (regencies.length === 0) {
+        grid.innerHTML = '<div style="grid-column:1/-1;padding:32px;text-align:center;color:var(--color-text-muted);">Tidak ada kabupaten/kota ditemukan.</div>';
+        return;
+      }
+
+      grid.innerHTML = regencies.map(r => {
+        const isKota = (r.type || '').toUpperCase() === 'KOTA';
+        const cnt = schoolCounts[r.id] || 0;
+        const regCode = r.code || r.id;
+        return `
+          <a href="regency-detail.html?prov=${encodeURIComponent(provinceCode)}&reg=${encodeURIComponent(regCode)}" class="regency-card">
+            <div class="regency-icon ${isKota ? 'kota' : 'kabupaten'}">
+              <span class="material-symbols-outlined">${isKota ? 'apartment' : 'holiday_village'}</span>
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <div class="regency-name">${r.name}</div>
+              <div class="regency-meta">
+                <span class="regency-type-badge ${isKota ? 'kota' : 'kabupaten'}">${r.type || 'KABUPATEN'}</span>
+                <span>${cnt > 0 ? cnt.toLocaleString('id-ID') + ' Sekolah' : 'Lihat Detail'}</span>
+              </div>
+            </div>
+          </a>
+        `;
+      }).join('');
+    }
+
+    /* ── Render school cards ── */
+    function renderSchools(schools, append = false) {
+      const grid = document.getElementById('schoolGrid');
+      if (!append) grid.innerHTML = '';
+
+      if (schools.length === 0 && !append) {
+        grid.innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--color-text-muted);background:#fff;border:1px solid var(--color-border);border-radius:14px;"><span class="material-symbols-outlined" style="font-size:40px;display:block;margin-bottom:10px;">school</span>Tidak ada sekolah yang cocok dengan filter.</div>';
+        return;
+      }
+
+      const cards = schools.map(s => {
+        const jenjang = s.jenjang || classifyJenjang(s.name);
+        const regName = s.regencies?.name || '';
+        return `
+          <a href="dashboard.html?npsn=${s.npsn}" class="school-card">
+            <div class="school-icon">
+              <span class="material-symbols-outlined">school</span>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div class="school-name">${s.name}</div>
+              <div class="school-npsn">NPSN: ${s.npsn}${regName ? ' &bull; ' + regName : ''}</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                <span class="accred-tag">${s.accreditation || '-'}</span>
+                <span class="loc-tag">${jenjang}</span>
+              </div>
+            </div>
+          </a>
+        `;
+      }).join('');
+
+      grid.insertAdjacentHTML('beforeend', cards);
+    }
+
+    let regencyIds = [];
+    let schoolSearchVal = '';
+    let filterJenjangVal = '';
+    let filterAkreditasiVal = '';
+
+    /* ── Populate regency filter dropdown ── */
+    function populateKabupatenDropdown(regencies) {
+      const sel = document.getElementById('filterKabupaten');
+      regencies.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r.id;
+        opt.textContent = r.name;
+        sel.appendChild(opt);
+      });
+    }
+
+    /* ── Apply all filters and reload school list ── */
+    async function applyFilters() {
+      schoolPage = 1;
+      schoolSearchVal = document.getElementById('schoolSearch').value;
+      filterJenjangVal = document.getElementById('filterJenjang').value;
+      filterAkreditasiVal = document.getElementById('filterAkreditasi').value;
+
+      const kabId = document.getElementById('filterKabupaten').value;
+      const ids = kabId ? [kabId] : regencyIds;
+
+      document.getElementById('schoolGrid').innerHTML = '<div style="grid-column:1/-1;padding:32px;text-align:center;color:var(--color-text-muted);">Mencari...</div>';
+      const schools = await fetchSchools(ids, schoolSearchVal, filterJenjangVal, filterAkreditasiVal, 1);
+      renderSchools(schools);
+      document.getElementById('schoolCount').textContent = schools.length;
+
+      const btn = document.getElementById('loadMoreBtn');
+      btn.style.display = schools.length === SCHOOL_LIMIT ? 'flex' : 'none';
+    }
+
+    /* ── Load more schools (pagination) ── */
+    async function loadMoreSchools() {
+      const btn = document.getElementById('loadMoreBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Memuat...';
+
+      schoolPage++;
+      const kabId = document.getElementById('filterKabupaten').value;
+      const ids = kabId ? [kabId] : regencyIds;
+      const schools = await fetchSchools(ids, schoolSearchVal, filterJenjangVal, filterAkreditasiVal, schoolPage);
+
+      renderSchools(schools, true);
+      const countEl = document.getElementById('schoolCount');
+      countEl.textContent = Number(countEl.textContent || 0) + schools.length;
+
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-symbols-outlined">expand_more</span> Muat Lebih Banyak';
+      btn.style.display = schools.length === SCHOOL_LIMIT ? 'flex' : 'none';
+    }
+
+    /* ── Quick search (header bar) ── */
+    let searchTimer = null;
+    function onQuickSearch(val) {
+      clearTimeout(searchTimer);
+      // Filter regencies immediately
+      const q = val.toLowerCase();
+      if (!q) {
+        renderRegencies(allRegencies);
+        document.getElementById('regencyTitle').textContent = 'Daftar Kabupaten / Kota';
+      } else {
+        const filtered = allRegencies.filter(r => r.name.toLowerCase().includes(q));
+        renderRegencies(filtered);
+        document.getElementById('regencyTitle').textContent = 'Kabupaten / Kota Ditemukan';
+      }
+      // Debounce school search
+      searchTimer = setTimeout(() => {
+        document.getElementById('schoolSearch').value = val;
+        applyFilters();
+      }, 350);
+    }
+
+    /* ── School search bar ── */
+    let schoolSearchTimer = null;
+    function onSchoolSearch(val) {
+      clearTimeout(schoolSearchTimer);
+      schoolSearchTimer = setTimeout(() => applyFilters(), 350);
+    }
+
+    /* ── Filter schools by regency click ── */
+    function filterByRegency(id, name) {
+      document.getElementById('filterKabupaten').value = id;
+      document.getElementById('schoolSubtitle').textContent = `Satuan pendidikan di ${name}.`;
+      applyFilters();
+      document.getElementById('schoolGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    /* ── Main init ── */
+    async function init() {
+      const code = getCode();
+      if (!code) {
+        document.getElementById('provinceName').textContent = 'Provinsi tidak ditemukan';
+        return;
+      }
+
+      // Load province
+      const prov = await loadProvince(code);
+      if (!prov) {
+        document.getElementById('provinceName').textContent = 'Provinsi tidak ditemukan';
+        document.getElementById('breadcrumbName').textContent = 'Tidak ditemukan';
+        return;
+      }
+
+      provinceId = prov.id;
+      provinceCode = prov.code || prov.id;
+      provinceName = prov.name;
+
+      document.getElementById('provinceName').textContent = prov.name;
+      document.getElementById('breadcrumbName').textContent = prov.name;
+      document.getElementById('pageTitle').textContent = prov.name + ' — SiTransparan';
+      document.getElementById('provinceDesc').textContent =
+        `Data satuan pendidikan di Provinsi ${prov.name} yang tersinkronisasi dari basis data.`;
+
+      // Load jenjang stats + regencies + school counts in parallel
+      const [counts, regencies, regSchoolCounts] = await Promise.all([
+        loadJenjangStats(prov.id),
+        loadRegencies(prov.id),
+        loadRegencySchoolCounts(prov.id)
+      ]);
+
+      renderJenjang(counts);
+
+      allRegencies = regencies;
+      regencyIds = regencies.map(r => r.id);
+
+      renderRegencies(regencies, regSchoolCounts);
+      populateKabupatenDropdown(regencies);
+
+      // Load initial school list
+      if (regencyIds.length > 0) {
+        const schools = await fetchSchools(regencyIds, '', '', '', 1);
+        renderSchools(schools);
+        document.getElementById('schoolCount').textContent = schools.length;
+        const btn = document.getElementById('loadMoreBtn');
+        btn.style.display = schools.length === SCHOOL_LIMIT ? 'flex' : 'none';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

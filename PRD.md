@@ -29,12 +29,14 @@ Platform ini menghubungkan seluruh pemangku kepentingan mulai dari **Masyarakat 
 
 | Peran Pengguna | Port Akses | Hak Akses & Tanggung Jawab Utama |
 | :--- | :---: | :--- |
-| **Publik / Masyarakat** | `2020` | Akses baca (*read-only*) seluruh data alokasi dana, riwayat penerimaan (APBN/APBD/CSR), grafik belanja, partisipasi apresiasi, dan forum diskusi warga. |
+| **Publik (Civic-Tech Vite)** | `2019` | Portal visualisasi data publik modern berbasis Vite dengan storytelling interaktif, visualisasi Sankey aliran dana, dan peta regional. |
+| **Publik / Masyarakat (Next.js)** | `2020` | Akses baca (*read-only*) seluruh data alokasi dana, riwayat penerimaan (APBN/APBD/CSR), grafik belanja, partisipasi apresiasi, dan aduan warga. |
 | **Kementerian / Pusat** | `2021` | Penetapan pagu nasional APBN, distribusi anggaran ke 38 Provinsi dan 514 Kabupaten/Kota, monitoring serapan nasional secara *cascading*. |
 | **Bank Penyalur** | `2022` | Pencatatan nomor rekening resmi sekolah, mutasi rekening koran, pemrosesan *disbursement* dana, dan rekonsiliasi kas. |
 | **Auditor / BPK / Inspektorat** | `2023` | Audit investigatif, verifikasi kelengkapan SPJ digital, validasi scan struk OCR, pencatatan temuan audit, dan pemantauan anomali belanja. |
 | **Institusi Pendidikan** | `2024` | Input Rencana Anggaran Biaya (RAB), pencatatan transaksi belanja riil, upload struk/kuitansi digital, verifikasi mutasi kas sekolah. |
-| **Pemerintah Daerah (APBD)** | `2027` | Pemantauan pemenuhan mandatori 20% APBD, distribusi anggaran ke 15 Kab/Kota & 11.354 sekolah di provinsi, pelaporan daerah. |
+| **Pemerintah Daerah (APBD)** | `2025` | Pemantauan pemenuhan mandatori 20% APBD, distribusi anggaran ke 15 Kab/Kota & 11.354 sekolah di provinsi, pelaporan daerah. |
+| **Super-Admin Console** | `2026` | Manajemen akun pengguna lintas kementerian/bank/sekolah, security audit logs, monitoring anomali nasional. |
 
 ---
 
@@ -44,7 +46,7 @@ Platform ini menghubungkan seluruh pemangku kepentingan mulai dari **Masyarakat 
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                          1. DATA INGESTION & STORAGE                        │
 │                                                                             │
-│   PostgreSQL 16 Engine (:2025)                                              │
+│   PostgreSQL 16 Engine (:2027)                                              │
 │   ├── 35 Public Tables (Master Anggaran, Wilayah, Transaksi, Audit, APBD)   │
 │   └── Performance B-Tree Indexes & Cascading Foreign Keys                   │
 └──────────────────────────────────────┬──────────────────────────────────────┘
@@ -52,7 +54,7 @@ Platform ini menghubungkan seluruh pemangku kepentingan mulai dari **Masyarakat 
 ┌──────────────────────────────────────▼──────────────────────────────────────┐
 │                          2. LOCAL API PROXY LAYER                           │
 │                                                                             │
-│   Node.js / Express PostgREST Proxy (:2026)                                 │
+│   Node.js / Express PostgREST Proxy (:2028)                                 │
 │   ├── Quote Normalization & Filter Parser (ilike, eq, in, or, order)        │
 │   ├── Auto BigInt Cast & Precision Math Engine                              │
 │   └── Sub-10ms Fast Response Gateway                                       │
@@ -62,15 +64,21 @@ Platform ini menghubungkan seluruh pemangku kepentingan mulai dari **Masyarakat 
        │                               │                               │
        ▼                               ▼                               ▼
 ┌──────────────────────┐   ┌──────────────────────┐   ┌──────────────────────┐
-│  Port 2020: Publik   │   │  Port 2021: Kemenkeu │   │   Port 2022: Bank    │
-│  Transparansi Warga  │   │  Distribusi Nasional │   │ Rekening & Penyaluran│
+│ Port 2019: Civic-Tech│   │  Port 2020: Publik   │   │  Port 2021: Kemenkeu │
+│ Portal Redesign Vite │   │  Transparansi Warga  │   │  Distribusi Nasional │
 └──────────────────────┘   └──────────────────────┘   └──────────────────────┘
        │                               │                               │
        ▼                               ▼                               ▼
 ┌──────────────────────┐   ┌──────────────────────┐   ┌──────────────────────┐
-│  Port 2023: Auditor  │   │ Port 2024: Sekolah   │   │ Port 2027: APBD Prov │
-│  Deteksi Anomali AI  │   │ Belanja & SPJ Digital│   │ Mandat 20% Daerah    │
+│   Port 2022: Bank    │   │  Port 2023: Auditor  │   │ Port 2024: Sekolah   │
+│ Rekening & Penyaluran│   │  Deteksi Anomali AI  │   │ Belanja & SPJ Digital│
 └──────────────────────┘   └──────────────────────┘   └──────────────────────┘
+       │                               │
+       ▼                               ▼
+┌──────────────────────┐   ┌──────────────────────┐
+│ Port 2025: APBD Prov │   │ Port 2026: Admin     │
+│ Mandat 20% Daerah    │   │ Super-Admin Console  │
+└──────────────────────┘   └──────────────────────┘
 ```
 
 ---

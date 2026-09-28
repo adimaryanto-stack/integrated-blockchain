@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Statistik Nasional — SiTransparan</title>
+  <meta name="description" content="Ringkasan statistik agregat pengeluaran dan alokasi dana pendidikan nasional dari database PostgreSQL."/>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  
+  <link rel="stylesheet" href="/styles/main.css"/>
+  <link rel="stylesheet" href="/styles/transparansi-2020.css"/>
+
+  <style>
+    /* ── KPI Metric Cards ── */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    @media (max-width: 1024px) {
+      .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .stat-grid { grid-template-columns: 1fr; }
+    }
+
+    .stat-kpi {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      padding: 22px 24px;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .stat-kpi::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--kpi-accent, var(--color-primary));
+    }
+    .stat-kpi:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .stat-kpi-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .stat-kpi-label {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--kpi-accent, var(--color-primary));
+    }
+    .stat-kpi-icon {
+      font-size: 20px;
+      color: var(--kpi-accent, var(--color-primary));
+      opacity: 0.8;
+    }
+    .stat-kpi-value {
+      font-size: clamp(18px, 2vw, 26px);
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      word-break: break-word;
+    }
+    .stat-kpi-desc {
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
+
+    /* ── Chart Section ── */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    @media (max-width: 900px) {
+      .charts-grid { grid-template-columns: 1fr; }
+    }
+
+    .chart-box {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: var(--shadow-sm);
+    }
+    .chart-box-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+    .chart-box-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 4px;
+    }
+    .chart-box-sub {
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
+
+    /* ── Bar Rows ── */
+    .bar-row {
+      margin-bottom: 14px;
+    }
+    .bar-row-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      gap: 8px;
+    }
+    .bar-row-label span:last-child {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--color-primary);
+      white-space: nowrap;
+    }
+    .bar-row-track {
+      height: 10px;
+      background: #F1F5F9;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .bar-row-fill {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* ── Top Schools Table ── */
+    .table-section {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .top-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+      margin-top: 4px;
+    }
+    .top-table th {
+      padding: 11px 14px;
+      background: #F8FAFC;
+      color: var(--color-text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      border-bottom: 2px solid var(--color-border);
+    }
+    .top-table td {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--color-border);
+      color: #0f172a;
+      vertical-align: middle;
+    }
+    .top-table tr:last-child td { border-bottom: none; }
+    .top-table tr:hover td { background: #F8FAFC; }
+    .top-table .td-right { text-align: right; }
+    .top-table .td-center { text-align: center; }
+
+    /* ── Accreditation Badge ── */
+    .accred-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: #EFF6FF;
+      color: var(--color-primary);
+    }
+
+    /* ── Page Hero ── */
+    .page-hero {
+      margin-bottom: 28px;
+    }
+    .page-hero h1 {
+      font-size: clamp(24px, 3vw, 34px);
+      font-weight: 800;
+      color: #0f172a;
+      margin: 8px 0;
+    }
+    .page-hero p {
+      font-size: 15px;
+      color: var(--color-text-muted);
+      max-width: 820px;
+      line-height: 1.6;
+    }
+  </style>
+
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="brand-logo">
+        <div class="logo-badge">
+          <span class="material-symbols-outlined" style="font-size: 22px;">account_balance</span>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 17px; font-weight: 800; line-height: 1.1; color: #0f172a;">Transparansi Anggaran</span>
+          <span style="font-size: 10px; font-weight: 700; color: var(--color-primary); letter-spacing: 0.05em;">SITRANSPARAN CIVIC-TECH</span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="main-nav">
+        <a href="index.html" class="nav-link">Beranda</a>
+        
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-trigger active" type="button">
+            <span>Data</span>
+            <span class="material-symbols-outlined" style="font-size: 18px;">expand_more</span>
+          </button>
+          <div class="nav-dropdown-menu">
+            <a href="aliran-dana.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">account_tree</span>
+              <span>Aliran Dana APBN</span>
+            </a>
+            <a href="audit.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">security</span>
+              <span>Audit & Anomali</span>
+            </a>
+            <a href="compare.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">compare_arrows</span>
+              <span>Bandingkan Sekolah</span>
+            </a>
+            <a href="peta-regional.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">public</span>
+              <span>Peta Regional</span>
+            </a>
+            <a href="provinces.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">map</span>
+              <span>38 Provinsi</span>
+            </a>
+            <a href="statistics.html" class="nav-dropdown-item active">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">bar_chart</span>
+              <span>Statistik Nasional</span>
+            </a>
+            <a href="funding.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">payments</span>
+              <span>Sumber Pendanaan</span>
+            </a>
+            <a href="detail-anggaran.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">receipt_long</span>
+              <span>Detail Program BOS</span>
+            </a>
+          </div>
+        </div>
+
+        <a href="reporting.html" class="nav-link">Laporkan</a>
+        <a href="tentang.html" class="nav-link">Tentang</a>
+        <a href="faq.html" class="nav-link">FAQ</a>
+        <a href="contact.html" class="nav-link">Kontak</a>
+      </nav>
+
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <a href="pantau-anggaran.html" class="btn-watchlist-pill" title="Lihat item yang Anda pantau">
+          <span>Pantau Anggaran</span>
+          <span class="watchlist-count" id="headerWatchlistCount">0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top: 36px; padding-bottom: 72px;">
+    <!-- Title Area -->
+    <div style="margin-bottom: 28px;">
+      <div class="badge-tag" style="background: var(--color-primary-light); color: var(--color-primary); border-color: rgba(29, 78, 216, 0.2);">
+        AGREGASI DATA NASIONAL
+      </div>
+      <h1 style="font-size: 32px; font-weight: 800; color: #0f172a; margin: 8px 0;">
+        Statistik Penggunaan Anggaran Nasional
+      </h1>
+      <p style="font-size: 15px; color: var(--color-text-muted); max-width: 820px; line-height: 1.6;">
+        Data ringkasan agregat dari 468.724 satuan pendidikan dan 8.903 transaksi yang tersimpan pada PostgreSQL 16.
+      </p>
+    </div>
+
+    <!-- 6 KPI Metric Cards -->
+    <div class="stat-grid">
+
+      <div class="stat-kpi" style="--kpi-accent: var(--color-primary)">
+        <div class="stat-kpi-header">
+          <span class="stat-kpi-label">Sekolah Terdaftar</span>
+          <span class="material-symbols-outlined stat-kpi-icon">school</span>
+        </div>
+        <div class="stat-kpi-value" id="statSchoolCount">--</div>
+        <div class="stat-kpi-desc">Di 38 Provinsi terverifikasi</div>
+      </div>
+
+      <div class="stat-kpi" style="--kpi-accent: #16A34A">
+        <div class="stat-kpi-header">
+          <span class="stat-kpi-label">Dana Diterima (Kas Masuk)</span>
+          <span class="material-symbols-outlined stat-kpi-icon" style="color:#16A34A;">account_balance_wallet</span>
+        </div>
+        <div class="stat-kpi-value" id="statTotalReceived">--</div>
+        <div class="stat-kpi-desc">Akumulasi APBN, APBD, &amp; CSR</div>
+      </div>
+
+      <div class="stat-kpi" style="--kpi-accent: #D97706">
+        <div class="stat-kpi-header">
+          <span class="stat-kpi-label">Dana Terpakai (Realisasi)</span>
+          <span class="material-symbols-outlined stat-kpi-icon" style="color:#D97706;">payments</span>
+        </div>
+        <div class="stat-kpi-value" id="statTotalSpent">--</div>
+        <div class="stat-kpi-desc">Telah dibelanjakan &amp; diverifikasi</div>
+      </div>
+
+      <div class="stat-kpi" style="--kpi-accent: #0284C7">
+        <div class="stat-kpi-header">
+          <span class="stat-kpi-label">Sisa Saldo Kas</span>
+          <span class="material-symbols-outlined stat-kpi-icon" style="color:#0284C7;">savings</span>
+        </div>
+        <div class="stat-kpi-value" id="statTotalRemaining">--</div>
+        <div class="stat-kpi-desc">Saldo kas di rekening sekolah</div>
+      </div>
+
+      <div class="stat-kpi" style="--kpi-accent: #7C3AED">
+        <div class="stat-kpi-header">
+          <span class="stat-kpi-label">Transaksi Diaudit</span>
+          <span class="material-symbols-outlined stat-kpi-icon" style="color:#7C3AED;">receipt_long</span>
+        </div>
+        <div class="stat-kpi-value" id="statTxCount">--</div>
+        <div class="stat-kpi-desc">Kwitansi dan bukti belanja</div>
+      </div>
+
+      <div class="stat-kpi" style="--kpi-accent: #E11D48">
+        <div class="stat-kpi-header">
+          <span class="stat-kpi-label">Laporan Masyarakat</span>
+          <span class="material-symbols-outlined stat-kpi-icon" style="color:#E11D48;">flag</span>
+        </div>
+        <div class="stat-kpi-value" id="statReportCount">0</div>
+        <div class="stat-kpi-desc">Aduan masuk ke sistem</div>
+      </div>
+
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-grid">
+
+      <!-- Category Breakdown -->
+      <div class="chart-box">
+        <div class="chart-box-header">
+          <div>
+            <div class="chart-box-title">Proporsi Kategori Belanja</div>
+            <div class="chart-box-sub">Distribusi pengeluaran berdasarkan peruntukan anggaran</div>
+          </div>
+          <span class="material-symbols-outlined" style="color: var(--color-primary); font-size: 22px;">pie_chart</span>
+        </div>
+        <div id="categoryChartContainer">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- Monthly Trend -->
+      <div class="chart-box">
+        <div class="chart-box-header">
+          <div>
+            <div class="chart-box-title">Tren Realisasi Bulanan (2026)</div>
+            <div class="chart-box-sub">Pola penyerapan kas belanja sekolah setiap bulan</div>
+          </div>
+          <span class="material-symbols-outlined" style="color: var(--color-primary); font-size: 22px;">show_chart</span>
+        </div>
+        <div id="monthlyChartContainer">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Top Schools Table -->
+    <div class="table-section">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+        <div>
+          <h3 style="font-size: 16px; font-weight: 800; color: #0f172a;">Satuan Pendidikan dengan Realisasi Terbesar</h3>
+          <p style="font-size: 12px; color: var(--color-text-muted); margin-top: 3px;">Daftar universitas dan sekolah dengan aktivitas anggaran tercatat</p>
+        </div>
+        <span class="badge-tag" style="background: #EFF6FF; color: var(--color-primary);">TOP INSTANSI</span>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table class="top-table">
+          <thead>
+            <tr>
+              <th>NAMA SEKOLAH / UNIVERSITAS</th>
+              <th>NPSN</th>
+              <th>AKREDITASI</th>
+              <th class="td-right">DANA DITERIMA</th>
+              <th class="td-right">REALISASI BELANJA</th>
+              <th class="td-center">AKSI</th>
+            </tr>
+          </thead>
+          <tbody id="topSchoolsTableBody">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+
+  <!-- Site Footer -->
+  <footer style="background: #0B1329; color: #94A3B8; padding: 48px 0 24px; border-top: 1px solid #1E293B;">
+    <div class="container">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; padding-bottom: 24px; border-bottom: 1px solid #1E293B;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: var(--color-primary); display: flex; align-items: center; justify-content: center; color: #fff;">
+            <span class="material-symbols-outlined" style="font-size: 18px;">account_balance</span>
+          </div>
+          <span style="font-size: 16px; font-weight: 800; color: #F8FAFC;">SiTransparan Anggaran</span>
+        </div>
+        <div style="display: flex; gap: 20px; font-size: 13px;">
+          <a href="index.html" style="color: #94A3B8; text-decoration: none;">Beranda</a>
+          <a href="aliran-dana.html" style="color: #94A3B8; text-decoration: none;">Aliran Dana</a>
+          <a href="audit.html" style="color: #94A3B8; text-decoration: none;">Audit</a>
+          <a href="statistics.html" style="color: #60A5FA; text-decoration: none; font-weight: 700;">Statistik</a>
+          <a href="tentang.html" style="color: #94A3B8; text-decoration: none;">Tentang</a>
+        </div>
+      </div>
+      <p style="font-size: 12px; color: #64748B; margin-top: 20px; text-align: center;">
+        © 2026 SiTransparan Civic-Tech.
+      </p>
+    </div>
+  </footer>
+
+  <script type="module" src="/scripts/db-client.js"></script>
+  <script>
+    async function loadStatistics() {
+      const fmt = n => window.DBClient ? window.DBClient.formatIDR(n) : 'Rp ' + Number(n).toLocaleString('id-ID');
+      const num = n => Number(n || 0).toLocaleString('id-ID');
+
+      // Try RPC first, then fall back to individual table queries via DBClient
+      let data = null;
+      try {
+        const res = await fetch('http://localhost:2021/rest/v1/rpc/get_national_statistics', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        if (res.ok) {
+          const list = await res.json();
+          data = Array.isArray(list) ? list[0] : list;
+        }
+      } catch (e) {
+        // fallthrough to DBClient
+      }
+
+      // Fallback: build stats from direct tables via proxy
+      if (!data && window.DBClient) {
+        try {
+          const [stats, txs] = await Promise.all([
+            window.DBClient.getAllProvinceStats(),
+            window.DBClient.getRecentTransactions(9999)
+          ]);
+          const totalSchools = stats.reduce((s, p) => s + (Number(p.total_schools) || 0), 0);
+          const txCount = Array.isArray(txs) ? txs.length : 0;
+          data = {
+            school_count: totalSchools,
+            total_received: 0,
+            total_spent: 0,
+            transaction_count: txCount,
+            report_count: 0,
+            category_breakdown: [],
+            monthly_expenses: [],
+            top_schools: []
+          };
+
+          // Aggregate from allocations
+          const allocs = await window.DBClient.getProvincialAllocations(2026);
+          if (Array.isArray(allocs) && allocs.length > 0) {
+            data.total_received = allocs.reduce((s, a) => s + Number(a.nominal_alokasi || 0), 0);
+            data.total_spent = allocs.reduce((s, a) => s + Number(a.realisasi_total || 0), 0);
+          }
+        } catch (e) {
+          console.error('Fallback stats load failed:', e);
+        }
+      }
+
+      if (!data) {
+        console.warn('statistics.html: Could not load national statistics from database.');
+        return;
+      }
+
+      document.getElementById('statSchoolCount').textContent = num(data.school_count);
+      document.getElementById('statTotalReceived').textContent = fmt(data.total_received);
+      document.getElementById('statTotalSpent').textContent = fmt(data.total_spent);
+      document.getElementById('statTotalRemaining').textContent = fmt(Math.max(0, (Number(data.total_received) || 0) - (Number(data.total_spent) || 0)));
+      document.getElementById('statTxCount').textContent = num(data.transaction_count);
+      document.getElementById('statReportCount').textContent = num(data.report_count);
+
+      renderCategories(data.category_breakdown || [], data.total_spent);
+      renderMonthly(data.monthly_expenses || []);
+      renderTopSchools(data.top_schools || []);
+    }
+
+    function renderCategories(categories, totalSpent) {
+      const container = document.getElementById('categoryChartContainer');
+      const colors = ['#1D4ED8', '#2563EB', '#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE'];
+
+      const total = totalSpent || categories.reduce((sum, c) => sum + Number(c.amount || 0), 0);
+
+      container.innerHTML = categories.map((cat, idx) => {
+        const amt = Number(cat.amount || 0);
+        const pct = total > 0 ? ((amt / total) * 100).toFixed(1) : 0;
+        const color = colors[idx % colors.length];
+
+        return `
+          <div class="bar-row">
+            <div class="bar-row-label">
+              <span style="color: #334155;">${cat.category}</span>
+              <span style="color: var(--color-primary);">${window.DBClient ? window.DBClient.formatIDR(amt) : 'Rp ' + amt.toLocaleString('id-ID')} (${pct}%)</span>
+            </div>
+            <div class="bar-row-track">
+              <div class="bar-row-fill" style="width: ${pct}%; background: ${color};"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderMonthly(months) {
+      const container = document.getElementById('monthlyChartContainer');
+      const maxAmt = Math.max(...months.map(m => Number(m.amount || 0)), 1);
+
+      container.innerHTML = months.map(m => {
+        const amt = Number(m.amount || 0);
+        const pct = ((amt / maxAmt) * 100).toFixed(1);
+        const monthLabel = m.month ? m.month.split('-')[1] : '-';
+        const monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        const name = monthNames[parseInt(monthLabel)] || m.month;
+
+        return `
+          <div class="bar-row">
+            <div class="bar-row-label">
+              <span style="color: #334155;">${name} 2026</span>
+              <span style="color: var(--color-text-muted); font-size: 12px;">${window.DBClient ? window.DBClient.formatIDR(amt) : 'Rp ' + amt.toLocaleString('id-ID')}</span>
+            </div>
+            <div class="bar-row-track">
+              <div class="bar-row-fill" style="width: ${pct}%; background: #2563EB;"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderTopSchools(schools) {
+      const tbody = document.getElementById('topSchoolsTableBody');
+      const fmt = n => window.DBClient ? window.DBClient.formatIDR(n) : 'Rp ' + Number(n).toLocaleString('id-ID');
+
+      if (!schools || schools.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--color-text-muted);">Belum ada data satuan pendidikan.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = schools.map(s => `
+        <tr>
+          <td>
+            <div style="font-weight:700;">${s.name}</div>
+            <div style="font-size:11px;color:var(--color-text-muted);">${s.location || ''}</div>
+          </td>
+          <td style="font-family:monospace;font-weight:700;">${s.npsn}</td>
+          <td><span class="accred-badge">${s.accreditation || 'A'}</span></td>
+          <td class="td-right" style="font-weight:700;">${fmt(s.total_received)}</td>
+          <td class="td-right" style="font-weight:700;color:#0284C7;">${fmt(s.total_spent)}</td>
+          <td class="td-center">
+            <a href="dashboard.html?npsn=${s.npsn}" class="btn-watchlist-pill" style="font-size:11px;padding:4px 10px;">Lihat Detail</a>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadStatistics();
+    });
+  </script>
+</body>
+</html>

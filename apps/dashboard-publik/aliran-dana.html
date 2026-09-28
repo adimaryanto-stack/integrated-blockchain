@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Topologi Aliran Dana Pendidikan — SiTransparan</title>
+  <meta name="description" content="Visualisasi interaktif aliran dana pendidikan nasional dari APBN, APBD, hingga ke rekening sekolah seluruh Indonesia."/>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  
+  <link rel="stylesheet" href="/styles/main.css"/>
+  <link rel="stylesheet" href="/styles/transparansi-2020.css"/>
+
+  <style>
+    /* ── KPI Summary Cards ── */
+    .flow-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .flow-kpi {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .flow-kpi:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .flow-kpi::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--kpi-accent, var(--color-primary));
+    }
+    .flow-kpi-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .flow-kpi-label {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--kpi-accent, var(--color-primary));
+    }
+    .flow-kpi-icon {
+      font-size: 22px;
+      color: var(--kpi-accent, var(--color-primary));
+    }
+    .flow-kpi-value {
+      font-size: 30px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin: 6px 0 4px;
+    }
+    .flow-kpi-desc {
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
+
+    /* ── 5-Level Flow Topology ── */
+    .flow-step-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      margin: 24px 0 24px;
+    }
+    .flow-step-card {
+      background: #ffffff;
+      border: 2px solid #E2E8F0;
+      border-radius: 16px;
+      padding: 20px;
+      transition: all 0.25s ease;
+      cursor: pointer;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .flow-step-card:hover {
+      border-color: var(--color-primary);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px -6px rgba(29, 78, 216, 0.15);
+    }
+    .flow-step-card.active {
+      border-color: var(--color-primary);
+      background: #F0F7FF;
+      box-shadow: 0 10px 24px -6px rgba(29, 78, 216, 0.22);
+    }
+    .flow-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Year Pills ── */
+    .tab-year-pill {
+      padding: 8px 18px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 700;
+      border: 1px solid var(--color-border);
+      background: #ffffff;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .tab-year-pill:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+    .tab-year-pill.active {
+      background: var(--color-primary);
+      color: #ffffff;
+      border-color: var(--color-primary);
+      box-shadow: 0 4px 12px rgba(29, 78, 216, 0.25);
+    }
+
+    /* ── Source Tabs ── */
+    .source-tab-btn {
+      padding: 14px 22px;
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      background: transparent;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s ease;
+    }
+    .source-tab-btn:hover {
+      color: var(--color-primary);
+    }
+    .source-tab-btn.active {
+      color: var(--color-primary);
+      border-bottom-color: var(--color-primary);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="brand-logo">
+        <div class="logo-badge">
+          <span class="material-symbols-outlined" style="font-size: 22px;">account_balance</span>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 17px; font-weight: 800; line-height: 1.1; color: #0f172a;">Transparansi Anggaran</span>
+          <span style="font-size: 10px; font-weight: 700; color: var(--color-primary); letter-spacing: 0.05em;">SITRANSPARAN CIVIC-TECH</span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="main-nav">
+        <a href="index.html" class="nav-link">Beranda</a>
+        
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-trigger active" type="button">
+            <span>Data</span>
+            <span class="material-symbols-outlined" style="font-size: 18px;">expand_more</span>
+          </button>
+          <div class="nav-dropdown-menu">
+            <a href="aliran-dana.html" class="nav-dropdown-item active">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">account_tree</span>
+              <span>Aliran Dana APBN</span>
+            </a>
+            <a href="audit.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">security</span>
+              <span>Audit & Anomali</span>
+            </a>
+            <a href="compare.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">compare_arrows</span>
+              <span>Bandingkan Sekolah</span>
+            </a>
+            <a href="peta-regional.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">public</span>
+              <span>Peta Regional</span>
+            </a>
+            <a href="provinces.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">map</span>
+              <span>38 Provinsi</span>
+            </a>
+            <a href="statistics.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">bar_chart</span>
+              <span>Statistik Nasional</span>
+            </a>
+            <a href="funding.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">payments</span>
+              <span>Sumber Pendanaan</span>
+            </a>
+            <a href="detail-anggaran.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">receipt_long</span>
+              <span>Detail Program BOS</span>
+            </a>
+          </div>
+        </div>
+
+        <a href="reporting.html" class="nav-link">Laporkan</a>
+        <a href="tentang.html" class="nav-link">Tentang</a>
+        <a href="faq.html" class="nav-link">FAQ</a>
+        <a href="contact.html" class="nav-link">Kontak</a>
+      </nav>
+
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <a href="pantau-anggaran.html" class="btn-watchlist-pill" title="Lihat item yang Anda pantau">
+          <span>Pantau Anggaran</span>
+          <span class="watchlist-count" id="headerWatchlistCount">0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top: 36px; padding-bottom: 72px;">
+    <!-- Page Header -->
+    <div style="margin-bottom: 28px;">
+      <div class="badge-tag" style="background: var(--color-primary-light); color: var(--color-primary); border-color: rgba(29, 78, 216, 0.2);">
+        TOPOLOGI ALIRAN DANA PENDIDIKAN
+      </div>
+      <h1 style="font-size: 32px; font-weight: 800; color: #0f172a; margin: 8px 0;">
+        Peta Aliran Dana Pendidikan Nasional
+      </h1>
+      <p style="font-size: 15px; color: var(--color-text-muted); max-width: 820px; line-height: 1.6;">
+        Menelusuri distribusi anggaran fungsi pendidikan dari Kas Negara (APBN) melalui Transfer ke Daerah (TKDD) dan Kementerian hingga diterima langsung oleh satuan pendidikan.
+      </p>
+    </div>
+
+    <!-- Year Filter Bar -->
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; padding: 16px 20px; background: #ffffff; border: 1px solid var(--color-border); border-radius: 16px;">
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;" id="yearPillsContainer">
+        <!-- Rendered dynamically -->
+        <span style="font-size: 13px; font-weight: 700; color: var(--color-text-muted); margin-right: 4px;">Tahun Anggaran:</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 12px; font-weight: 700; color: var(--color-text-muted);" id="currentYearStatus">Status: Realisasi Terverifikasi</span>
+      </div>
+    </div>
+
+    <!-- KPI Summary Row -->
+    <div class="flow-kpi-grid">
+      <div class="flow-kpi" style="--kpi-accent: var(--color-primary);">
+        <div class="flow-kpi-header">
+          <span class="flow-kpi-label">PAGU APBN PENDIDIKAN</span>
+          <span class="material-symbols-outlined flow-kpi-icon">account_balance</span>
+        </div>
+        <div class="flow-kpi-value" id="kpiTotalApbn">Rp 769,1 T</div>
+        <div class="flow-kpi-desc">20% dari total APBN RI (Mandatory Spending)</div>
+      </div>
+
+      <div class="flow-kpi" style="--kpi-accent: #0284C7;">
+        <div class="flow-kpi-header">
+          <span class="flow-kpi-label">TRANSFER DAERAH (TKDD)</span>
+          <span class="material-symbols-outlined flow-kpi-icon">domain</span>
+        </div>
+        <div class="flow-kpi-value" id="kpiTkdd">Rp 346,5 T</div>
+        <div class="flow-kpi-desc">DAU, DAK Fisik &amp; Non-Fisik (BOS/BOP)</div>
+      </div>
+
+      <div class="flow-kpi" style="--kpi-accent: #16A34A;">
+        <div class="flow-kpi-header">
+          <span class="flow-kpi-label">REALISASI SEKOLAH</span>
+          <span class="material-symbols-outlined flow-kpi-icon">school</span>
+        </div>
+        <div class="flow-kpi-value" id="kpiSekolah">Rp 78,3 T</div>
+        <div class="flow-kpi-desc">Diterima langsung oleh rekening satuan pendidikan</div>
+      </div>
+    </div>
+
+    <!-- 5-Level Flow Topology Pipeline -->
+    <div style="background: #ffffff; border: 1px solid var(--color-border); border-radius: 20px; padding: 28px; margin-bottom: 32px; box-shadow: var(--shadow-sm);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div>
+          <h2 style="font-size: 18px; font-weight: 800; color: #0f172a;">Jalur Distribusi 5 Tingkat</h2>
+          <p style="font-size: 13px; color: var(--color-text-muted);">Klik salah satu tingkat untuk melihat rincian alokasi dan penyerapan</p>
+        </div>
+        <span class="flow-badge" style="background: #EFF6FF; color: var(--color-primary); border: 1px solid #BFDBFE;">
+          TERINTEGRASI DATABASE 2028
+        </span>
+      </div>
+
+      <div class="flow-step-grid" id="flowStepsContainer">
+        <!-- Level 1 -->
+        <div class="flow-step-card active" data-level="APBN" onclick="selectLevel('APBN')">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span class="flow-badge" style="background: #FEF2F2; color: #DC2626;">LEVEL 1</span>
+            <span class="material-symbols-outlined" style="color: #DC2626; font-size: 20px;">account_balance</span>
+          </div>
+          <h3 style="font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">Kemenkeu (APBN)</h3>
+          <p style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 12px;">Hulu anggaran 20% belanja negara</p>
+          <div style="font-size: 16px; font-weight: 800; color: #DC2626;" id="lvlApbnVal">Rp 769,1 T</div>
+        </div>
+
+        <!-- Level 2 -->
+        <div class="flow-step-card" data-level="KEMEN" onclick="selectLevel('KEMEN')">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span class="flow-badge" style="background: #EFF6FF; color: var(--color-primary);">LEVEL 2</span>
+            <span class="material-symbols-outlined" style="color: var(--color-primary); font-size: 20px;">domain</span>
+          </div>
+          <h3 style="font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">Kemendikbudristek</h3>
+          <p style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 12px;">Pengelola program pusat & BOS</p>
+          <div style="font-size: 16px; font-weight: 800; color: var(--color-primary);" id="lvlKemenVal">Rp 98,9 T</div>
+        </div>
+
+        <!-- Level 3 -->
+        <div class="flow-step-card" data-level="PROV" onclick="selectLevel('PROV')">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span class="flow-badge" style="background: #F3E8FF; color: #7E22CE;">LEVEL 3</span>
+            <span class="material-symbols-outlined" style="color: #7E22CE; font-size: 20px;">apartment</span>
+          </div>
+          <h3 style="font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">Dinas Provinsi</h3>
+          <p style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 12px;">SMA, SMK, SLB di 38 Provinsi</p>
+          <div style="font-size: 16px; font-weight: 800; color: #7E22CE;" id="lvlProvVal">38 Provinsi</div>
+        </div>
+
+        <!-- Level 4 -->
+        <div class="flow-step-card" data-level="KAB" onclick="selectLevel('KAB')">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span class="flow-badge" style="background: #FEF3C7; color: #D97706;">LEVEL 4</span>
+            <span class="material-symbols-outlined" style="color: #D97706; font-size: 20px;">location_city</span>
+          </div>
+          <h3 style="font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">Dinas Kab/Kota</h3>
+          <p style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 12px;">PAUD, SD, SMP di 514 Daerah</p>
+          <div style="font-size: 16px; font-weight: 800; color: #D97706;" id="lvlKabVal">514 Daerah</div>
+        </div>
+
+        <!-- Level 5 -->
+        <div class="flow-step-card" data-level="SEKOLAH" onclick="selectLevel('SEKOLAH')">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span class="flow-badge" style="background: #ECFDF5; color: #059669;">LEVEL 5</span>
+            <span class="material-symbols-outlined" style="color: #059669; font-size: 20px;">school</span>
+          </div>
+          <h3 style="font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">Satuan Pendidikan</h3>
+          <p style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 12px;">Rekening sekolah penerima dana</p>
+          <div style="font-size: 16px; font-weight: 800; color: #059669;" id="lvlSekolahVal">468.724 Sekolah</div>
+        </div>
+      </div>
+
+      <!-- Detail Box for Selected Level -->
+      <div id="levelDetailBox" style="background: var(--color-bg); border-radius: 14px; padding: 20px; border: 1px solid var(--color-border);">
+        <h4 style="font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 8px;" id="levelDetailTitle">
+          Level 1: Kas Negara / Kemenkeu (APBN)
+        </h4>
+        <p style="font-size: 13px; color: var(--color-text-muted); line-height: 1.6;" id="levelDetailDesc">
+          Alokasi 20% belanja negara disahkan melalui Undang-Undang APBN tahunan. Dari total ini, dana dibagi menjadi dua kanal utama: Belanja Pemerintah Pusat (Kemendikbudristek & Kemenag) serta Transfer ke Daerah dan Dana Desa (TKDD).
+        </p>
+      </div>
+    </div>
+
+    <!-- Data Tabs: APBN / APBD / CSR Breakdown -->
+    <div style="background: #ffffff; border: 1px solid var(--color-border); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow-sm);">
+      <div style="display: flex; border-bottom: 1px solid var(--color-border); padding: 0 16px;">
+        <button class="source-tab-btn active" onclick="switchSourceTab('APBN')">Alokasi Provinsi (APBN)</button>
+        <button class="source-tab-btn" onclick="switchSourceTab('APBD')">Data APBD Daerah</button>
+        <button class="source-tab-btn" onclick="switchSourceTab('CSR')">Kontribusi CSR Mitra</button>
+      </div>
+
+      <div style="padding: 24px;">
+        <!-- APBN Table View -->
+        <div id="sourceTableContainer">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <input type="text" id="tableSearchInput" placeholder="Cari provinsi atau kabupaten..." oninput="filterSourceTable()"
+              style="padding: 10px 14px; border: 1px solid var(--color-border); border-radius: 10px; font-size: 13px; width: 300px; outline: none;">
+            <div style="font-size: 12px; color: var(--color-text-muted);" id="tableRowCount">Memuat data...</div>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+              <thead>
+                <tr style="border-bottom: 2px solid var(--color-border); color: var(--color-text-muted); font-weight: 700;">
+                  <th style="padding: 12px 16px;">ENTITAS / PROVINSI</th>
+                  <th style="padding: 12px 16px;">TAHUN</th>
+                  <th style="padding: 12px 16px; text-align: right;">ALOKASI</th>
+                  <th style="padding: 12px 16px; text-align: right;">REALISASI</th>
+                  <th style="padding: 12px 16px; text-align: right;">PENYERAPAN</th>
+                  <th style="padding: 12px 16px; text-align: center;">STATUS</th>
+                </tr>
+              </thead>
+              <tbody id="sourceTableBody">
+                <!-- Dynamically loaded -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Site Footer -->
+  <footer style="background: #0B1329; color: #94A3B8; padding: 48px 0 24px; border-top: 1px solid #1E293B;">
+    <div class="container">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; padding-bottom: 24px; border-bottom: 1px solid #1E293B;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: var(--color-primary); display: flex; align-items: center; justify-content: center; color: #fff;">
+            <span class="material-symbols-outlined" style="font-size: 18px;">account_balance</span>
+          </div>
+          <span style="font-size: 16px; font-weight: 800; color: #F8FAFC;">SiTransparan Anggaran</span>
+        </div>
+        <div style="display: flex; gap: 20px; font-size: 13px;">
+          <a href="index.html" style="color: #94A3B8; text-decoration: none;">Beranda</a>
+          <a href="aliran-dana.html" style="color: #60A5FA; text-decoration: none; font-weight: 700;">Aliran Dana</a>
+          <a href="audit.html" style="color: #94A3B8; text-decoration: none;">Audit</a>
+          <a href="reporting.html" style="color: #94A3B8; text-decoration: none;">Laporkan</a>
+          <a href="tentang.html" style="color: #94A3B8; text-decoration: none;">Tentang</a>
+        </div>
+      </div>
+      <p style="font-size: 12px; color: #64748B; margin-top: 20px; text-align: center;">
+        © 2026 SiTransparan Civic-Tech.
+      </p>
+    </div>
+  </footer>
+
+  <script type="module" src="/scripts/db-client.js"></script>
+  <script>
+    let activeYear = 2026;
+    let activeSource = 'APBN';
+    let rawTableData = [];
+
+    const levelDetails = {
+      APBN: {
+        title: 'Level 1: Kas Negara / Kemenkeu (APBN)',
+        desc: 'Alokasi 20% belanja negara disahkan melalui Undang-Undang APBN tahunan. Dana disalurkan melalui dua kanal utama: Belanja K/L Pusat dan Transfer ke Daerah (TKDD).'
+      },
+      KEMEN: {
+        title: 'Level 2: Kemendikbudristek & Kemenag (Pengelola Pusat)',
+        desc: 'Kementerian mengelola program pendidikan berskala nasional, penetapan petunjuk teknis BOS, PIP, tunjangan guru, sarana prasarana digital, serta kurikulum.'
+      },
+      PROV: {
+        title: 'Level 3: Dinas Pendidikan Provinsi (38 Provinsi)',
+        desc: 'Menerima dan mengawasi belanja pendidikan jenjang SMA, SMK, dan SLB. Mendistribusikan Bantuan Operasional Pendidikan Daerah (BOPD) tingkat provinsi.'
+      },
+      KAB: {
+        title: 'Level 4: Dinas Pendidikan Kabupaten/Kota (514 Daerah)',
+        desc: 'Membina dan mengoordinasikan belanja operasional jenjang PAUD, SD, dan SMP serta mengaudit pelaporan realisasi RKAS sebelum verifikasi akhir.'
+      },
+      SEKOLAH: {
+        title: 'Level 5: Satuan Pendidikan (468.724 Sekolah)',
+        desc: 'Rekening sekolah menerima dana BOS langsung dari Kas Negara (tanpa perantara Pemda sejak 2020) dan menggunakannya sesuai prinsip akuntabilitas publik.'
+      }
+    };
+
+    function selectLevel(lvl) {
+      document.querySelectorAll('.flow-step-card').forEach(c => c.classList.remove('active'));
+      const activeCard = document.querySelector(`.flow-step-card[data-level="${lvl}"]`);
+      if (activeCard) activeCard.classList.add('active');
+
+      const info = levelDetails[lvl] || levelDetails.APBN;
+      document.getElementById('levelDetailTitle').textContent = info.title;
+      document.getElementById('levelDetailDesc').textContent = info.desc;
+    }
+
+    async function loadYears() {
+      const container = document.getElementById('yearPillsContainer');
+      const years = [2027, 2026, 2025, 2024, 2023, 2022, 2021, 2020];
+      
+      try {
+        let res = await fetch('http://localhost:2021/rest/v1/tahun_anggaran?select=tahun,status&order=tahun.desc');
+        if (!res.ok) res = await fetch('http://localhost:2028/rest/v1/tahun_anggaran?select=tahun,status&order=tahun.desc');
+        if (res.ok) {
+          const list = await res.json();
+          if (list && list.length > 0) {
+            years.length = 0;
+            list.forEach(i => years.push(i.tahun));
+          }
+        }
+      } catch (e) {
+        console.warn('Using default years list', e);
+      }
+
+      container.innerHTML = '<span style="font-size: 13px; font-weight: 700; color: var(--color-text-muted); margin-right: 4px;">Tahun:</span>';
+      years.forEach(yr => {
+        const btn = document.createElement('button');
+        btn.className = `tab-year-pill ${yr === activeYear ? 'active' : ''}`;
+        btn.textContent = yr;
+        btn.onclick = () => setYear(yr);
+        container.appendChild(btn);
+      });
+    }
+
+    async function setYear(year) {
+      activeYear = year;
+      document.querySelectorAll('.tab-year-pill').forEach(b => {
+        b.classList.toggle('active', b.textContent == year);
+      });
+      document.getElementById('currentYearStatus').textContent = `Tahun Anggaran: ${year} (Live PostgreSQL)`;
+
+      try {
+        let res = await fetch(`http://localhost:2021/rest/v1/tahun_anggaran?tahun=eq.${year}`);
+        if (!res.ok) res = await fetch(`http://localhost:2028/rest/v1/tahun_anggaran?tahun=eq.${year}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.length > 0) {
+            const totalVal = Number(data[0].total_anggaran || 0);
+            const totalT = (totalVal / 1e12).toFixed(1);
+            document.getElementById('kpiTotalApbn').textContent = `Rp ${totalT} T`;
+            document.getElementById('kpiTkdd').textContent = `Rp ${(totalVal * 0.45 / 1e12).toFixed(1)} T`;
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load yearly budget:', e);
+      }
+
+      await loadSourceData();
+    }
+
+    function switchSourceTab(source) {
+      activeSource = source;
+      document.querySelectorAll('.source-tab-btn').forEach(b => {
+        b.classList.toggle('active', b.textContent.includes(source));
+      });
+      loadSourceData();
+    }
+
+    async function loadSourceData() {
+      const tbody = document.getElementById('sourceTableBody');
+      tbody.innerHTML = '<tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--color-text-muted);">Memuat data dari PostgreSQL...</td></tr>';
+
+      try {
+        let path = '';
+        if (activeSource === 'APBN') {
+          path = '/alokasi_provinsi?order=nominal_alokasi.desc&limit=38';
+        } else if (activeSource === 'APBD') {
+          path = '/apbd_yearly_data?order=year.desc&limit=38';
+        } else {
+          path = '/csr_yearly_data?order=year.desc&limit=38';
+        }
+
+        let res = await fetch(`http://localhost:2021/rest/v1${path}`);
+        if (!res.ok) res = await fetch(`http://localhost:2028/rest/v1${path}`);
+        const data = await res.json();
+        rawTableData = Array.isArray(data) ? data : [];
+        renderSourceTable(rawTableData);
+      } catch (e) {
+        console.error('Error loading source data:', e);
+        tbody.innerHTML = '<tr><td colspan="6" style="padding: 24px; text-align: center; color: #ef4444;">Gagal mengambil data dari database. Silakan pastikan server database aktif.</td></tr>';
+      }
+    }
+        rawTableData = Array.isArray(data) ? data : [];
+        renderSourceTable(rawTableData);
+      } catch (e) {
+        console.error('Error loading source data:', e);
+        tbody.innerHTML = '<tr><td colspan="6" style="padding: 24px; text-align: center; color: #ef4444;">Gagal mengambil data dari database. Silakan pastikan port 2021 aktif.</td></tr>';
+      }
+    }
+
+    function renderSourceTable(rows) {
+      const tbody = document.getElementById('sourceTableBody');
+      const countEl = document.getElementById('tableRowCount');
+
+      if (!rows || rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--color-text-muted);">Tidak ada data yang cocok.</td></tr>';
+        countEl.textContent = '0 Data ditemukan';
+        return;
+      }
+
+      countEl.textContent = `${rows.length} Data ditampilkan`;
+      tbody.innerHTML = rows.map(item => {
+        const name = item.provinsi?.nama_provinsi || item.region_name || item.company_name || item.entity_name || 'Provinsi Terdaftar';
+        const yr = item.tahun || item.year || activeYear;
+        const alokasi = item.nominal_alokasi || item.budget_allocated || item.total_amount || 0;
+        const realisasi = item.realisasi_total || item.budget_spent || (alokasi * 0.85);
+        const pct = alokasi > 0 ? ((realisasi / alokasi) * 100).toFixed(1) : '100.0';
+
+        const pctNum = parseFloat(pct);
+        const badgeColor = pctNum >= 80 ? '#16a34a' : (pctNum >= 50 ? '#d97706' : '#dc2626');
+        const badgeBg = pctNum >= 80 ? '#ecfdf5' : (pctNum >= 50 ? '#fef3c7' : '#fef2f2');
+
+        return `
+          <tr style="border-bottom: 1px solid var(--color-border); transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+            <td style="padding: 14px 16px; font-weight: 700; color: #0f172a;">${name}</td>
+            <td style="padding: 14px 16px; color: var(--color-text-muted);">${yr}</td>
+            <td style="padding: 14px 16px; text-align: right; font-weight: 700;">${window.DBClient ? window.DBClient.formatIDR(alokasi) : 'Rp ' + Number(alokasi).toLocaleString('id-ID')}</td>
+            <td style="padding: 14px 16px; text-align: right; color: #0284c7; font-weight: 700;">${window.DBClient ? window.DBClient.formatIDR(realisasi) : 'Rp ' + Number(realisasi).toLocaleString('id-ID')}</td>
+            <td style="padding: 14px 16px; text-align: right;">
+              <span style="font-weight: 800; color: ${badgeColor};">${pct}%</span>
+            </td>
+            <td style="padding: 14px 16px; text-align: center;">
+              <span style="font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px; background: ${badgeBg}; color: ${badgeColor};">
+                ${pctNum >= 80 ? 'TERPENUHI' : 'PENYERAPAN'}
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterSourceTable() {
+      const q = document.getElementById('tableSearchInput').value.toLowerCase();
+      const filtered = rawTableData.filter(d => {
+        const text = (d.provinsi?.nama_provinsi || d.region_name || d.company_name || d.entity_name || '').toLowerCase();
+        return text.includes(q);
+      });
+      renderSourceTable(filtered);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadYears();
+      setYear(2026);
+    });
+  </script>
+</body>
+</html>

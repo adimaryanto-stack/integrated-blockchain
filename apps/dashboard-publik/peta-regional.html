@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Peta Penyerapan Anggaran Regional — SiTransparan</title>
+  <meta name="description" content="Peta interaktif penyerapan anggaran pendidikan dan transfer dana ke 38 provinsi se-Indonesia dari basis data resmi PostgreSQL."/>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  
+  <link rel="stylesheet" href="/styles/main.css"/>
+  <link rel="stylesheet" href="/styles/transparansi-2020.css"/>
+  <style>
+    .map-container {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      margin-bottom: 40px;
+      box-shadow: var(--shadow-sm);
+    }
+    .map-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 32px;
+    }
+    .svg-map-wrapper {
+      background: #F8FAFC;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 20px 20px 16px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .province-chips-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+      margin-top: 20px;
+      max-height: 280px;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+    .province-chip {
+      padding: 10px 12px;
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: all var(--transition-fast);
+    }
+    .province-chip:hover, .province-chip.active {
+      border-color: var(--color-primary);
+      background: var(--color-primary-light);
+      transform: translateY(-2px);
+    }
+    .province-chip .p-name {
+      color: #0f172a;
+      font-weight: 700;
+    }
+    .province-chip .p-rate {
+      font-size: 11px;
+      color: var(--color-primary);
+      font-weight: 800;
+    }
+    .province-detail-panel {
+      background: #F8FAFC;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .panel-header {
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px dashed var(--color-border);
+      font-size: 13px;
+    }
+    .stat-row:last-child {
+      border-bottom: none;
+    }
+    .table-section {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 56px;
+    }
+    .custom-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+      margin-top: 16px;
+    }
+    .custom-table th {
+      padding: 12px 16px;
+      background: #F8FAFC;
+      color: var(--color-text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .custom-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--color-border);
+      color: #0f172a;
+    }
+    .custom-table tr:hover td {
+      background: #F1F5F9;
+    }
+    @media (max-width: 1024px) {
+      .map-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="brand-logo">
+        <div class="logo-badge">
+          <span class="material-symbols-outlined" style="font-size: 22px;">account_balance</span>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 17px; font-weight: 800; line-height: 1.1; color: #0f172a;">Transparansi Anggaran</span>
+          <span style="font-size: 10px; font-weight: 700; color: var(--color-primary); letter-spacing: 0.05em;">SITRANSPARAN CIVIC-TECH</span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="main-nav">
+        <a href="index.html" class="nav-link">Beranda</a>
+        
+        <!-- Menu Data Dropdown -->
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-trigger active" type="button">
+            <span>Data</span>
+            <span class="material-symbols-outlined" style="font-size: 18px;">expand_more</span>
+          </button>
+          <div class="nav-dropdown-menu">
+            <a href="aliran-dana.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">account_tree</span>
+              <span>Aliran Dana APBN</span>
+            </a>
+            <a href="audit.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">security</span>
+              <span>Audit & Anomali</span>
+            </a>
+            <a href="compare.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">compare_arrows</span>
+              <span>Bandingkan Sekolah</span>
+            </a>
+            <a href="peta-regional.html" class="nav-dropdown-item active">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">public</span>
+              <span>Peta Regional</span>
+            </a>
+            <a href="provinces.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">map</span>
+              <span>38 Provinsi</span>
+            </a>
+            <a href="statistics.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">bar_chart</span>
+              <span>Statistik Nasional</span>
+            </a>
+            <a href="funding.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">payments</span>
+              <span>Sumber Pendanaan</span>
+            </a>
+            <a href="detail-anggaran.html" class="nav-dropdown-item">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">receipt_long</span>
+              <span>Detail Program BOS</span>
+            </a>
+          </div>
+        </div>
+
+        <a href="reporting.html" class="nav-link">Laporkan</a>
+        <a href="tentang.html" class="nav-link">Tentang</a>
+        <a href="faq.html" class="nav-link">FAQ</a>
+        <a href="contact.html" class="nav-link">Kontak</a>
+      </nav>
+
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <a href="pantau-anggaran.html" class="btn-watchlist-pill" title="Lihat item yang Anda pantau">
+          <span>Pantau Anggaran</span>
+          <span class="watchlist-count" id="headerWatchlistCount">0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top: 40px; padding-bottom: 72px;">
+    <!-- Page Header -->
+    <div style="margin-bottom: 32px;">
+      <div class="badge-tag" style="background: var(--color-primary-light); color: var(--color-primary); border-color: rgba(29, 78, 216, 0.2);">
+        DATA 38 PROVINSI INDONESIA
+      </div>
+      <h1 style="font-size: 32px; font-weight: 800; color: #0f172a; margin: 8px 0;">
+        Peta Penyerapan Anggaran Pendidikan Regional
+      </h1>
+      <p style="font-size: 15px; color: var(--color-text-muted); max-width: 800px; line-height: 1.6;">
+        Memantau bagaimana Transfer ke Daerah (TKD) senilai <strong>Rp346,5 Triliun</strong> didistribusikan ke 38 provinsi untuk gaji guru, BOS daerah, dan pembangunan sarana prasarana sekolah.
+      </p>
+    </div>
+
+    <!-- Map & Drill-down Grid -->
+    <div class="map-container">
+      <div class="map-grid">
+        <!-- Map Canvas & Quick Selector -->
+        <div>
+          <div class="svg-map-wrapper">
+            <div style="margin-bottom: 14px;">
+              <span style="font-size: 11px; font-weight: 800; color: var(--color-primary); text-transform: uppercase; letter-spacing: 0.06em;">
+                Visualisasi Sebaran Regional
+              </span>
+              <h3 style="font-size: 17px; font-weight: 800; margin-top: 4px; color: #0f172a;">Peta Penyaluran per Provinsi</h3>
+              <p style="font-size: 12px; color: var(--color-text-muted); margin-top: 2px;">Distribusi sekolah penerima dana berdasarkan data PostgreSQL. Klik provinsi untuk detail.</p>
+            </div>
+
+            <!-- Interactive Indonesia Map (38 Provinsi) -->
+            <div id="indonesiaMapContainer" style="position: relative; width: 100%; border-radius: 12px; border: 1px solid #e2e8f0; background: #f8fafc; overflow: hidden; box-shadow: 0 4px 16px rgba(15,23,42,0.04);">
+              <svg
+                id="indonesiaMapSvg"
+                viewBox="0 0 1000 500"
+                style="width: 100%; height: auto; display: block; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.06));"
+              ></svg>
+
+              <!-- Glassmorphic Tooltip -->
+              <div id="mapTooltip" style="
+                display: none;
+                position: absolute;
+                pointer-events: none;
+                z-index: 20;
+                transform: translate(-50%, -110%);
+                background: rgba(255,255,255,0.88);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border: 1px solid rgba(255,255,255,0.5);
+                border-radius: 10px;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+                padding: 10px 14px;
+                min-width: 150px;
+                transition: opacity 0.1s;
+              ">
+                <p id="mapTooltipName" style="font-weight: 800; font-size: 13px; color: #0f172a; white-space: nowrap; margin-bottom: 4px;"></p>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span id="mapTooltipDot" style="width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;"></span>
+                  <span id="mapTooltipCount" style="font-size: 11px; font-weight: 600; color: #475569;"></span>
+                </div>
+              </div>
+
+              <!-- Legend (bottom-right) -->
+              <div style="
+                position: absolute;
+                bottom: 12px;
+                right: 12px;
+                background: rgba(255,255,255,0.75);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                border: 1px solid #e2e8f0;
+                border-radius: 10px;
+                padding: 10px 12px;
+                font-size: 10px;
+              ">
+                <p style="font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #94A3B8; margin-bottom: 7px;">Kerapatan</p>
+                <div style="display: flex; flex-direction: column; gap: 5px; color: #475569;">
+                  <span style="display: flex; align-items: center; gap: 7px;"><span style="width: 12px; height: 12px; border-radius: 3px; background: #e2e8f0; flex-shrink:0;"></span>0 Sekolah</span>
+                  <span style="display: flex; align-items: center; gap: 7px;"><span style="width: 12px; height: 12px; border-radius: 3px; background: #93c5fd; flex-shrink:0;"></span>&lt;5.000</span>
+                  <span style="display: flex; align-items: center; gap: 7px;"><span style="width: 12px; height: 12px; border-radius: 3px; background: #3b82f6; flex-shrink:0;"></span>5.000–10.000</span>
+                  <span style="display: flex; align-items: center; gap: 7px;"><span style="width: 12px; height: 12px; border-radius: 3px; background: #1d4ed8; flex-shrink:0;"></span>10.001–20.000</span>
+                  <span style="display: flex; align-items: center; gap: 7px;"><span style="width: 12px; height: 12px; border-radius: 3px; background: #1e3a8a; flex-shrink:0;"></span>20.001+</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Province Chips Selector -->
+          <div class="province-chips-grid" id="provinceChips">
+            <!-- Injected via JavaScript -->
+          </div>
+        </div>
+
+        <!-- Province Detail Panel -->
+        <div class="province-detail-panel" id="provinceDetailPanel">
+          <div>
+            <div class="panel-header">
+              <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--color-primary);">Rincian Provinsi Terpilih</span>
+              <h2 id="pTitle" style="font-size: 22px; font-weight: 800; color: #0f172a; margin-top: 2px;">Jawa Barat</h2>
+              <div id="pCode" style="font-size: 12px; color: var(--color-text-muted);">Kode Wilayah: 32 (JB)</div>
+            </div>
+
+            <div>
+              <div class="stat-row">
+                <span style="color: var(--color-text-muted);">Total Anggaran TKD</span>
+                <strong id="pBudget" style="font-size: 15px; color: var(--color-primary);">Rp68.4 Triliun</strong>
+              </div>
+              <div class="stat-row">
+                <span style="color: var(--color-text-muted);">Realisasi Penyerapan</span>
+                <strong id="pRealization" style="color: var(--color-primary); font-weight: 800;">73.2%</strong>
+              </div>
+              <div class="stat-row">
+                <span style="color: var(--color-text-muted);">Satuan Pendidikan</span>
+                <span id="pSchools" style="font-weight: 600;">32.400 Sekolah</span>
+              </div>
+              <div class="stat-row">
+                <span style="color: var(--color-text-muted);">Peserta Didik Aktif</span>
+                <span id="pStudents" style="font-weight: 600;">9.450.000 Siswa</span>
+              </div>
+              <div class="stat-row">
+                <span style="color: var(--color-text-muted);">Alokasi Rata-rata/Siswa</span>
+                <span id="pPerStudent" style="font-weight: 600;">Rp7.238.000 / thn</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 8px;">
+            <button class="btn-watchlist-pill" onclick="saveProvinceToWatchlist()" style="justify-content: center; width: 100%;">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">bookmark_border</span>
+              Pantau Provinsi Ini
+            </button>
+            <a href="provinces.html" id="btnExploreProvince" class="btn-report" style="text-align: center; justify-content: center; text-decoration: none;">
+              Jelajahi Sekolah di Provinsi &rarr;
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comparative Regional Table -->
+    <div class="table-section">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <h2 style="font-size: 20px; font-weight: 800; color: #0f172a;">Tabel Peringkat Penyerapan Daerah</h2>
+          <p style="font-size: 13px; color: var(--color-text-muted);">Daftar realisasi anggaran pendidikan 38 provinsi di Indonesia.</p>
+        </div>
+        <input 
+          type="text" 
+          id="tableSearchInput" 
+          placeholder="Saring nama provinsi..." 
+          style="padding: 10px 18px; border-radius: var(--radius-pill); border: 1px solid var(--color-border); font-size: 13px; outline: none; width: 260px;"
+          onkeyup="filterTable(this.value)"
+        />
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table class="custom-table" id="provincesTable">
+          <thead>
+            <tr>
+              <th>Provinsi</th>
+              <th>Kode</th>
+              <th>Total Anggaran</th>
+              <th>Tingkat Realisasi</th>
+              <th>Jumlah Sekolah</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <!-- Injected via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Site Footer -->
+  <footer style="background: #0B1329; color: #94A3B8; padding: 48px 0 24px; border-top: 1px solid #1E293B;">
+    <div class="container">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; padding-bottom: 24px; border-bottom: 1px solid #1E293B;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: var(--color-primary); display: flex; align-items: center; justify-content: center; color: #fff;">
+            <span class="material-symbols-outlined" style="font-size: 18px;">account_balance</span>
+          </div>
+          <span style="font-size: 16px; font-weight: 800; color: #F8FAFC;">SiTransparan Anggaran</span>
+        </div>
+        <div style="display: flex; gap: 20px; font-size: 13px;">
+          <a href="index.html" style="color: #94A3B8; text-decoration: none;">Beranda</a>
+          <a href="aliran-dana.html" style="color: #94A3B8; text-decoration: none;">Aliran Dana</a>
+          <a href="peta-regional.html" style="color: #60A5FA; text-decoration: none; font-weight: 700;">Peta Regional</a>
+          <a href="provinces.html" style="color: #94A3B8; text-decoration: none;">38 Provinsi</a>
+          <a href="reporting.html" style="color: #94A3B8; text-decoration: none;">Laporkan</a>
+          <a href="tentang.html" style="color: #94A3B8; text-decoration: none;">Tentang</a>
+        </div>
+      </div>
+      <p style="font-size: 12px; color: #64748B; margin-top: 20px; text-align: center;">
+        © 2026 SiTransparan Civic-Tech.
+      </p>
+    </div>
+  </footer>
+
+  <script type="module" src="/scripts/indonesia-paths.js"></script>
+  <script type="module" src="/scripts/db-client.js"></script>
+  <script type="module" src="/scripts/app.js"></script>
+  <script>
+    let currentSelectedProvince = 'Jawa Barat';
+    let provincesData = [];
+    // schoolCountByCode: { "32": 15400, ... } — keyed by province code
+    let schoolCountByCode = {};
+
+    /* ── Color logic (identical to IndonesiaMap.tsx) ── */
+    function getMapColor(count) {
+      if (count === 0) return '#e2e8f0';
+      if (count < 5000) return '#93c5fd';
+      if (count <= 10000) return '#3b82f6';
+      if (count <= 20000) return '#1d4ed8';
+      return '#1e3a8a';
+    }
+
+    /* ── Render all 38 province paths into the SVG ── */
+    function renderMap() {
+      const paths = window.INDONESIA_PROVINCE_PATHS;
+      const svg = document.getElementById('indonesiaMapSvg');
+      const tooltip = document.getElementById('mapTooltip');
+      const tooltipName = document.getElementById('mapTooltipName');
+      const tooltipDot = document.getElementById('mapTooltipDot');
+      const tooltipCount = document.getElementById('mapTooltipCount');
+      const container = document.getElementById('indonesiaMapContainer');
+
+      if (!paths || !svg) return;
+
+      svg.innerHTML = '';
+
+      paths.forEach(prov => {
+        const count = schoolCountByCode[prov.code] || 0;
+        const color = getMapColor(count);
+        const isSelected = prov.name.toLowerCase() === currentSelectedProvince.toLowerCase();
+
+        const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        pathEl.setAttribute('d', prov.path);
+        pathEl.setAttribute('fill', color);
+        pathEl.setAttribute('stroke', isSelected ? '#1e40af' : '#ffffff');
+        pathEl.setAttribute('stroke-width', isSelected ? '2' : '0.5');
+        pathEl.style.cursor = 'pointer';
+        pathEl.style.transition = 'filter 0.2s, stroke 0.2s, stroke-width 0.2s';
+
+        // Hover – show tooltip & highlight
+        pathEl.addEventListener('mouseenter', (e) => {
+          pathEl.setAttribute('stroke', '#1e40af');
+          pathEl.setAttribute('stroke-width', '2');
+          pathEl.style.filter = 'brightness(0.9)';
+
+          tooltipName.textContent = prov.name;
+          tooltipDot.style.backgroundColor = color;
+          tooltipCount.textContent = count > 0
+            ? count.toLocaleString('id-ID') + ' Sekolah'
+            : 'Belum ada data';
+          tooltip.style.display = 'block';
+        });
+
+        pathEl.addEventListener('mousemove', (e) => {
+          const rect = container.getBoundingClientRect();
+          // Position in percentage of container width/height for SVG-responsive layout
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          tooltip.style.left = x + 'px';
+          tooltip.style.top = y + 'px';
+        });
+
+        pathEl.addEventListener('mouseleave', () => {
+          const stillSelected = prov.name.toLowerCase() === currentSelectedProvince.toLowerCase();
+          pathEl.setAttribute('stroke', stillSelected ? '#1e40af' : '#ffffff');
+          pathEl.setAttribute('stroke-width', stillSelected ? '2' : '0.5');
+          pathEl.style.filter = '';
+          tooltip.style.display = 'none';
+        });
+
+        // Click → select province
+        pathEl.addEventListener('click', () => {
+          selectProvince(prov.name);
+        });
+
+        svg.appendChild(pathEl);
+      });
+    }
+
+    /* ── Re-paint map stroke when selection changes ── */
+    function updateMapSelection(selectedName) {
+      const paths = window.INDONESIA_PROVINCE_PATHS;
+      const svg = document.getElementById('indonesiaMapSvg');
+      if (!paths || !svg) return;
+      const pathEls = svg.querySelectorAll('path');
+      paths.forEach((prov, i) => {
+        const el = pathEls[i];
+        if (!el) return;
+        const isSelected = prov.name.toLowerCase() === selectedName.toLowerCase();
+        el.setAttribute('stroke', isSelected ? '#1e40af' : '#ffffff');
+        el.setAttribute('stroke-width', isSelected ? '2' : '0.5');
+      });
+    }
+
+
+
+    async function loadPostgresProvinces() {
+      if (!window.DBClient) return;
+
+      const chipsContainer = document.getElementById('provinceChips');
+      const tableBody = document.getElementById('tableBody');
+      if (chipsContainer && provincesData.length === 0) {
+        chipsContainer.innerHTML = '<div style="padding: 12px; color: var(--color-text-muted); font-size: 13px;">Memuat data 38 provinsi dari database...</div>';
+      }
+      if (tableBody && provincesData.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--color-text-muted);">Memuat data provinsi dari database...</td></tr>';
+      }
+
+      try {
+        const [stats, allocations] = await Promise.all([
+          window.DBClient.getAllProvinceStats(),
+          window.DBClient.getProvincialAllocations(2026)
+        ]);
+
+        if (stats && stats.length > 0) {
+          const allocMap = new Map();
+          if (allocations) {
+            allocations.forEach(a => {
+              const name = a.provinsi?.nama_provinsi;
+              if (name) allocMap.set(name.toLowerCase(), a);
+            });
+          }
+
+          const mapped = stats.map(s => {
+            const alloc = allocMap.get(s.province_name.toLowerCase());
+            const budgetNum = alloc ? Number(alloc.nominal_alokasi) : 0;
+            const realizedNum = alloc ? Number(alloc.realisasi_total) : 0;
+            const budgetStr = budgetNum > 0 ? `Rp${(budgetNum / 1e12).toFixed(1)} Triliun` : 'Rp 0';
+            const rateStr = alloc?.persentase_penyerapan 
+              ? `${alloc.persentase_penyerapan}%` 
+              : (budgetNum > 0 ? `${((realizedNum / budgetNum) * 100).toFixed(1)}%` : '0%');
+            const estStudents = (s.total_schools || 0) * 160;
+            const costPerStudent = estStudents > 0 && budgetNum > 0 
+              ? window.DBClient.formatIDR(budgetNum / estStudents) + ' / thn'
+              : 'Rp 7.500.000 / thn';
+
+            return {
+              name: s.province_name,
+              budget: budgetStr,
+              realization: rateStr,
+              schools: s.total_schools ? s.total_schools.toLocaleString('id-ID') : '0',
+              students: estStudents.toLocaleString('id-ID'),
+              code: s.province_code ? `PRV-${s.province_code}` : 'PRV',
+              perStudent: costPerStudent
+            };
+          });
+
+          if (mapped.length > 0) {
+            provincesData = mapped;
+
+            // Build schoolCountByCode from stats (used by renderMap)
+            stats.forEach(s => {
+              if (s.province_code) {
+                schoolCountByCode[String(s.province_code)] = Number(s.total_schools) || 0;
+              }
+            });
+
+            renderMap();
+            renderProvinces();
+            if (currentSelectedProvince) {
+              selectProvince(currentSelectedProvince);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Database provinces load error:', err);
+      }
+    }
+
+    function renderProvinces() {
+      const chipsContainer = document.getElementById('provinceChips');
+      const tableBody = document.getElementById('tableBody');
+      if (!chipsContainer || !tableBody) return;
+
+      chipsContainer.innerHTML = '';
+      tableBody.innerHTML = '';
+
+      provincesData.forEach(p => {
+        // Chip
+        const chip = document.createElement('div');
+        chip.className = `province-chip ${p.name.toLowerCase() === currentSelectedProvince.toLowerCase() ? 'active' : ''}`;
+        chip.onclick = () => selectProvince(p.name);
+        chip.innerHTML = `
+          <span class="p-name">${p.name}</span>
+          <span class="p-rate">${p.realization}</span>
+        `;
+        chipsContainer.appendChild(chip);
+
+        // Table Row
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${p.name}</strong></td>
+          <td><span style="background: #F1F5F9; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 11px;">${p.code}</span></td>
+          <td style="font-weight: 700; color: var(--color-primary);">${p.budget}</td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span>${p.realization}</span>
+              <div style="flex: 1; height: 6px; background: #e2e8f0; border-radius: 99px; min-width: 60px;">
+                <div style="width: ${p.realization}; height: 100%; background: var(--color-primary); border-radius: 99px;"></div>
+              </div>
+            </div>
+          </td>
+          <td>${p.schools}</td>
+          <td>
+            <button onclick="selectProvince('${p.name}')" class="btn-watchlist-pill" style="font-size: 11px; padding: 4px 10px;">
+              Pilih
+            </button>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    }
+
+    function selectProvince(name) {
+      currentSelectedProvince = name;
+      const data = provincesData.find(p => p.name.toLowerCase() === name.toLowerCase());
+
+      // Always update map highlight (even before data loads)
+      updateMapSelection(name);
+
+      if (!data) return;
+
+      document.getElementById('pTitle').textContent = data.name;
+      document.getElementById('pCode').textContent = `Kode Wilayah: ${data.code}`;
+      document.getElementById('pBudget').textContent = data.budget;
+      document.getElementById('pRealization').textContent = data.realization;
+      document.getElementById('pSchools').textContent = `${data.schools} Sekolah`;
+      document.getElementById('pStudents').textContent = `${data.students} Siswa`;
+      document.getElementById('pPerStudent').textContent = data.perStudent || 'Rp7.238.000 / thn';
+
+      const exploreBtn = document.getElementById('btnExploreProvince');
+      if (exploreBtn) {
+        exploreBtn.href = `province-detail.html?name=${encodeURIComponent(data.name)}`;
+        exploreBtn.innerHTML = `Lihat Detail ${data.name} &rarr;`;
+      }
+
+      document.querySelectorAll('.province-chip').forEach(c => {
+        const nameEl = c.querySelector('.p-name');
+        c.classList.toggle('active', nameEl && nameEl.textContent.toLowerCase() === name.toLowerCase());
+      });
+
+      document.getElementById('provinceDetailPanel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function saveProvinceToWatchlist() {
+      alert(`Provinsi ${currentSelectedProvince} berhasil ditambahkan ke daftar pantau!`);
+      const countEl = document.getElementById('headerWatchlistCount');
+      if (countEl) countEl.textContent = Number(countEl.textContent || 0) + 1;
+    }
+
+    function filterTable(val) {
+      const q = val.toLowerCase();
+      document.querySelectorAll('#tableBody tr').forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(q) ? '' : 'none';
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Render map immediately (all grey – data not loaded yet)
+      // INDONESIA_PROVINCE_PATHS is set by the module script before this
+      // Use setTimeout to allow module scripts to execute first
+      setTimeout(() => {
+        renderMap();
+      }, 50);
+
+      renderProvinces();
+      loadPostgresProvinces();
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const q = urlParams.get('q') || urlParams.get('prov');
+      if (q) {
+        setTimeout(() => selectProvince(q), 300);
+      }
+    });
+  </script>
+</body>
+</html>
