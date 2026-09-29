@@ -774,17 +774,18 @@ export function getDashboardSummary(tahun: number = 2026): DashboardSummary {
     };
   });
 
-  // Trend: use tahun_anggaran.total_anggaran for nominal per year — use BigInt to avoid precision loss
-  const trenTahunan = tahunAnggaranData
-    .filter((t) => t.status !== 'DRAFT')
+  // Trend: use tahun_anggaran.total_anggaran for nominal per year — sorted ascending, include all database years
+  const trenTahunan = [...tahunAnggaranData]
+    .sort((a, b) => Number(a.tahun) - Number(b.tahun))
     .map((t) => {
       const bNominal = toBigIntHelper(t.total_anggaran);
-      const yearProvData = alokasiProvinsiData.filter((p) => p.tahun_anggaran_id === t.id);
+      const yearProvData = alokasiProvinsiData.filter((p) => String(p.tahun_anggaran_id) === String(t.id));
       const bRealSum = yearProvData.reduce((s, p) => s + toBigIntHelper(p.realisasi_total), 0n);
-      // Estimate 70% realisasi for years without real data
-      const bReal = bRealSum > 0n ? bRealSum : (bNominal * 7n / 10n);
+      // For future or DRAFT years, realisasi is 0 if no disbursements recorded yet
+      const isDraftOrFuture = t.status === 'DRAFT' || Number(t.tahun) > 2026;
+      const bReal = isDraftOrFuture ? bRealSum : (bRealSum > 0n ? bRealSum : (bNominal * 7n / 10n));
       return {
-        tahun: t.tahun as number,
+        tahun: Number(t.tahun),
         nominal: Number(bNominal),
         realisasi: Number(bReal),
       };

@@ -79,6 +79,14 @@ export default function DashboardPage() {
     }));
   }, [summary]);
 
+  const trendYearsTitle = useMemo(() => {
+    if (!trendData || trendData.length === 0) return 'Tren Penyaluran Dana Pendidikan';
+    const years = trendData.map(t => Number(t.tahun)).filter(y => !isNaN(y)).sort((a, b) => a - b);
+    if (years.length === 0) return 'Tren Penyaluran Dana Pendidikan';
+    if (years.length === 1) return `Tren Penyaluran Dana Pendidikan Tahun ${years[0]}`;
+    return `Tren Penyaluran Dana Pendidikan ${years[0]}–${years[years.length - 1]}`;
+  }, [trendData]);
+
   if (loading || !summary) {
     return (
       <div className="min-h-screen">
@@ -229,7 +237,7 @@ export default function DashboardPage() {
 
           {/* Trend Line Chart */}
           <div className="glass-card p-5">
-            <h3 className="text-sm font-semibold text-text-primary mb-4">Tren Penyaluran Dana Pendidikan 2020–2026</h3>
+            <h3 className="text-sm font-semibold text-text-primary mb-4">{trendYearsTitle}</h3>
             <ResponsiveContainer width="100%" height={280}>
               <AreaChart data={trendData}>
                 <defs>
@@ -250,8 +258,8 @@ export default function DashboardPage() {
                   formatter={(value: any, name: any) => [`${(Number(value) || 0).toFixed(1)} T`, name === 'Nominal' ? 'Pagu Alokasi' : 'Dana Cair']}
                 />
                 <Legend formatter={(value: string) => value === 'Nominal' ? 'Pagu Alokasi' : 'Dana Cair'} wrapperStyle={{ fontSize: 11, color: '#64748b' }} />
-                <Area type="monotone" dataKey="Nominal" stroke="#6366f1" fill="url(#gradNominal)" strokeWidth={2} />
-                <Area type="monotone" dataKey="Realisasi" stroke="#10b981" fill="url(#gradRealisasi)" strokeWidth={2} />
+                <Area type="monotone" dataKey="Nominal" stroke="#6366f1" fill="url(#gradNominal)" strokeWidth={2} dot={{ r: 4, fill: '#6366f1' }} activeDot={{ r: 6 }} />
+                <Area type="monotone" dataKey="Realisasi" stroke="#10b981" fill="url(#gradRealisasi)" strokeWidth={2} dot={{ r: 4, fill: '#10b981' }} activeDot={{ r: 6 }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>

@@ -195,6 +195,31 @@
      */
     async getProvincialAllocations(year = 2026) {
       try {
+        // Try provincial_allocations first (matches web-next port 2020 exactly)
+        const paData = await this.request(`/provincial_allocations?year=eq.${year}&order=alokasi.desc`);
+        if (Array.isArray(paData) && paData.length > 0) {
+          return paData.map(p => ({
+            id: p.id,
+            tahun: p.year,
+            nominal_alokasi: Number(p.alokasi || 0),
+            realisasi_total: Number(p.disalurkan || 0),
+            selisih: Number(p.sisa || 0),
+            persentase_penyerapan: Number(p.alokasi) > 0 
+              ? ((Number(p.disalurkan) / Number(p.alokasi)) * 100).toFixed(1)
+              : '0.0',
+            provinsi_code: p.provinsi_code,
+            provinsi: {
+              id: p.id,
+              kode_provinsi: p.provinsi_code,
+              nama_provinsi: p.provinsi_name
+            }
+          }));
+        }
+      } catch (e) {
+        console.warn('[DBClient] provincial_allocations fallback:', e.message);
+      }
+
+      try {
         const data = await this.request(`/alokasi_provinsi?tahun=eq.${year}&order=nominal_alokasi.desc`);
         return Array.isArray(data) ? data : [];
       } catch (e) {

@@ -177,7 +177,7 @@ for ($w = 0; $w -lt 25; $w++) {
 }
 
 Write-Host "`n==================================================================" -ForegroundColor Cyan
-Write-Host " STATUS SELURUH 9 SERVER DAN PORT:" -ForegroundColor Cyan
+Write-Host " STATUS SELURUH 10 SERVER DAN PORT:" -ForegroundColor Cyan
 Write-Host "==================================================================" -ForegroundColor Cyan
 
 foreach ($item in $allPortsList) {

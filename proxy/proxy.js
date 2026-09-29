@@ -157,23 +157,21 @@ app.post('/rest/v1/rpc/:function', async (req, res) => {
       return res.json(dbRes.rows);
     }
 
-    // ── get_all_province_stats: aggregate directly from institusi_pendidikan ──
+    // ── get_all_province_stats: aggregate directly from province_school_stats ──
     else if (func === 'get_all_province_stats') {
       const dbRes = await pool.query(`
         SELECT
-          p.id          AS province_id,
-          p.kode_provinsi AS province_code,
-          p.nama_provinsi AS province_name,
-          COUNT(ip.id)::integer AS total_schools,
-          COALESCE(SUM(CASE WHEN ip.jenjang = 'PAUD'        THEN 1 ELSE 0 END),0)::integer AS paud,
-          COALESCE(SUM(CASE WHEN ip.jenjang = 'SD'          THEN 1 ELSE 0 END),0)::integer AS sd,
-          COALESCE(SUM(CASE WHEN ip.jenjang = 'SMP'         THEN 1 ELSE 0 END),0)::integer AS smp,
-          COALESCE(SUM(CASE WHEN ip.jenjang = 'SMA'         THEN 1 ELSE 0 END),0)::integer AS sma,
-          COALESCE(SUM(CASE WHEN ip.jenjang = 'UNIVERSITAS' THEN 1 ELSE 0 END),0)::integer AS univ
-        FROM public.provinsi p
-        LEFT JOIN public.institusi_pendidikan ip ON ip.provinsi_id = p.id
-        GROUP BY p.id, p.kode_provinsi, p.nama_provinsi
-        ORDER BY p.nama_provinsi
+          province_id,
+          province_code,
+          province_name,
+          total_schools::integer,
+          paud::integer,
+          sd::integer,
+          smp::integer,
+          sma::integer,
+          univ::integer
+        FROM public.province_school_stats
+        ORDER BY province_name
       `);
       return res.json(dbRes.rows);
     }

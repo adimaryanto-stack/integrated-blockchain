@@ -513,14 +513,15 @@ export function getDashboardSummary(tahun: number = 2026): DashboardSummary {
       };
     });
 
-    const activeYears = db.tahun_anggaran.filter((t: any) => t.status !== 'DRAFT');
-    const trenTahunan = activeYears.map((t: any) => {
-      const yearAlokasis = db.alokasi_provinsi.filter((ap: any) => ap.tahun_anggaran_id === t.id);
+    const allYears = [...(db.tahun_anggaran || [])].sort((a: any, b: any) => Number(a.tahun) - Number(b.tahun));
+    const trenTahunan = allYears.map((t: any) => {
+      const yearAlokasis = db.alokasi_provinsi.filter((ap: any) => String(ap.tahun_anggaran_id) === String(t.id));
       const yearRealisasi = yearAlokasis.reduce((sum: number, ap: any) => sum + Number(ap.realisasi_total), 0);
+      const isDraftOrFuture = t.status === 'DRAFT' || Number(t.tahun) > 2026;
       return {
         tahun: Number(t.tahun),
         nominal: Number(t.total_anggaran),
-        realisasi: yearRealisasi > 0 ? yearRealisasi : Math.round(Number(t.total_anggaran) * 0.7)
+        realisasi: isDraftOrFuture ? yearRealisasi : (yearRealisasi > 0 ? yearRealisasi : Math.round(Number(t.total_anggaran) * 0.7))
       };
     });
 
@@ -568,7 +569,7 @@ export function getDashboardSummary(tahun: number = 2026): DashboardSummary {
     PAUD: { nominal: paudNom, realisasi: paudReal },
   };
 
-  const activeYears = tahunAnggaranData.filter(t => t.status !== 'DRAFT');
+  const allYears = [...tahunAnggaranData].sort((a, b) => Number(a.tahun) - Number(b.tahun));
 
   return {
     total_nominal: totalNominal,
@@ -580,11 +581,14 @@ export function getDashboardSummary(tahun: number = 2026): DashboardSummary {
       realisasi: jenjangData[j].realisasi,
       persentase: jenjangData[j].nominal > 0 ? (jenjangData[j].realisasi / jenjangData[j].nominal) * 100 : 0,
     })),
-    tren_tahunan: activeYears.map((t, i) => ({
-      tahun: t.tahun,
-      nominal: t.total_anggaran,
-      realisasi: Math.round(t.total_anggaran * (trendRealisasiPct[i] || 70) / 100),
-    })),
+    tren_tahunan: allYears.map((t) => {
+      const isDraftOrFuture = t.status === 'DRAFT' || Number(t.tahun) > 2026;
+      return {
+        tahun: Number(t.tahun),
+        nominal: Number(t.total_anggaran),
+        realisasi: isDraftOrFuture ? 0 : Math.round(Number(t.total_anggaran) * 0.7),
+      };
+    }),
   };
 }
 

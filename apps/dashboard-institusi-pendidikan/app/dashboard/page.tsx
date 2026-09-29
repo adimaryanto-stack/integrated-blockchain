@@ -64,6 +64,12 @@ export default function DashboardPage() {
           instList = res.data;
         }
 
+        // Fetch all years from database
+        const { data: dbYears } = await supabase
+          .from('tahun_anggaran')
+          .select('*')
+          .order('tahun', { ascending: true });
+
         if (instList && instList.length > 0 && isMounted) {
           const inst = instList[0];
           setInstitusi(inst);
@@ -73,22 +79,45 @@ export default function DashboardPage() {
           const selisih = nominal - realisasi;
           const persentase = nominal > 0 ? (realisasi / nominal) * 100 : 84.0;
 
-          setYearlyData([
-            {
-              tahun: 2026,
-              nominal,
-              realisasi,
-              selisih,
-              persentase,
-            },
-            {
-              tahun: 2027,
-              nominal: 0,
-              realisasi: 0,
-              selisih: 0,
-              persentase: 0,
-            }
-          ]);
+          if (dbYears && dbYears.length > 0) {
+            const mappedYears: YearData[] = dbYears.map((y: any) => {
+              const th = Number(y.tahun);
+              if (th === 2026) {
+                return {
+                  tahun: th,
+                  nominal,
+                  realisasi,
+                  selisih,
+                  persentase,
+                };
+              }
+              return {
+                tahun: th,
+                nominal: 0,
+                realisasi: 0,
+                selisih: 0,
+                persentase: 0,
+              };
+            });
+            setYearlyData(mappedYears);
+          } else {
+            setYearlyData([
+              {
+                tahun: 2026,
+                nominal,
+                realisasi,
+                selisih,
+                persentase,
+              },
+              {
+                tahun: 2027,
+                nominal: 0,
+                realisasi: 0,
+                selisih: 0,
+                persentase: 0,
+              }
+            ]);
+          }
         }
       } catch (err) {
         console.error('Dashboard fetch error:', err);
@@ -104,6 +133,15 @@ export default function DashboardPage() {
     if (found) return found;
     return { tahun: activeTahun, nominal: 0, realisasi: 0, selisih: 0, persentase: 0 };
   }, [yearlyData, activeTahun]);
+
+  const trendYearsTitle = useMemo(() => {
+    if (!yearlyData || yearlyData.length === 0) return 'Tren Penyerapan Anggaran Sekolah';
+    const years = yearlyData.map(d => d.tahun);
+    const minYear = Math.min(...years);
+    const maxYear = Math.max(...years);
+    if (minYear === maxYear) return `Tren Penyerapan Anggaran Sekolah (${minYear})`;
+    return `Tren Penyerapan Anggaran Sekolah (${minYear}–${maxYear})`;
+  }, [yearlyData]);
 
   const currentSaldo = useMemo(
     () => yearlyData.filter(d => d.tahun <= activeTahun).reduce((sum, d) => sum + d.selisih, 0),
@@ -271,7 +309,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="glass-card p-5">
-              <h3 className="text-sm font-semibold text-text-primary mb-4">Tren Penyerapan Anggaran Sekolah</h3>
+              <h3 className="text-sm font-semibold text-text-primary mb-4">{trendYearsTitle}</h3>
               <ResponsiveContainer width="100%" height={280}>
                 <AreaChart data={chartData}>
                   <defs>
@@ -292,8 +330,8 @@ export default function DashboardPage() {
                     formatter={(value: any) => [`Rp ${fmtRupiah(Number(value))}`, '']}
                   />
                   <Legend wrapperStyle={{ fontSize: 11, color: '#64748b' }} />
-                  <Area type="monotone" dataKey="Nominal" name="Anggaran Alokasi" stroke="#6366f1" fill="url(#gradNominal)" strokeWidth={2} />
-                  <Area type="monotone" dataKey="Realisasi" name="Realisasi Belanja" stroke="#10b981" fill="url(#gradRealisasi)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="Nominal" name="Anggaran Alokasi" stroke="#6366f1" fill="url(#gradNominal)" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  <Area type="monotone" dataKey="Realisasi" name="Realisasi Belanja" stroke="#10b981" fill="url(#gradRealisasi)" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>

@@ -237,7 +237,7 @@
                 Visualisasi Sebaran Regional
               </span>
               <h3 style="font-size: 17px; font-weight: 800; margin-top: 4px; color: #0f172a;">Peta Penyaluran per Provinsi</h3>
-              <p style="font-size: 12px; color: var(--color-text-muted); margin-top: 2px;">Distribusi sekolah penerima dana berdasarkan data PostgreSQL. Klik provinsi untuk detail.</p>
+              <p style="font-size: 12px; color: var(--color-text-muted); margin-top: 2px;">Distribusi sekolah penerima dana berdasarkan basis data resmi. Klik provinsi untuk detail.</p>
             </div>
 
             <!-- Interactive Indonesia Map (38 Provinsi) -->
@@ -316,23 +316,23 @@
             <div>
               <div class="stat-row">
                 <span style="color: var(--color-text-muted);">Total Anggaran TKD</span>
-                <strong id="pBudget" style="font-size: 15px; color: var(--color-primary);">Rp68.4 Triliun</strong>
+                <strong id="pBudget" style="font-size: 15px; color: var(--color-primary);">-</strong>
               </div>
               <div class="stat-row">
                 <span style="color: var(--color-text-muted);">Realisasi Penyerapan</span>
-                <strong id="pRealization" style="color: var(--color-primary); font-weight: 800;">73.2%</strong>
+                <strong id="pRealization" style="color: var(--color-primary); font-weight: 800;">-</strong>
               </div>
               <div class="stat-row">
                 <span style="color: var(--color-text-muted);">Satuan Pendidikan</span>
-                <span id="pSchools" style="font-weight: 600;">32.400 Sekolah</span>
+                <span id="pSchools" style="font-weight: 600;">Memuat data...</span>
               </div>
               <div class="stat-row">
                 <span style="color: var(--color-text-muted);">Peserta Didik Aktif</span>
-                <span id="pStudents" style="font-weight: 600;">9.450.000 Siswa</span>
+                <span id="pStudents" style="font-weight: 600;">-</span>
               </div>
               <div class="stat-row">
                 <span style="color: var(--color-text-muted);">Alokasi Rata-rata/Siswa</span>
-                <span id="pPerStudent" style="font-weight: 600;">Rp7.238.000 / thn</span>
+                <span id="pPerStudent" style="font-weight: 600;">-</span>
               </div>
             </div>
           </div>
@@ -417,8 +417,16 @@
   <script>
     let currentSelectedProvince = 'Jawa Barat';
     let provincesData = [];
-    // schoolCountByCode: { "32": 15400, ... } — keyed by province code
+    let schoolCountByName = {};
     let schoolCountByCode = {};
+
+    function getSchoolCount(prov) {
+      if (!prov) return 0;
+      const nameKey = (prov.name || '').toLowerCase().trim();
+      if (schoolCountByName[nameKey] !== undefined) return schoolCountByName[nameKey];
+      if (prov.code && schoolCountByCode[String(prov.code)] !== undefined) return schoolCountByCode[String(prov.code)];
+      return 0;
+    }
 
     /* ── Color logic (identical to IndonesiaMap.tsx) ── */
     function getMapColor(count) {
@@ -444,7 +452,7 @@
       svg.innerHTML = '';
 
       paths.forEach(prov => {
-        const count = schoolCountByCode[prov.code] || 0;
+        const count = getSchoolCount(prov);
         const color = getMapColor(count);
         const isSelected = prov.name.toLowerCase() === currentSelectedProvince.toLowerCase();
 
@@ -560,6 +568,8 @@
               schools: s.total_schools ? s.total_schools.toLocaleString('id-ID') : '0',
               students: estStudents.toLocaleString('id-ID'),
               code: s.province_code ? `PRV-${s.province_code}` : 'PRV',
+              rawCode: s.province_code,
+              provId: s.province_id,
               perStudent: costPerStudent
             };
           });
@@ -567,10 +577,14 @@
           if (mapped.length > 0) {
             provincesData = mapped;
 
-            // Build schoolCountByCode from stats (used by renderMap)
+            // Build schoolCountByName and schoolCountByCode from stats (used by renderMap)
             stats.forEach(s => {
+              const cnt = Number(s.total_schools) || 0;
+              if (s.province_name) {
+                schoolCountByName[s.province_name.toLowerCase().trim()] = cnt;
+              }
               if (s.province_code) {
-                schoolCountByCode[String(s.province_code)] = Number(s.total_schools) || 0;
+                schoolCountByCode[String(s.province_code)] = cnt;
               }
             });
 
@@ -601,7 +615,10 @@
         chip.onclick = () => selectProvince(p.name);
         chip.innerHTML = `
           <span class="p-name">${p.name}</span>
-          <span class="p-rate">${p.realization}</span>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 4px; margin-top: 2px;">
+            <span class="p-rate">${p.schools} Sekolah</span>
+            <span style="font-size: 11px; color: var(--color-text-muted); font-weight: 600;">${p.realization}</span>
+          </div>
         `;
         chipsContainer.appendChild(chip);
 
@@ -649,7 +666,8 @@
 
       const exploreBtn = document.getElementById('btnExploreProvince');
       if (exploreBtn) {
-        exploreBtn.href = `province-detail.html?name=${encodeURIComponent(data.name)}`;
+        const codeParam = data.rawCode || data.code.replace('PRV-', '');
+        exploreBtn.href = `province-detail.html?code=${encodeURIComponent(codeParam)}&name=${encodeURIComponent(data.name)}`;
         exploreBtn.innerHTML = `Lihat Detail ${data.name} &rarr;`;
       }
 

@@ -516,24 +516,24 @@ export async function getDashboardSummary(tahun: number = 2026): Promise<Dashboa
     };
   });
 
-  const { data: activeYears } = await supabase
+  const { data: allYears } = await supabase
     .from('tahun_anggaran')
     .select('*')
-    .neq('status', 'DRAFT')
     .order('tahun', { ascending: true });
   
   const tren_tahunan = await Promise.all(
-    (activeYears || []).map(async (y) => {
+    (allYears || []).map(async (y) => {
       const { data: provs } = await supabase
         .from('alokasi_provinsi')
         .select('nominal_alokasi, realisasi_total')
         .eq('tahun_anggaran_id', y.id);
       
       const real = provs?.reduce((sum, p) => sum + Number(p.realisasi_total || 0), 0) || 0;
+      const isDraftOrFuture = y.status === 'DRAFT' || Number(y.tahun) > 2026;
       return {
-        tahun: y.tahun,
+        tahun: Number(y.tahun),
         nominal: Number(y.total_anggaran),
-        realisasi: real > 0 ? real : Math.round(Number(y.total_anggaran) * 0.7),
+        realisasi: isDraftOrFuture ? real : (real > 0 ? real : Math.round(Number(y.total_anggaran) * 0.7)),
       };
     })
   );

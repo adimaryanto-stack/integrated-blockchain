@@ -109,6 +109,15 @@ export default function DashboardPage() {
       }));
   }, [allApbd]);
 
+  const trendYearsTitle = useMemo(() => {
+    if (!trendData || trendData.length === 0) return 'Proporsi APBD Pendidikan Lampung';
+    const years = trendData.map((d) => Number(d.tahun)).filter((y) => !isNaN(y));
+    const minYear = Math.min(...years);
+    const maxYear = Math.max(...years);
+    if (minYear === maxYear) return `Proporsi APBD Pendidikan Lampung (${minYear})`;
+    return `Proporsi APBD Pendidikan Lampung (${minYear}–${maxYear})`;
+  }, [trendData]);
+
   return (
     <div className="min-h-screen pb-12">
       <Header
@@ -343,7 +352,7 @@ export default function DashboardPage() {
           <div className="glass-card p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-text-primary">
-                Proporsi APBD Pendidikan Lampung ({activeTahun})
+                {trendYearsTitle}
               </h3>
               <span className="text-xs text-text-muted font-mono">Triliun Rp</span>
             </div>
@@ -375,9 +384,9 @@ export default function DashboardPage() {
                   formatter={(value: any) => [`${Number(value).toFixed(2)} T`, '']}
                 />
                 <Legend wrapperStyle={{ fontSize: 11, color: '#64748b' }} />
-                <Area type="monotone" dataKey="TotalAPBD" name="Total APBD" stroke="#6366f1" fill="url(#gradTotal)" strokeWidth={2} />
-                <Area type="monotone" dataKey="AlokasiPendidikan" name="Alokasi Pendidikan" stroke="#10b981" fill="url(#gradAlokasi)" strokeWidth={2} />
-                <Area type="monotone" dataKey="Wajib20" name="Batas Wajib 20%" stroke="#f59e0b" strokeDasharray="4 4" fill="none" strokeWidth={2} />
+                <Area type="monotone" dataKey="TotalAPBD" name="Total APBD" stroke="#6366f1" fill="url(#gradTotal)" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                <Area type="monotone" dataKey="AlokasiPendidikan" name="Alokasi Pendidikan" stroke="#10b981" fill="url(#gradAlokasi)" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                <Area type="monotone" dataKey="Wajib20" name="Batas Wajib 20%" stroke="#f59e0b" strokeDasharray="4 4" fill="none" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>

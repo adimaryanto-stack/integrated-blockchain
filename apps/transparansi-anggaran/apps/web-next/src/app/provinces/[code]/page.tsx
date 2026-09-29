@@ -138,6 +138,10 @@ export default function ProvinceDetailPage() {
                 const { data: provById } = await supabase.from('provinces').select('*').eq('id', code).maybeSingle();
                 prov = provById;
             }
+            if (!prov && /^\d+$/.test(code)) {
+                const { data: provByPId } = await supabase.from('provinces').select('*').eq('id', `p-${code}`).maybeSingle();
+                prov = provByPId;
+            }
             if (!prov) { setLoading(false); return; }
             setProvince(prov);
 
