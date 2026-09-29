@@ -10,7 +10,7 @@
 
 Dashboard Auditor dirancang khusus untuk Badan Pemeriksa Keuangan (BPK) dan Inspektorat Jenderal Kementerian guna melakukan pengawasan, audit kepatuhan SPJ, deteksi anomali harga/pajak berbasis AI, serta verifikasi aliran dana pendidikan dari tingkat pusat hingga ke 38 provinsi dan satuan pendidikan.
 
-Aplikasi ini berjalan pada **Port 2023** dan terhubung 100% secara langsung ke database lokal **PostgreSQL 16 (Port 2025)** melalui **Proxy API Server (Port 2026)**.
+Aplikasi ini berjalan pada **Port 2023** dan terhubung 100% secara langsung ke database lokal **PostgreSQL 16 (Port 2027)** melalui **Proxy API Server (Port 2028)**.
 
 ---
 

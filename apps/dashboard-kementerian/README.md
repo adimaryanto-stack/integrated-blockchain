@@ -10,7 +10,7 @@
 
 Dashboard Kementerian Pendidikan (Kemendikbudristek & Kemenkeu) merupakan pusat kendali penetapan pagu APBN Pendidikan Nasional (Rp 665,02 Triliun), distribusi transfer dana ke 38 Provinsi, 514 Kabupaten/Kota, dan pemantauan penyerapan anggaran pada 367.865 satuan pendidikan di seluruh Indonesia.
 
-Aplikasi ini berjalan pada **Port 2021** dan terhubung 100% secara langsung ke database lokal **PostgreSQL 16 (Port 2025)** melalui **Proxy API Server (Port 2026)**.
+Aplikasi ini berjalan pada **Port 2021** dan terhubung 100% secara langsung ke database lokal **PostgreSQL 16 (Port 2027)** melalui **Proxy API Server (Port 2028)**.
 
 ---
 

@@ -68,6 +68,12 @@ Modul ini adalah dashboard ke-6 dari platform `integrated-blockchain` yang berja
     - Manajemen akun administrator dan konfigurasi batas cakupan (*scope type* & *scope ID*).
     - Penjelasan visual arsitektur penegakan Scoped RBAC.
 
+11. **Pengaturan Asisten AI Aksara (`/ai-settings`):**
+    - Konfigurasi integrasi multi-provider AI (Google Gemini, OpenAI, DeepSeek).
+    - Fitur uji koneksi API langsung (*Live Test Connection*) dengan deteksi model otomatis (*auto-fallback* model).
+    - Pengaturan *system prompt*, temperatur, dan batas output token.
+    - Penyimpanan konfigurasi terpusat pada tabel `system_settings` PostgreSQL untuk melayani chatbot publik interaktif Aksara (Port 2019).
+
 ---
 
 ## Cara Menjalankan Secara Lokal

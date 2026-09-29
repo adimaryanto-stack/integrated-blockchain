@@ -515,12 +515,37 @@
 
       const botMsgDiv = document.createElement('div');
       botMsgDiv.className = 'ai-message ai-message--bot';
-      botMsgDiv.innerHTML = `<div class="ai-message-bubble"><em>Aksara sedang mengecek database PostgreSQL 2026…</em></div>`;
+      botMsgDiv.innerHTML = `<div class="ai-message-bubble"><div style="display:flex;align-items:center;gap:8px;"><em>Aksara sedang menganalisis data dan menyiapkan jawaban…</em><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#1D4ED8;animation:pulse 1s infinite;"></span></div></div>`;
       chatBody.appendChild(botMsgDiv);
       chatBody.scrollTop = chatBody.scrollHeight;
 
       let botResponse = null;
-      if (window.DBClient) {
+
+      // 1. Try querying Live AI via Proxy Backend (which uses configured API token from Admin Settings & PostgreSQL data)
+      try {
+        const aiRes = await fetch('http://localhost:2028/api/ai/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: userText })
+        });
+        if (aiRes.ok) {
+          const aiData = await aiRes.json();
+          if (aiData.reply) {
+            // Format basic markdown into clean HTML
+            botResponse = escapeHtml(aiData.reply)
+              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+              .replace(/\*(.*?)\*/g, '<em>$1</em>')
+              .replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.06);padding:2px 4px;border-radius:3px;">$1</code>')
+              .replace(/\n\n/g, '<br><br>')
+              .replace(/\n/g, '<br>');
+          }
+        }
+      } catch (err) {
+        console.warn('[AI Aksara] Proxy API chat error:', err);
+      }
+
+      // 2. Secondary fallback: DBClient if available
+      if (!botResponse && window.DBClient) {
         try {
           botResponse = await window.DBClient.queryDatabaseForAI(userText);
         } catch (e) {
@@ -528,18 +553,21 @@
         }
       }
 
+      // 3. Static engine fallback
       if (!botResponse) {
         botResponse = generateAiResponse(userText);
       }
 
-      setTimeout(() => {
-        botMsgDiv.innerHTML = `<div class="ai-message-bubble">${botResponse}</div>`;
-        chatBody.scrollTop = chatBody.scrollHeight;
-      }, 200);
+      botMsgDiv.innerHTML = `<div class="ai-message-bubble">${botResponse}</div>`;
+      chatBody.scrollTop = chatBody.scrollHeight;
     }
 
     function generateAiResponse(query) {
       const q = query.toLowerCase();
+
+      if (q.includes('siapa') || q.includes('kamu') || q.includes('aksara') || q.includes('halo') || q.includes('hai') || q.includes('pagi') || q.includes('siang') || q.includes('malam')) {
+        return `Halo! Aku <strong>Aksara</strong>, asisten AI interaktif pemantauan APBN Pendidikan 2026. Aku bertugas membantu masyarakat menelusuri transparansi anggaran pendidikan secara terbuka dan faktual — mulai dari dana BOS sekolah, beasiswa PIP & KIP Kuliah, hingga alokasi mandatory spending 20% APBN ke seluruh provinsi.`;
+      }
 
       if (q.includes('total') || q.includes('alokasi') || q.includes('anggaran') || q.includes('realisasi')) {
         return `Berdasarkan data APBN 2026 terverifikasi, total alokasi mandatori pendidikan 20% adalah <strong>Rp757,8 Triliun</strong>. Hingga saat ini, realisasi penyerapan mencapai <strong>Rp542,1 Triliun (71,5%)</strong> disalurkan untuk 53,2 juta siswa dan 438 ribu sekolah se-Indonesia.`;

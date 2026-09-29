@@ -11,6 +11,7 @@ import {
   MapPinned,
   KeyRound,
   ShieldCheck,
+  Bot,
 } from "lucide-react";
 import { useAdminStore } from "@/store/adminStore";
 
@@ -31,6 +32,7 @@ export function Sidebar() {
     { to: "/broadcast", label: "Broadcast", icon: Megaphone, module: "Broadcast" },
     { to: "/wilayah", label: "Master Data Wilayah", icon: MapPinned, module: "Master Data Wilayah" },
     { to: "/access-control", label: "Access Control Matrix", icon: KeyRound, module: "Access Control Matrix" },
+    { to: "/ai-settings", label: "Pengaturan AI Aksara", icon: Bot, module: "Pengaturan AI Aksara" },
   ];
 
   // Filter menu items by RBAC — Beranda always visible, others check canAccess("module", "view")

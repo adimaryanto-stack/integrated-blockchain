@@ -10,7 +10,7 @@
 
 Dashboard Bank Penyalur merupakan sistem perbankan terintegrasi yang digunakan oleh Bank Mitra Penyalur Dana Pendidikan (seperti BRI, BNI, Mandiri) untuk memantau pagu dana pusat, mengelola rekening penampung (Escrow), mengeksekusi pencairan bertahap (triwulan Q1-Q4), serta melakukan rekonsiliasi transfer otomatis langsung ke rekening satuan pendidikan di seluruh Indonesia.
 
-Aplikasi ini berjalan pada **Port 2022** dan terhubung 100% secara langsung ke database lokal **PostgreSQL 16 (Port 2025)** melalui **Proxy API Server (Port 2026)**.
+Aplikasi ini berjalan pada **Port 2022** dan terhubung 100% secara langsung ke database lokal **PostgreSQL 16 (Port 2027)** melalui **Proxy API Server (Port 2028)**.
 
 ---
 

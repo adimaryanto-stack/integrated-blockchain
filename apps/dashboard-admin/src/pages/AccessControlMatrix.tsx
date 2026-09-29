@@ -27,6 +27,7 @@ const modulesList = [
   "Broadcast",
   "Master Data Wilayah",
   "Access Control Matrix",
+  "Pengaturan AI Aksara",
 ];
 
 const roleOrder: AdminRole[] = [

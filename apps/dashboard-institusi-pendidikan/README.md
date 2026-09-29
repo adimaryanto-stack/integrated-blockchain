@@ -10,7 +10,7 @@
 
 Dashboard Institusi Pendidikan merupakan platform operasional satuan pendidikan (sekolah/madrasah/kampus) dalam mengelola pagu anggaran, merencanakan belanja (RAB), memantau transaksi mutasi kas bank, serta mencocokkan kuitansi pengeluaran dengan bantuan OCR Tesseract.
 
-Aplikasi ini berjalan pada **Port 2024** dan terhubung 100% secara langsung ke database lokal **PostgreSQL 16 (Port 2025)** melalui **Proxy API Server (Port 2026)**.
+Aplikasi ini berjalan pada **Port 2024** dan terhubung 100% secara langsung ke database lokal **PostgreSQL 16 (Port 2027)** melalui **Proxy API Server (Port 2028)**.
 
 ---
 

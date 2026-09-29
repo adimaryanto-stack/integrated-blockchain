@@ -9,6 +9,7 @@ import { BankMutations } from "@/pages/BankMutations";
 import { Broadcast } from "@/pages/Broadcast";
 import { MasterDataWilayah } from "@/pages/MasterDataWilayah";
 import { AccessControlMatrix } from "@/pages/AccessControlMatrix";
+import { AiSettings } from "@/pages/AiSettings";
 
 export const router = createBrowserRouter([
   { path: "/login", element: <Login /> },
@@ -17,6 +18,7 @@ export const router = createBrowserRouter([
   { path: "/audit-log", element: <AuditLog /> },
   { path: "/data-sources", element: <DataSourceMonitor /> },
   { path: "/ai-faa", element: <AiFaaConsole /> },
+  { path: "/ai-settings", element: <AiSettings /> },
   { path: "/bank-mutations", element: <BankMutations /> },
   { path: "/broadcast", element: <Broadcast /> },
   { path: "/wilayah", element: <MasterDataWilayah /> },

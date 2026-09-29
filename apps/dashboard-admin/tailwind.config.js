@@ -14,6 +14,11 @@ export default {
           light: "#28406E",
           dark: "#101A30",
         },
+        primary: {
+          DEFAULT: "#1B2A4A",
+          light: "#28406E",
+          dark: "#101A30",
+        },
         gold: {
           DEFAULT: "#C9973E",
           light: "#E3B968",

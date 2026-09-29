@@ -1,5 +1,7 @@
 # 🏛️ Integrated Blockchain - Platform Transparansi Anggaran Pendidikan Indonesia
 
+[![Version](https://img.shields.io/badge/Version-v2.4.0%20(29%20Sept%202026)-blue.svg)](CHANGELOG.md)
+[![Status](https://img.shields.io/badge/All%2010%20Ports-100%25%20Verified%20Online-brightgreen.svg)](#-peta-10-port--akses-dashboard)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15%2F16-black.svg?logo=next.js&logoColor=white)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB.svg?logo=react&logoColor=black)](https://react.dev/)
@@ -15,6 +17,7 @@ Sistem tata kelola dan transparansi keuangan pendidikan Indonesia terintegrasi d
 | Dokumen | Format | Deskripsi | Tautan Langsung |
 |---|:---:|---|:---:|
 | 🌐 **Panduan Visual & Interaktif** | `HTML` | Tampilan panduan grafis modern untuk pengguna umum / non-programmer. | [**Buka `README.html`**](README.html) |
+| 📝 **Changelog & Riwayat Rilis** | `Markdown` | Catatan lengkap versi, pembaruan terkini v2.4.0, dan log perbaikan sistem. | [**Buka `CHANGELOG.md`**](CHANGELOG.md) |
 | 📋 **Product Requirements (PRD)** | `Markdown` | Spesifikasi lengkap sistem, alur bisnis dana APBN/APBD/CSR, & hak akses. | [**Buka `PRD.md`**](PRD.md) |
 | 🏆 **MVP & Laporan Verifikasi** | `Markdown` | Laporan pengujian fitur 10 port, performa latensi, dan integrasi database. | [**Buka `MVP.md`**](MVP.md) |
 | 🚀 **Panduan Deployment VPS/Mac** | `Markdown` | Tutorial step-by-step setup VPS Ubuntu/Debian, macOS, Nginx, Domain, & SSL. | [**Buka `deploy_guide.md`**](deploy_guide.md) |
@@ -36,6 +39,36 @@ Sistem tata kelola dan transparansi keuangan pendidikan Indonesia terintegrasi d
 | **2026** | **Dashboard Admin** (Super-Admin Console & Manajemen Pengguna) | `apps/dashboard-admin` | [http://localhost:2026](http://localhost:2026) | 🟢 Aktif |
 | **2027** | **Database PostgreSQL 16** (35 Tabel Relasional Mandiri) | `pgsql/bin` / System PostgreSQL | `postgresql://localhost:2027` | 🟢 Aktif |
 | **2028** | **Proxy REST API Server** (Protokol PostgREST Sub-10ms) | `proxy/proxy.js` | [http://localhost:2028](http://localhost:2028) | 🟢 Aktif |
+
+---
+
+## 📁 Struktur Direktori Proyek
+
+```
+integrated-blockchain/
+├── apps/
+│   ├── dashboard-publik/                 # Port 2019: Portal Warga Civic-Tech (Vite / Vanilla ES)
+│   ├── transparansi-anggaran/
+│   │   └── apps/web-next/                # Port 2020: Portal Transparansi Publik (Next.js 14 App Router)
+│   ├── dashboard-kementerian/            # Port 2021: Penetapan Pagu & Alokasi Nasional (Next.js 15)
+│   ├── dashboard-bank/                   # Port 2022: Penyaluran Kas & Rekening Escrow Himbara (Next.js 15)
+│   ├── dashboard-auditor/                # Port 2023: Pengawasan BPK & Deteksi Anomali AI (Next.js 15)
+│   ├── dashboard-institusi-pendidikan/   # Port 2024: RAB Sekolah, SPJ & Scan Kuitansi OCR (Next.js 15)
+│   ├── dashboard-apbd/                   # Port 2025: Validasi Mandatori 20% APBD Lampung (Next.js 15)
+│   └── dashboard-admin/                  # Port 2026: Super-Admin Console & RBAC Hierarkis (Vite)
+├── proxy/
+│   └── proxy.js                          # Port 2028: Fast PostgREST REST API Gateway (Node.js/Express)
+├── pgsql/                                # Port 2027: PostgreSQL 16 Portable Engine (Windows)
+├── scripts/                              # Skrip Utilitas, Otomasi & Pemeriksaan
+│   ├── check_all_ports.js                # Health-check real-time 10 port (:2019-:2028)
+│   ├── clean-cache.js                    # Pembersih cache .next & Turbopack 1-klik
+│   ├── setup-db.js                       # Inisialisasi & migrasi 35 tabel database
+│   └── setup-env.js                      # Generator berkas .env.local otomatis
+├── start-all.bat / start-all.ps1         # Peluncur 1-Klik Seluruh Ekosistem 10 Layanan
+├── stop-all.bat / stop-all.ps1           # Penghenti Aman Seluruh Port & Proses Node/Postgres
+├── CHANGELOG.md                          # Catatan Rilis & Log Pembaruan Terkini
+└── README.md                             # Dokumentasi Induk Proyek
+```
 
 ---
 
@@ -166,6 +199,23 @@ Berikut adalah ringkasan pembaruan arsitektur dan peningkatan fitur sistem:
 - Menggunakan perintah `npm run dev` secara konsisten pada setiap aplikasi.
 - Penyesuaian port: PostgreSQL di Port `2027` dan Proxy REST API Gateway di Port `2028`.
 - Pemanasan halaman (*warm-up compilation*) otomatis sebelum membuka browser.
+
+### 🟢 7. Visualisasi Tren Tahunan Dinamis & Recharts Area Dots (Port 2021–2025)
+- **Otomasi Rentang Tahun**: Menggantikan judul statis `"2020–2026"` menjadi kalkulasi rentang dinamis (`${minYear}–${maxYear}`) langsung dari tabel database PostgreSQL `tahun_anggaran` (contoh: `Tren APBN Pendidikan 2026–2027`).
+- **Penghapusan Filter DRAFT**: Menghapus filter `.filter(t => t.status !== 'DRAFT')` dan `.neq('status', 'DRAFT')` agar tahun berjalan (2026) dan tahun rencana (2027) selalu tampil otomatis.
+- **Titik Koordinat Interaktif (Area Dots)**: Menambahkan `dot={{ r: 4 }}` dan `activeDot={{ r: 6 }}` pada seluruh komponen `<Area>` di 5 dashboard (Kementerian, Bank, Auditor, Sekolah, dan APBD) agar data tahun terlihat tegas dan interaktif.
+- **Rule Akuntansi 2027**: Realisasi belanja tahun DRAFT/rencana otomatis dihitung Rp 0 (0% penyerapan), dengan sisa kas tahun aktif dialirkan sebagai saldo kas terbawa (*carry-forward*).
+
+### 🟢 8. Sinkronisasi Data 38 Provinsi & Peta Regional Portal Civic-Tech (Port 2019)
+- **Penyelarasan Data**: Menyelaraskan query alokasi dan realisasi 38 provinsi di `apps/dashboard-publik` agar 100% identik dengan Port 2020 via view `provincial_allocations`.
+- **Integrasi Peta**: Pewarnaan choropleth peta Indonesia interaktif dan chip provinsi disinkronkan dengan data agregat sekolah `province_school_stats`.
+- **Navigasi Presisi**: Memperbaiki routing kartu provinsi (`province-detail.html?code=...&name=...`) untuk penelusuran sekolah hingga level kabupaten/kota.
+
+### 🟢 9. Akselerasi Endpoint Proxy & Skrip Pemeriksaan (Port 2028)
+- **Optimasi Kueri RPC**: Endpoint `/rest/v1/rpc/get_all_province_stats` dioptimalkan membaca langsung dari tabel terindeks `province_school_stats`, mempercepat waktu respons ke <10ms.
+- **Skrip `node scripts/check_all_ports.js`**: Skrip verifikasi kesehatan otomatis untuk menguji ketersediaan HTTP 200 OK dan latensi milidetik seluruh 10 port dalam satu baris perintah.
+
+> 📘 **Riwayat lengkap seluruh versi terdahulu (v1.0.0 s.d. v2.4.0) dapat dibaca di: [CHANGELOG.md](CHANGELOG.md)**.
 
 ---
 

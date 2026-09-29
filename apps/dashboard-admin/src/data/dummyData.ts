@@ -182,6 +182,7 @@ export const initialRolePermissions: RolePermissions[] = [
       "Broadcast": { canView: true, canCreate: true, canEdit: true, canDelete: true },
       "Master Data Wilayah": { canView: true, canCreate: true, canEdit: true, canDelete: true },
       "Access Control Matrix": { canView: true, canCreate: true, canEdit: true, canDelete: true },
+      "Pengaturan AI Aksara": { canView: true, canCreate: true, canEdit: true, canDelete: true },
     },
   },
   {
@@ -197,6 +198,7 @@ export const initialRolePermissions: RolePermissions[] = [
       "Broadcast": { canView: true, canCreate: true, canEdit: false, canDelete: false },
       "Master Data Wilayah": { canView: true, canCreate: false, canEdit: false, canDelete: false },
       "Access Control Matrix": { canView: true, canCreate: false, canEdit: false, canDelete: false },
+      "Pengaturan AI Aksara": { canView: true, canCreate: true, canEdit: true, canDelete: false },
     },
   },
   {
@@ -212,6 +214,7 @@ export const initialRolePermissions: RolePermissions[] = [
       "Broadcast": { canView: true, canCreate: true, canEdit: false, canDelete: false },
       "Master Data Wilayah": { canView: true, canCreate: true, canEdit: true, canDelete: false },
       "Access Control Matrix": { canView: false, canCreate: false, canEdit: false, canDelete: false },
+      "Pengaturan AI Aksara": { canView: true, canCreate: false, canEdit: false, canDelete: false },
     },
   },
   {
@@ -227,6 +230,7 @@ export const initialRolePermissions: RolePermissions[] = [
       "Broadcast": { canView: true, canCreate: true, canEdit: false, canDelete: false },
       "Master Data Wilayah": { canView: true, canCreate: true, canEdit: true, canDelete: false },
       "Access Control Matrix": { canView: false, canCreate: false, canEdit: false, canDelete: false },
+      "Pengaturan AI Aksara": { canView: false, canCreate: false, canEdit: false, canDelete: false },
     },
   },
   {
@@ -242,6 +246,7 @@ export const initialRolePermissions: RolePermissions[] = [
       "Broadcast": { canView: false, canCreate: false, canEdit: false, canDelete: false },
       "Master Data Wilayah": { canView: true, canCreate: false, canEdit: false, canDelete: false },
       "Access Control Matrix": { canView: false, canCreate: false, canEdit: false, canDelete: false },
+      "Pengaturan AI Aksara": { canView: false, canCreate: false, canEdit: false, canDelete: false },
     },
   },
 ];

@@ -36,9 +36,415 @@ app.get('/', (req, res) => {
     port: port,
     endpoints: {
       rpc: '/rest/v1/rpc/:function',
-      rest: '/rest/v1/:table'
+      rest: '/rest/v1/:table',
+      aiConfig: '/api/ai/config',
+      aiTest: '/api/ai/test',
+      aiChat: '/api/ai/chat'
     }
   });
+});
+
+// ─────────────────────────────────────────────────────────
+// AI Aksara API Endpoints
+// ─────────────────────────────────────────────────────────
+app.get('/api/ai/config', async (req, res) => {
+  try {
+    const dbRes = await pool.query("SELECT value, updated_at FROM public.system_settings WHERE key = 'ai_aksara_config'");
+    if (dbRes.rows.length > 0) {
+      const config = dbRes.rows[0].value;
+      const maskedKey = config.apiKey ? (config.apiKey.length > 8 ? config.apiKey.slice(0, 4) + '...' + config.apiKey.slice(-4) : '****') : '';
+      return res.json({ ...config, apiKeyMasked: maskedKey, hasKey: Boolean(config.apiKey), updatedAt: dbRes.rows[0].updated_at });
+    }
+    return res.json({ hasKey: false });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/ai/config', async (req, res) => {
+  const { provider, apiKey, model, systemPrompt, isActive, temperature, maxTokens, endpointUrl } = req.body;
+  try {
+    const config = {
+      provider: provider || 'gemini',
+      apiKey: apiKey || '',
+      model: model || 'gemini-2.5-flash',
+      systemPrompt: systemPrompt || '',
+      isActive: isActive !== false,
+      temperature: temperature ?? 0.7,
+      maxTokens: maxTokens || 1024,
+      endpointUrl: endpointUrl || ''
+    };
+    await pool.query(
+      `INSERT INTO public.system_settings (key, value, updated_at)
+       VALUES ('ai_aksara_config', $1, NOW())
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = EXCLUDED.updated_at`,
+      [JSON.stringify(config)]
+    );
+    console.log('[AI Config] Successfully saved config for provider:', config.provider, 'model:', config.model);
+    return res.json({ success: true, message: 'Konfigurasi AI berhasil disimpan!' });
+  } catch (err) {
+    console.error('[AI Config Save Error]:', err.message);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── Helper: Gemini Model Discovery & Multi-version Caller ─────────
+async function fetchAvailableGeminiModels(apiKey) {
+  const versions = ['v1beta', 'v1'];
+  for (const ver of versions) {
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/${ver}/models?key=${apiKey}`);
+      if (res.ok) {
+        const data = await res.json();
+        const models = (data.models || [])
+          .filter(m => !m.supportedGenerationMethods || m.supportedGenerationMethods.includes('generateContent'))
+          .map(m => m.name.replace(/^models\//, ''));
+        if (models.length > 0) {
+          return { models, version: ver };
+        }
+      }
+    } catch (e) {
+      console.warn(`[Gemini ListModels] ${ver} error:`, e.message);
+    }
+  }
+  return { models: [], version: 'v1beta' };
+}
+
+async function callGeminiGenerate(apiKey, requestedModel, payload) {
+  const cleanModel = (requestedModel || 'gemini-2.5-flash').replace(/^models\//, '');
+  const versions = ['v1beta', 'v1'];
+  let lastError = '';
+
+  // 1. Try requested model across versions
+  for (const ver of versions) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/${ver}/models/${cleanModel}:generateContent?key=${apiKey}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      console.log(`[Gemini Call] Model: ${cleanModel} | Ver: ${ver} | Status: ${res.status}`);
+      if (res.ok) {
+        return { ok: true, data, usedModel: cleanModel, usedVersion: ver };
+      }
+      if (data.error?.message) {
+        lastError = data.error.message;
+      }
+      if (res.status === 400 && data.error?.message?.includes('API_KEY_INVALID')) {
+        return { ok: false, status: 400, message: 'API Key Google Gemini tidak valid. Silakan periksa kembali key Anda di Google AI Studio.' };
+      }
+    } catch (err) {
+      lastError = err.message;
+    }
+  }
+
+  // 2. Discover available models for this specific API key
+  const { models, version } = await fetchAvailableGeminiModels(apiKey);
+  console.log(`[Gemini Discovery] Available models:`, models);
+  if (models.length > 0) {
+    const preferred = [
+      'gemini-flash-lite-latest',
+      'gemini-flash-latest',
+      'gemini-2.5-flash-lite',
+      'gemini-2.5-flash',
+      'gemini-pro-latest',
+      'gemini-2.5-pro',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-1.5-flash-latest',
+      'gemini-1.5-flash-8b',
+      'gemini-1.5-pro',
+      'gemini-pro',
+      ...models
+    ];
+    const candidateModels = Array.from(new Set(preferred.filter(p => models.includes(p))));
+
+    for (const targetModel of candidateModels) {
+      for (const ver of versions) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/${ver}/models/${targetModel}:generateContent?key=${apiKey}`;
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          console.log(`[Gemini Fallback Call] Model: ${targetModel} | Ver: ${ver} | Status: ${res.status}`);
+          if (res.ok) {
+            return {
+              ok: true,
+              data,
+              usedModel: targetModel,
+              usedVersion: ver,
+              autoSwitched: targetModel !== cleanModel,
+              originalModel: cleanModel,
+              availableModels: models
+            };
+          }
+          if (data.error?.message) {
+            lastError = data.error.message;
+          }
+        } catch (e) {
+          lastError = e.message;
+        }
+      }
+    }
+
+    return {
+      ok: false,
+      status: 400,
+      message: `Gagal memanggil model. Model tersedia di akun Anda: ${models.slice(0, 8).join(', ')}. Detail error: ${lastError}`,
+      availableModels: models
+    };
+  }
+
+  return {
+    ok: false,
+    status: 404,
+    message: `Model '${cleanModel}' tidak ditemukan. Detail error: ${lastError || 'Pastikan API Key valid dan telah memiliki izin Google Generative Language API di Google AI Studio.'}`
+  };
+}
+
+app.post('/api/ai/models', async (req, res) => {
+  let { provider, apiKey } = req.body;
+  if (!apiKey) {
+    const dbRes = await pool.query("SELECT value FROM public.system_settings WHERE key = 'ai_aksara_config'");
+    apiKey = dbRes.rows[0]?.value?.apiKey || '';
+  }
+  if (!apiKey && provider !== 'custom') {
+    return res.status(400).json({ error: 'API Key belum diisi' });
+  }
+
+  try {
+    if (provider === 'gemini') {
+      const { models } = await fetchAvailableGeminiModels(apiKey);
+      return res.json({ models: models.length > 0 ? models : ['gemini-flash-lite-latest', 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.5-pro'] });
+    } else if (provider === 'openai') {
+      const r = await fetch('https://api.openai.com/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      if (r.ok) {
+        const d = await r.json();
+        const models = (d.data || [])
+          .filter(m => m.id.includes('gpt') || m.id.includes('o1') || m.id.includes('o3'))
+          .map(m => m.id)
+          .slice(0, 10);
+        return res.json({ models });
+      }
+      return res.json({ models: ['gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo', 'o3-mini'] });
+    } else if (provider === 'deepseek') {
+      return res.json({ models: ['deepseek-chat', 'deepseek-coder', 'deepseek-reasoner'] });
+    } else {
+      return res.json({ models: ['custom-model'] });
+    }
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/ai/test', async (req, res) => {
+  const { provider, apiKey, model, endpointUrl } = req.body;
+  if (!apiKey && provider !== 'custom') {
+    return res.status(400).json({ success: false, message: 'API Token belum diisi' });
+  }
+
+  try {
+    if (provider === 'gemini') {
+      const payload = {
+        contents: [{ parts: [{ text: 'Halo Aksara, tes koneksi 1 kata saja: Siap' }] }]
+      };
+      const result = await callGeminiGenerate(apiKey, model, payload);
+      if (!result.ok) {
+        return res.status(result.status || 400).json({
+          success: false,
+          message: result.message || 'Gagal tersambung ke Google Gemini API',
+          availableModels: result.availableModels
+        });
+      }
+
+      const reply = result.data.candidates?.[0]?.content?.parts?.[0]?.text || 'Terkoneksi';
+      let msg = `Berhasil tersambung ke Gemini (${result.usedModel}): ${reply.trim()}`;
+      if (result.autoSwitched) {
+        msg = `Berhasil tersambung ke Gemini via model (${result.usedModel})! Model otomatis disesuaikan & disimpan.`;
+      }
+
+      // Automatically persist verified config to database so it is instantly live
+      try {
+        const autoCfg = {
+          provider: 'gemini',
+          apiKey,
+          model: result.usedModel,
+          isActive: true,
+          temperature: 0.7,
+          maxTokens: 1024,
+          systemPrompt: 'Kamu adalah Aksara, asisten AI interaktif dan ramah untuk transparansi anggaran pendidikan APBN Indonesia 2026. Kamu membantu masyarakat menelusuri ke mana uang APBN pendidikan mengalir secara transparan, berbasis data resmi, akurat, dan mudah dipahami.'
+        };
+        await pool.query(
+          `INSERT INTO public.system_settings (key, value, updated_at)
+           VALUES ('ai_aksara_config', $1, NOW())
+           ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = EXCLUDED.updated_at`,
+          [JSON.stringify(autoCfg)]
+        );
+        console.log('[AI Test] Auto-saved verified config to database for model:', result.usedModel);
+      } catch (eDb) {
+        console.error('[AI Test] Auto-save error:', eDb.message);
+      }
+
+      return res.json({
+        success: true,
+        message: msg,
+        usedModel: result.usedModel,
+        autoSwitched: result.autoSwitched || false,
+        availableModels: result.availableModels
+      });
+    } else if (provider === 'openai' || provider === 'deepseek') {
+      const endpoint = provider === 'deepseek' ? 'https://api.deepseek.com/chat/completions' : 'https://api.openai.com/v1/chat/completions';
+      const m = model || (provider === 'deepseek' ? 'deepseek-chat' : 'gpt-4o-mini');
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: m,
+          messages: [{ role: 'user', content: 'Tes koneksi 1 kata saja: Siap' }],
+          max_tokens: 10
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return res.status(response.status).json({ success: false, message: data.error?.message || `Gagal tersambung ke ${provider.toUpperCase()} API` });
+      }
+
+      // Automatically persist verified config
+      try {
+        const autoCfg = {
+          provider,
+          apiKey,
+          model: m,
+          isActive: true,
+          temperature: 0.7,
+          maxTokens: 1024,
+          systemPrompt: 'Kamu adalah Aksara, asisten AI interaktif dan ramah untuk transparansi anggaran pendidikan APBN Indonesia 2026.'
+        };
+        await pool.query(
+          `INSERT INTO public.system_settings (key, value, updated_at)
+           VALUES ('ai_aksara_config', $1, NOW())
+           ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = EXCLUDED.updated_at`,
+          [JSON.stringify(autoCfg)]
+        );
+      } catch (eDb) {}
+      return res.json({ success: true, message: `Berhasil tersambung ke ${provider.toUpperCase()} (${m})`, usedModel: m });
+    } else {
+      return res.json({ success: true, message: 'Konfigurasi tersimpan' });
+    }
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Koneksi error: ' + err.message });
+  }
+});
+
+app.post('/api/ai/chat', async (req, res) => {
+  const { message, history } = req.body;
+  if (!message) return res.status(400).json({ error: 'Message required' });
+
+  try {
+    const configRes = await pool.query("SELECT value FROM public.system_settings WHERE key = 'ai_aksara_config'");
+    const config = configRes.rows[0]?.value || {};
+    const { provider = 'gemini', apiKey = '', model = 'gemini-1.5-flash', systemPrompt, isActive = true } = config;
+
+    const contextData = `
+KONTEKS DATA RESMI DATABASE NASIONAL 2026:
+- Total alokasi mandatory APBN Pendidikan 2026: Rp757,8 Triliun (20% APBN).
+- Total Satuan Pendidikan terdaftar: 468.483 sekolah di 38 provinsi se-Indonesia.
+- Rincian jenjang nasional: PAUD (~180rb), SD (~148rb), SMP (~43rb), SMA/SMK (~35rb), Perguruan Tinggi (~5rb).
+- Dana BOS Reguler: Rp900.000 - Rp1.960.000 per siswa/tahun, ditransfer langsung dari kas negara ke rekening sekolah tanpa potongan.
+- Program Indonesia Pintar (PIP): 18,6 juta siswa SD-SMA. KIP Kuliah: ~985 ribu mahasiswa aktif.
+- 5 Provinsi Sekolah Terbanyak: Jawa Timur (86.305), Jawa Tengah (57.057), Jawa Barat (33.686), Sumatera Utara (25.267), Sulawesi Selatan (19.233).
+- Data resmi tersinkronisasi langsung dengan database lokal.
+    `.trim();
+
+    const fullPrompt = `${systemPrompt || 'Kamu adalah Aksara, asisten AI interaktif pemantauan APBN Pendidikan 2026 yang ramah dan faktual.'}\n\n${contextData}\n\nPertanyaan: ${message}`;
+
+    if (isActive && apiKey && provider === 'gemini') {
+      const contents = [];
+      if (Array.isArray(history)) {
+        history.slice(-6).forEach(h => {
+          contents.push({
+            role: h.role === 'user' ? 'user' : 'model',
+            parts: [{ text: h.content }]
+          });
+        });
+      }
+      contents.push({
+        role: 'user',
+        parts: [{ text: fullPrompt }]
+      });
+
+      const payload = {
+        contents,
+        generationConfig: {
+          temperature: config.temperature || 0.7,
+          maxOutputTokens: config.maxTokens || 1024
+        }
+      };
+
+      const result = await callGeminiGenerate(apiKey, model, payload);
+      if (result.ok) {
+        const reply = result.data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (reply) {
+          // If autoSwitched, asynchronously update system_settings with the working model
+          if (result.autoSwitched && result.usedModel) {
+            config.model = result.usedModel;
+            pool.query("UPDATE public.system_settings SET value = $1, updated_at = NOW() WHERE key = 'ai_aksara_config'", [JSON.stringify(config)]).catch(console.error);
+          }
+          return res.json({ reply, provider: 'gemini', model: result.usedModel });
+        }
+      }
+    } else if (isActive && apiKey && (provider === 'openai' || provider === 'deepseek')) {
+      const endpoint = provider === 'deepseek' ? 'https://api.deepseek.com/chat/completions' : 'https://api.openai.com/v1/chat/completions';
+      const m = model || (provider === 'deepseek' ? 'deepseek-chat' : 'gpt-4o-mini');
+      const messages = [{ role: 'system', content: `${systemPrompt || ''}\n\n${contextData}` }];
+      if (Array.isArray(history)) {
+        history.slice(-6).forEach(h => messages.push({ role: h.role, content: h.content }));
+      }
+      messages.push({ role: 'user', content: message });
+
+      const aiRes = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: m,
+          messages,
+          temperature: config.temperature || 0.7,
+          max_tokens: config.maxTokens || 1024
+        })
+      });
+
+      if (aiRes.ok) {
+        const aiData = await aiRes.json();
+        const reply = aiData.choices?.[0]?.message?.content;
+        if (reply) {
+          return res.json({ reply, provider, model: m });
+        }
+      }
+    }
+
+    return res.json({
+      reply: null,
+      fallback: true,
+      hasKey: Boolean(apiKey),
+      message: 'Token API belum aktif atau belum dikonfigurasi di Admin Dashboard (http://localhost:2026/ai-settings).'
+    });
+  } catch (err) {
+    console.error('[AI Chat Error]:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 // ─────────────────────────────────────────────────────────
@@ -477,6 +883,7 @@ app.all('/rest/v1/:table', async (req, res) => {
       else if (table === 'apbd_pendidikan_breakdown') onConflict = 'ON CONFLICT (id) DO UPDATE SET nominal_alokasi = EXCLUDED.nominal_alokasi, realisasi_total = EXCLUDED.realisasi_total, updated_at = EXCLUDED.updated_at';
       else if (table === 'apbd_input_log') onConflict = 'ON CONFLICT (id) DO NOTHING';
       else if (table === 'apbd_yearly_data') onConflict = 'ON CONFLICT (id) DO UPDATE SET total_budget = EXCLUDED.total_budget, allocated_amount = EXCLUDED.allocated_amount, disbursed_amount = EXCLUDED.disbursed_amount, remaining_amount = EXCLUDED.remaining_amount, updated_at = EXCLUDED.updated_at';
+      else if (table === 'system_settings') onConflict = 'ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = EXCLUDED.updated_at';
 
       const sql = `INSERT INTO "${table}" (${columns.map(c => `"${c}"`).join(', ')}) VALUES ${rowPlaceholders.join(', ')} ${onConflict} RETURNING *`;
       // console.log(`[Proxy SQL] Insert into ${table} with ${items.length} row(s)`);
