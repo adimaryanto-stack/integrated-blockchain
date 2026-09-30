@@ -1,12 +1,12 @@
 # 🏛️ Integrated Blockchain - Platform Transparansi Anggaran Pendidikan Indonesia
 
-[![Version](https://img.shields.io/badge/Version-v2.4.0%20(29%20Sept%202026)-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-v2.4.1%20(30%20Sept%202026)-blue.svg)](CHANGELOG.md)
 [![Status](https://img.shields.io/badge/All%2010%20Ports-100%25%20Verified%20Online-brightgreen.svg)](#-peta-10-port--akses-dashboard)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15%2F16-black.svg?logo=next.js&logoColor=white)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB.svg?logo=react&logoColor=black)](https://react.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4%2F4.0-38B2AC.svg?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Restricted%20(Private%20Use)-red.svg)](LICENSE)
 
 Sistem tata kelola dan transparansi keuangan pendidikan Indonesia terintegrasi dengan database lokal mandiri (*100% Single Source of Truth PostgreSQL*), mencakup **8 portal web aplikasi** untuk **PAUD, SD, SMP, SMA, dan Perguruan Tinggi** di 38 Provinsi dan 514 Kabupaten/Kota.
 
@@ -296,4 +296,13 @@ node scripts/export_and_compress_db.js
 
 ## 📄 Lisensi
 
-Proyek ini dilisensikan di bawah [MIT License](LICENSE).
+Proyek ini dilisensikan di bawah **[Restricted Private Use License](LICENSE)** (Hak Cipta Dilindungi).
+
+- **Izin yang Diberikan (Permissions)**:
+  - ✓ **Private use**: Diizinkan untuk penggunaan pribadi, inspeksi kode, pengujian lokal, evaluasi, penelitian akademis, dan edukasi non-komersial.
+- **Batasan & Larangan (Limitations & Restrictions)**:
+  - ✗ **Commercial use**: Dilarang keras menggunakan, memperjualbelikan, atau memonetisasi kode sumber ini untuk aktivitas komersial tanpa izin tertulis dari pemilik hak cipta.
+  - ✗ **Distribution**: Dilarang mendistribusikan ulang, mengunggah mirror publik, menyewakan, atau melisensikan ulang (*sublicense*) kepada pihak ketiga.
+  - ✗ **Modification for redistribution**: Dilarang merilis publik atau menerbitkan karya turunan/modifikasi.
+
+Rincian lengkap ketentuan lisensi dapat dibaca langsung pada berkas [LICENSE](LICENSE).

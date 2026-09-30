@@ -6,6 +6,17 @@ Format pencatatan berpedoman pada [Keep a Changelog](https://keepachangelog.com/
 
 ---
 
+## [2.4.1] - 2026-09-30
+
+### 🔒 Keamanan & Kebijakan Lisensi (Security & Licensing)
+- **Pembaruan Lisensi Menjadi Terbatas (Restricted Private Use Only)**:
+  - Mengubah lisensi proyek dari open source MIT menjadi **Restricted Private Use License**.
+  - **Permissions yang Diberikan**: Dibatasi hanya untuk **Private use** (penggunaan pribadi, evaluasi mandiri, inspeksi kode, pengujian lokal, dan riset non-komersial).
+  - **Limitations & Restrictions**: Dilarang keras untuk penggunaan komersial (*commercial use*), distribusi ulang (*distribution/mirroring*), publikasi karya turunan (*modification for redistribution*), serta sublisensi tanpa izin tertulis dari pemilik hak cipta (`adimaryanto`).
+  - Pembaruan berkas `LICENSE`, badge lisensi di `README.md`, dan seluruh dokumentasi pendukung.
+
+---
+
 ## [2.4.0] - 2026-09-29
 
 > **Pembaruan Terkini (Latest Update)**: Otomasi visualisasi tren tahunan dari basis data riil (Port 2021–2025), integrasi penuh peta regional Portal Civic-Tech (Port 2019), optimasi performa proxy database, dan standarisasi dokumentasi ekosistem.

@@ -1,17 +1,39 @@
-MIT License
+Restricted Private Use License
 
-Copyright (c) 2026 adimaryanto
+Copyright (c) 2026 adimaryanto. All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+PERMISSIONS:
+✓ Private use:
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to inspect,
+  compile, run, test, and use the Software privately for personal, evaluation,
+  academic research, and non-commercial educational purposes only.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+LIMITATIONS & RESTRICTIONS:
+✗ Commercial use:
+  You may NOT sell, monetize, commercialize, or use the Software or any part
+  thereof in connection with any commercial product, service, or revenue-generating
+  business activity without prior explicit written permission from the copyright holder.
 
+✗ Distribution:
+  You may NOT distribute, publicly host, mirror, sublicense, publish, rent,
+  lease, or make the Software available to any third party across any public or
+  private networks, repository, or distribution platform.
+
+✗ Modification for Redistribution:
+  While private modifications for personal use and evaluation are permitted,
+  you may NOT publicly distribute, publish, or release modified versions or
+  derivative works of the Software.
+
+✗ Patent & Trademark use:
+  This license does not grant any trademark, brand, logo, or patent rights.
+
+CONDITIONS:
+- License and copyright notice:
+  The above copyright notice, this list of permissions, limitations, and the
+  following disclaimer shall be included in all copies or substantial portions of the Software.
+
+DISCLAIMER:
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
