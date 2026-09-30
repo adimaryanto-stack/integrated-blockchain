@@ -17,7 +17,8 @@ Sistem tata kelola dan transparansi keuangan pendidikan Indonesia terintegrasi d
 | Dokumen | Format | Deskripsi | Tautan Langsung |
 |---|:---:|---|:---:|
 | 🌐 **Panduan Visual & Interaktif** | `HTML` | Tampilan panduan grafis modern untuk pengguna umum / non-programmer. | [**Buka `README.html`**](README.html) |
-| 📝 **Changelog & Riwayat Rilis** | `Markdown` | Catatan lengkap versi, pembaruan terkini v2.4.0, dan log perbaikan sistem. | [**Buka `CHANGELOG.md`**](CHANGELOG.md) |
+| 📝 **Changelog & Riwayat Rilis** | `Markdown` | Catatan lengkap versi, pembaruan terkini v2.4.1, dan log perbaikan sistem. | [**Buka `CHANGELOG.md`**](CHANGELOG.md) |
+| 📜 **Pemberitahuan Pihak Ketiga (HKI)** | `Markdown` | Pengakuan hak cipta & lisensi 52 dependensi open-source untuk pendaftaran HKI. | [**Buka `THIRD_PARTY_NOTICES.md`**](THIRD_PARTY_NOTICES.md) |
 | 📋 **Product Requirements (PRD)** | `Markdown` | Spesifikasi lengkap sistem, alur bisnis dana APBN/APBD/CSR, & hak akses. | [**Buka `PRD.md`**](PRD.md) |
 | 🏆 **MVP & Laporan Verifikasi** | `Markdown` | Laporan pengujian fitur 10 port, performa latensi, dan integrasi database. | [**Buka `MVP.md`**](MVP.md) |
 | 🚀 **Panduan Deployment VPS/Mac** | `Markdown` | Tutorial step-by-step setup VPS Ubuntu/Debian, macOS, Nginx, Domain, & SSL. | [**Buka `deploy_guide.md`**](deploy_guide.md) |
@@ -66,7 +67,9 @@ integrated-blockchain/
 │   └── setup-env.js                      # Generator berkas .env.local otomatis
 ├── start-all.bat / start-all.ps1         # Peluncur 1-Klik Seluruh Ekosistem 10 Layanan
 ├── stop-all.bat / stop-all.ps1           # Penghenti Aman Seluruh Port & Proses Node/Postgres
+├── THIRD_PARTY_NOTICES.md                # Pengakuan Hak Cipta & Lisensi Dependensi Pihak Ketiga (HKI)
 ├── CHANGELOG.md                          # Catatan Rilis & Log Pembaruan Terkini
+├── LICENSE                               # Dokumen Lisensi Resmi (Restricted Private Use Only)
 └── README.md                             # Dokumentasi Induk Proyek
 ```
 
@@ -306,3 +309,12 @@ Proyek ini dilisensikan di bawah **[Restricted Private Use License](LICENSE)** (
   - ✗ **Modification for redistribution**: Dilarang merilis publik atau menerbitkan karya turunan/modifikasi.
 
 Rincian lengkap ketentuan lisensi dapat dibaca langsung pada berkas [LICENSE](LICENSE).
+
+---
+
+### 🛡️ Batas Kepemilikan & Kepatuhan Hak Cipta Pihak Ketiga (Pendaftaran HKI)
+
+Seluruh arsitektur sistem 10-port, kode aplikasi, gateway proxy, logika bisnis, dan skema database relasional adalah karya cipta orisinal milik **adimaryanto** dan dilindungi oleh Hak Cipta berdasarkan Undang-Undang Republik Indonesia Nomor 28 Tahun 2014 tentang Hak Cipta.
+
+Pustaka, modul, dan komponen sumber terbuka pihak ketiga yang digunakan dalam repositori ini tetap merupakan hak cipta milik masing-masing pengembang aslinya dan dilisensikan di bawah lisensi permisif (MIT, Apache 2.0, BSD, ISC, SIL OFL). Daftar lengkap pengakuan hak cipta (*acknowledgement*), tautan repositori sumber, dan teks lengkap lisensi pihak ketiga dapat dilihat pada berkas **[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)**.
+

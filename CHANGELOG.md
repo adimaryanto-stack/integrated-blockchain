@@ -8,12 +8,17 @@ Format pencatatan berpedoman pada [Keep a Changelog](https://keepachangelog.com/
 
 ## [2.4.1] - 2026-09-30
 
-### 🔒 Keamanan & Kebijakan Lisensi (Security & Licensing)
+### 🔒 Keamanan, Kebijakan Lisensi & Kepatuhan HKI (Security, Licensing & IP Compliance)
 - **Pembaruan Lisensi Menjadi Terbatas (Restricted Private Use Only)**:
   - Mengubah lisensi proyek dari open source MIT menjadi **Restricted Private Use License**.
   - **Permissions yang Diberikan**: Dibatasi hanya untuk **Private use** (penggunaan pribadi, evaluasi mandiri, inspeksi kode, pengujian lokal, dan riset non-komersial).
   - **Limitations & Restrictions**: Dilarang keras untuk penggunaan komersial (*commercial use*), distribusi ulang (*distribution/mirroring*), publikasi karya turunan (*modification for redistribution*), serta sublisensi tanpa izin tertulis dari pemilik hak cipta (`adimaryanto`).
   - Pembaruan berkas `LICENSE`, badge lisensi di `README.md`, dan seluruh dokumentasi pendukung.
+- **Audit Menyeluruh Lisensi Pihak Ketiga & Dokumen `THIRD_PARTY_NOTICES.md`**:
+  - Melakukan audit komprehensif terhadap seluruh 52 dependensi pustaka open source (React, Next.js, Express, PostgreSQL driver, Tesseract OCR, Tailwind CSS, Lucide Icons, dsb.).
+  - Menerbitkan berkas **`THIRD_PARTY_NOTICES.md`** yang memuat tabel lengkap atribusi hak cipta, jenis lisensi (MIT, Apache 2.0, BSD, ISC, SIL OFL), tautan repositori sumber, dan salinan teks lisensi asli.
+  - Menegaskan batas kepemilikan hak cipta (*statement of intellectual property boundary*) sebagai prasyarat resmi pendaftaran **Hak Kekayaan Intelektual (HKI / Hak Cipta Program Komputer)** di **DJKI Kemenkumham RI**.
+  - Menyediakan skrip generator audit otomatis `scripts/audit_licenses.js` dan `scripts/build_notices.js`.
 
 ---
 

@@ -1,0 +1,723 @@
+[
+  {
+    "name": "@google/genai",
+    "license": "Apache-2.0",
+    "author": "",
+    "repository": "https://github.com/googleapis/js-genai",
+    "description": "",
+    "type": "production",
+    "usedIn": [
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "Apache License                            Version 2.0, January 2004                         http://www.apache.org/licenses/"
+  },
+  {
+    "name": "@supabase/ssr",
+    "license": "MIT",
+    "author": "Supabase, Inc.",
+    "repository": "https://github.com/supabase/ssr",
+    "description": "Use the Supabase JavaScript library in popular server-side rendering (SSR) frameworks.",
+    "type": "production",
+    "usedIn": [
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "MIT License  Copyright (c) 2022-2023 Supabase, Inc.  Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "@supabase/supabase-js",
+    "license": "MIT",
+    "author": "Supabase",
+    "repository": "https://github.com/supabase/supabase-js",
+    "description": "Isomorphic Javascript SDK for Supabase",
+    "type": "production",
+    "usedIn": [
+      "apps/dashboard-apbd/package.json",
+      "apps/dashboard-auditor/package.json",
+      "apps/dashboard-bank/package.json",
+      "apps/dashboard-institusi-pendidikan/package.json",
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "MIT License  Copyright (c) 2020 Supabase  Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "@swc/helpers",
+    "license": "Apache-2.0",
+    "author": "강동윤 <kdy1997.dev@gmail.com>",
+    "repository": "https://github.com/swc-project/swc",
+    "description": "External helpers for the swc project.",
+    "type": "production",
+    "usedIn": [
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "Apache License                         Version 2.0, January 2004                      http://www.apache.org/licenses/  TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION"
+  },
+  {
+    "name": "@tailwindcss/postcss",
+    "license": "MIT",
+    "author": "",
+    "repository": "https://github.com/tailwindlabs/tailwindcss",
+    "description": "PostCSS plugin for Tailwind CSS, a utility-first CSS framework for rapidly building custom user interfaces",
+    "type": "development",
+    "usedIn": [
+      "apps/dashboard-apbd/package.json",
+      "apps/dashboard-auditor/package.json",
+      "apps/dashboard-bank/package.json",
+      "apps/dashboard-institusi-pendidikan/package.json",
+      "apps/dashboard-kementerian/package.json",
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "MIT License  Copyright (c) Tailwind Labs, Inc.  Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "@types/file-saver",
+    "license": "MIT",
+    "author": "",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "description": "TypeScript definitions for file-saver",
+    "type": "development",
+    "usedIn": [
+      "apps/dashboard-apbd/package.json",
+      "apps/dashboard-auditor/package.json",
+      "apps/dashboard-kementerian/package.json"
+    ],
+    "licenseNotice": "MIT License      Copyright (c) Microsoft Corporation.      Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "@types/jest",
+    "license": "MIT",
+    "author": "",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "description": "TypeScript definitions for jest",
+    "type": "development",
+    "usedIn": [
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "MIT License      Copyright (c) Microsoft Corporation.      Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "@types/node",
+    "license": "MIT",
+    "author": "",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "description": "TypeScript definitions for node",
+    "type": "development",
+    "usedIn": [
+      "apps/dashboard-admin/package.json",
+      "apps/dashboard-apbd/package.json",
+      "apps/dashboard-auditor/package.json",
+      "apps/dashboard-bank/package.json",
+      "apps/dashboard-institusi-pendidikan/package.json",
+      "apps/dashboard-kementerian/package.json",
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "MIT License      Copyright (c) Microsoft Corporation.      Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "@types/react",
+    "license": "MIT",
+    "author": "",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "description": "TypeScript definitions for react",
+    "type": "development",
+    "usedIn": [
+      "apps/dashboard-admin/package.json",
+      "apps/dashboard-apbd/package.json",
+      "apps/dashboard-auditor/package.json",
+      "apps/dashboard-bank/package.json",
+      "apps/dashboard-institusi-pendidikan/package.json",
+      "apps/dashboard-kementerian/package.json",
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "MIT License      Copyright (c) Microsoft Corporation.      Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "@types/react-dom",
+    "license": "MIT",
+    "author": "",
+    "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+    "description": "TypeScript definitions for react-dom",
+    "type": "development",
+    "usedIn": [
+      "apps/dashboard-admin/package.json",
+      "apps/dashboard-apbd/package.json",
+      "apps/dashboard-auditor/package.json",
+      "apps/dashboard-bank/package.json",
+      "apps/dashboard-institusi-pendidikan/package.json",
+      "apps/dashboard-kementerian/package.json",
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "MIT License      Copyright (c) Microsoft Corporation.      Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "@vitejs/plugin-react",
+    "license": "MIT",
+    "author": "Evan You",
+    "repository": "https://github.com/vitejs/vite-plugin-react",
+    "description": "The default Vite plugin for React projects",
+    "type": "development",
+    "usedIn": [
+      "apps/dashboard-admin/package.json"
+    ],
+    "licenseNotice": "MIT License  Copyright (c) 2019-present, Yuxi (Evan) You and Vite contributors  Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "autoprefixer",
+    "license": "MIT",
+    "author": "Andrey Sitnik <andrey@sitnik.es>",
+    "repository": "postcss/autoprefixer",
+    "description": "Parse CSS and add vendor prefixes to CSS rules using values from the Can I Use website",
+    "type": "development",
+    "usedIn": [
+      "apps/dashboard-admin/package.json"
+    ],
+    "licenseNotice": "The MIT License (MIT)  Copyright 2013 Andrey Sitnik <andrey@sitnik.es>  Permission is hereby granted, free of charge, to any person obtaining a copy of"
+  },
+  {
+    "name": "axios",
+    "license": "MIT",
+    "author": "Matt Zabriskie",
+    "repository": "https://github.com/axios/axios",
+    "description": "Promise based HTTP client for the browser and node.js",
+    "type": "production",
+    "usedIn": [
+      "apps/transparansi-anggaran/apps/web-next/package.json",
+      "apps/transparansi-anggaran/package.json",
+      "package.json"
+    ],
+    "licenseNotice": "# Copyright (c) 2014-present Matt Zabriskie & Collaborators  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:  The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software."
+  },
+  {
+    "name": "bcryptjs",
+    "license": "BSD-3-Clause",
+    "author": "Daniel Wirtz <dcode@dcode.io>",
+    "repository": "https://github.com/dcodeIO/bcrypt.js",
+    "description": "Optimized bcrypt in plain JavaScript with zero dependencies, with TypeScript support. Compatible to 'bcrypt'.",
+    "type": "production",
+    "usedIn": [
+      "apps/transparansi-anggaran/package.json"
+    ],
+    "licenseNotice": "bcrypt.js --------- Copyright (c) 2012 Nevins Bartolomeo <nevins.bartolomeo@gmail.com> Copyright (c) 2012 Shane Girish <shaneGirish@gmail.com> Copyright (c) 2025 Daniel Wirtz <dcode@dcode.io>"
+  },
+  {
+    "name": "buffer-equal-constant-time",
+    "license": "BSD-3-Clause",
+    "author": "GoInstant Inc., a salesforce.com company",
+    "repository": "git@github.com:goinstant/buffer-equal-constant-time",
+    "description": "Constant-time comparison of Buffers",
+    "type": "production",
+    "usedIn": [
+      "apps/transparansi-anggaran/package.json"
+    ],
+    "licenseNotice": "Copyright (c) 2013, GoInstant Inc., a salesforce.com company All rights reserved.  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:"
+  },
+  {
+    "name": "cheerio",
+    "license": "MIT",
+    "author": "Matt Mueller <mattmuelle@gmail.com>",
+    "repository": "git://github.com/cheeriojs/cheerio",
+    "description": "The fast, flexible & elegant library for parsing and manipulating HTML and XML.",
+    "type": "production",
+    "usedIn": [
+      "apps/transparansi-anggaran/apps/web-next/package.json",
+      "apps/transparansi-anggaran/package.json",
+      "package.json"
+    ],
+    "licenseNotice": "MIT License  Copyright (c) 2022 The Cheerio contributors  Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "class-variance-authority",
+    "license": "Apache-2.0",
+    "author": "Joe Bell (https://joebell.co.uk)",
+    "repository": "https://github.com/joe-bell/cva",
+    "description": "Class Variance Authority 🧬",
+    "type": "production",
+    "usedIn": [
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "Apache License                            Version 2.0, January 2004                         http://www.apache.org/licenses/     TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION"
+  },
+  {
+    "name": "clsx",
+    "license": "MIT",
+    "author": "Luke Edwards",
+    "repository": "lukeed/clsx",
+    "description": "A tiny (239B) utility for constructing className strings conditionally.",
+    "type": "production",
+    "usedIn": [
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "MIT License  Copyright (c) Luke Edwards <luke.edwards05@gmail.com> (lukeed.com)  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:"
+  },
+  {
+    "name": "cors",
+    "license": "MIT",
+    "author": "Troy Goode <troygoode@gmail.com> (https://github.com/troygoode/)",
+    "repository": "expressjs/cors",
+    "description": "Node.js CORS middleware",
+    "type": "production",
+    "usedIn": [
+      "proxy/package.json"
+    ],
+    "licenseNotice": "(The MIT License)  Copyright (c) 2013 Troy Goode <troygoode@gmail.com>  Permission is hereby granted, free of charge, to any person obtaining"
+  },
+  {
+    "name": "cross-env",
+    "license": "MIT",
+    "author": "Kent C. Dodds <me@kentcdodds.com> (https://kentcdodds.com)",
+    "repository": "https://github.com/kentcdodds/cross-env",
+    "description": "Run scripts that set and use environment variables across platforms",
+    "type": "development",
+    "usedIn": [
+      "apps/transparansi-anggaran/package.json"
+    ],
+    "licenseNotice": "The MIT License (MIT) Copyright (c) 2017-2025 Kent C. Dodds  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal"
+  },
+  {
+    "name": "dotenv",
+    "license": "BSD-2-Clause",
+    "author": "",
+    "repository": "git://github.com/motdotla/dotenv",
+    "description": "Loads environment variables from .env file",
+    "type": "production",
+    "usedIn": [
+      "apps/dashboard-auditor/package.json",
+      "apps/dashboard-institusi-pendidikan/package.json"
+    ],
+    "licenseNotice": "Copyright (c) 2015, Scott Motte All rights reserved.  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:"
+  },
+  {
+    "name": "ecdsa-sig-formatter",
+    "license": "Apache-2.0",
+    "author": "D2L Corporation",
+    "repository": "ssh://git@github.com/Brightspace/node-ecdsa-sig-formatter",
+    "description": "Translate ECDSA signatures between ASN.1/DER and JOSE-style concatenation",
+    "type": "production",
+    "usedIn": [
+      "apps/transparansi-anggaran/package.json"
+    ],
+    "licenseNotice": "Apache License                            Version 2.0, January 2004                         http://www.apache.org/licenses/     TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION"
+  },
+  {
+    "name": "eslint",
+    "license": "MIT",
+    "author": "Nicholas C. Zakas <nicholas+npm@nczconsulting.com>",
+    "repository": "eslint/eslint",
+    "description": "An AST-based pattern checker for JavaScript.",
+    "type": "development",
+    "usedIn": [
+      "apps/dashboard-apbd/package.json",
+      "apps/dashboard-auditor/package.json",
+      "apps/dashboard-bank/package.json",
+      "apps/dashboard-institusi-pendidikan/package.json",
+      "apps/dashboard-kementerian/package.json",
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "Copyright OpenJS Foundation and other contributors, <www.openjsf.org>  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights"
+  },
+  {
+    "name": "eslint-config-next",
+    "license": "MIT",
+    "author": "",
+    "repository": "vercel/next.js",
+    "description": "ESLint configuration used by Next.js.",
+    "type": "development",
+    "usedIn": [
+      "apps/dashboard-apbd/package.json",
+      "apps/dashboard-auditor/package.json",
+      "apps/dashboard-bank/package.json",
+      "apps/dashboard-institusi-pendidikan/package.json",
+      "apps/dashboard-kementerian/package.json",
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": ""
+  },
+  {
+    "name": "exceljs",
+    "license": "MIT",
+    "author": "Guyon Roche",
+    "repository": "https://github.com/exceljs/exceljs",
+    "description": "Excel Workbook Manager - Read and Write xlsx and csv Files.",
+    "type": "production",
+    "usedIn": [
+      "apps/dashboard-apbd/package.json",
+      "apps/dashboard-auditor/package.json",
+      "apps/dashboard-kementerian/package.json"
+    ],
+    "licenseNotice": "The MIT License (MIT)  Copyright (c) 2014-2019 Guyon Roche  Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "express",
+    "license": "MIT",
+    "author": "TJ Holowaychuk <tj@vision-media.ca>",
+    "repository": "expressjs/express",
+    "description": "Fast, unopinionated, minimalist web framework",
+    "type": "production",
+    "usedIn": [
+      "proxy/package.json"
+    ],
+    "licenseNotice": "(The MIT License)  Copyright (c) 2009-2014 TJ Holowaychuk <tj@vision-media.ca> Copyright (c) 2013-2014 Roman Shtylman <shtylman+expressjs@gmail.com> Copyright (c) 2014-2015 Douglas Christopher Wilson <doug@somethingdoug.com>"
+  },
+  {
+    "name": "extend",
+    "license": "MIT",
+    "author": "Stefan Thomas <justmoon@members.fsf.org> (http://www.justmoon.net)",
+    "repository": "https://github.com/justmoon/node-extend",
+    "description": "Port of jQuery.extend for node.js and the browser",
+    "type": "production",
+    "usedIn": [
+      "apps/transparansi-anggaran/package.json"
+    ],
+    "licenseNotice": "The MIT License (MIT)  Copyright (c) 2014 Stefan Thomas  Permission is hereby granted, free of charge, to any person obtaining"
+  },
+  {
+    "name": "file-saver",
+    "license": "MIT",
+    "author": "Eli Grey <me@eligrey.com>",
+    "repository": "https://github.com/eligrey/FileSaver.js",
+    "description": "An HTML5 saveAs() FileSaver implementation",
+    "type": "production",
+    "usedIn": [
+      "apps/dashboard-apbd/package.json",
+      "apps/dashboard-auditor/package.json",
+      "apps/dashboard-kementerian/package.json"
+    ],
+    "licenseNotice": "The MIT License  Copyright © 2016 [Eli Grey][1].  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:"
+  },
+  {
+    "name": "framer-motion",
+    "license": "MIT",
+    "author": "Matt Perry",
+    "repository": "https://github.com/motiondivision/motion/",
+    "description": "A simple and powerful JavaScript animation library",
+    "type": "production",
+    "usedIn": [
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "The MIT License (MIT)  Copyright (c) 2018 Framer B.V.  Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "has-flag",
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "repository": "sindresorhus/has-flag",
+    "description": "Check if argv has a specific flag",
+    "type": "production",
+    "usedIn": [
+      "apps/transparansi-anggaran/package.json"
+    ],
+    "licenseNotice": "MIT License  Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:"
+  },
+  {
+    "name": "jest",
+    "license": "MIT",
+    "author": "",
+    "repository": "https://github.com/jestjs/jest",
+    "description": "Delightful JavaScript Testing.",
+    "type": "development",
+    "usedIn": [
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "MIT License  Copyright (c) Meta Platforms, Inc. and affiliates.  Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "lucide-react",
+    "license": "ISC",
+    "author": "Eric Fennis",
+    "repository": "https://github.com/lucide-icons/lucide",
+    "description": "A Lucide icon library package for React applications.",
+    "type": "production",
+    "usedIn": [
+      "apps/dashboard-admin/package.json",
+      "apps/dashboard-apbd/package.json",
+      "apps/dashboard-auditor/package.json",
+      "apps/dashboard-bank/package.json",
+      "apps/dashboard-institusi-pendidikan/package.json",
+      "apps/dashboard-kementerian/package.json",
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "ISC License  Copyright (c) 2026 Lucide Icons and Contributors  Permission to use, copy, modify, and/or distribute this software for any"
+  },
+  {
+    "name": "next",
+    "license": "MIT",
+    "author": "",
+    "repository": "vercel/next.js",
+    "description": "The React Framework",
+    "type": "production",
+    "usedIn": [
+      "apps/dashboard-apbd/package.json",
+      "apps/dashboard-auditor/package.json",
+      "apps/dashboard-bank/package.json",
+      "apps/dashboard-institusi-pendidikan/package.json",
+      "apps/dashboard-kementerian/package.json",
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "The MIT License (MIT)  Copyright (c) 2025 Vercel, Inc.  Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "pg",
+    "license": "MIT",
+    "author": "Brian Carlson <brian.m.carlson@gmail.com>",
+    "repository": "git://github.com/brianc/node-postgres",
+    "description": "PostgreSQL client - pure javascript & libpq with the same API",
+    "type": "production",
+    "usedIn": [
+      "package.json",
+      "proxy/package.json"
+    ],
+    "licenseNotice": "MIT License  Copyright (c) 2010 - 2021 Brian Carlson  Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "playwright",
+    "license": "Apache-2.0",
+    "author": "Microsoft Corporation",
+    "repository": "https://github.com/microsoft/playwright",
+    "description": "A high-level API to automate web browsers",
+    "type": "development",
+    "usedIn": [
+      "apps/dashboard-kementerian/package.json"
+    ],
+    "licenseNotice": "Apache License\r                            Version 2.0, January 2004\r                         http://www.apache.org/licenses/\r \r    TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION"
+  },
+  {
+    "name": "postcss",
+    "license": "MIT",
+    "author": "Andrey Sitnik <andrey@sitnik.es>",
+    "repository": "postcss/postcss",
+    "description": "Tool for transforming styles with JS plugins",
+    "type": "development",
+    "usedIn": [
+      "apps/dashboard-admin/package.json"
+    ],
+    "licenseNotice": "The MIT License (MIT)  Copyright 2013 Andrey Sitnik <andrey@sitnik.es>  Permission is hereby granted, free of charge, to any person obtaining a copy of"
+  },
+  {
+    "name": "radix-ui",
+    "license": "MIT",
+    "author": "",
+    "repository": "https://github.com/radix-ui/primitives",
+    "description": "",
+    "type": "production",
+    "usedIn": [
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "MIT License  Copyright (c) 2022 WorkOS  Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "react",
+    "license": "MIT",
+    "author": "",
+    "repository": "https://github.com/facebook/react",
+    "description": "React is a JavaScript library for building user interfaces.",
+    "type": "production",
+    "usedIn": [
+      "apps/dashboard-admin/package.json",
+      "apps/dashboard-apbd/package.json",
+      "apps/dashboard-auditor/package.json",
+      "apps/dashboard-bank/package.json",
+      "apps/dashboard-institusi-pendidikan/package.json",
+      "apps/dashboard-kementerian/package.json",
+      "apps/transparansi-anggaran/apps/web-next/package.json",
+      "apps/transparansi-anggaran/package.json"
+    ],
+    "licenseNotice": "MIT License  Copyright (c) Meta Platforms, Inc. and affiliates.  Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "react-dom",
+    "license": "MIT",
+    "author": "",
+    "repository": "https://github.com/facebook/react",
+    "description": "React package for working with the DOM.",
+    "type": "production",
+    "usedIn": [
+      "apps/dashboard-admin/package.json",
+      "apps/dashboard-apbd/package.json",
+      "apps/dashboard-auditor/package.json",
+      "apps/dashboard-bank/package.json",
+      "apps/dashboard-institusi-pendidikan/package.json",
+      "apps/dashboard-kementerian/package.json",
+      "apps/transparansi-anggaran/apps/web-next/package.json",
+      "apps/transparansi-anggaran/package.json"
+    ],
+    "licenseNotice": "MIT License  Copyright (c) Meta Platforms, Inc. and affiliates.  Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "react-is",
+    "license": "MIT",
+    "author": "",
+    "repository": "https://github.com/facebook/react",
+    "description": "Brand checking of React Elements.",
+    "type": "production",
+    "usedIn": [
+      "apps/transparansi-anggaran/package.json"
+    ],
+    "licenseNotice": "MIT License  Copyright (c) Meta Platforms, Inc. and affiliates.  Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "react-router-dom",
+    "license": "MIT",
+    "author": "Remix Software <hello@remix.run>",
+    "repository": "https://github.com/remix-run/react-router",
+    "description": "Declarative routing for React web applications",
+    "type": "production",
+    "usedIn": [
+      "apps/dashboard-admin/package.json"
+    ],
+    "licenseNotice": "MIT License  Copyright (c) React Training LLC 2015-2019 Copyright (c) Remix Software Inc. 2020-2021 Copyright (c) Shopify Inc. 2022-2023"
+  },
+  {
+    "name": "recharts",
+    "license": "MIT",
+    "author": "recharts group",
+    "repository": "https://github.com/recharts/recharts",
+    "description": "React charts",
+    "type": "production",
+    "usedIn": [
+      "apps/dashboard-apbd/package.json",
+      "apps/dashboard-auditor/package.json",
+      "apps/dashboard-bank/package.json",
+      "apps/dashboard-institusi-pendidikan/package.json",
+      "apps/dashboard-kementerian/package.json",
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "The MIT License (MIT)  Copyright (c) 2015-present recharts  Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "shadcn",
+    "license": "MIT",
+    "author": "shadcn",
+    "repository": "https://github.com/shadcn-ui/ui",
+    "description": "Add components to your apps.",
+    "type": "development",
+    "usedIn": [
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "MIT License  Copyright (c) 2023 shadcn  Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "tailwind-merge",
+    "license": "MIT",
+    "author": "Dany Castillo",
+    "repository": "https://github.com/dcastil/tailwind-merge",
+    "description": "Merge Tailwind CSS classes without style conflicts",
+    "type": "production",
+    "usedIn": [
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "MIT License  Copyright (c) 2021 Dany Castillo  Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "tailwindcss",
+    "license": "MIT",
+    "author": "",
+    "repository": "https://github.com/tailwindlabs/tailwindcss",
+    "description": "A utility-first CSS framework for rapidly building custom user interfaces.",
+    "type": "development",
+    "usedIn": [
+      "apps/dashboard-admin/package.json",
+      "apps/dashboard-apbd/package.json",
+      "apps/dashboard-auditor/package.json",
+      "apps/dashboard-bank/package.json",
+      "apps/dashboard-institusi-pendidikan/package.json",
+      "apps/dashboard-kementerian/package.json",
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "MIT License  Copyright (c) Tailwind Labs, Inc.  Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "tesseract.js",
+    "license": "Apache-2.0",
+    "author": "",
+    "repository": "https://github.com/naptha/tesseract.js",
+    "description": "Pure Javascript Multilingual OCR",
+    "type": "production",
+    "usedIn": [
+      "apps/dashboard-institusi-pendidikan/package.json",
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "Apache License                            Version 2.0, January 2004                         http://www.apache.org/licenses/     TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION"
+  },
+  {
+    "name": "ts-jest",
+    "license": "MIT",
+    "author": "Kulshekhar Kabra <kulshekhar@users.noreply.github.com> (https://github.com/kulshekhar)",
+    "repository": "https://github.com/kulshekhar/ts-jest",
+    "description": "A Jest transformer with source map support that lets you use Jest to test projects written in TypeScript",
+    "type": "development",
+    "usedIn": [
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "MIT License  Copyright (c) 2016-2025  Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "tw-animate-css",
+    "license": "MIT",
+    "author": "Luca Bosin",
+    "repository": "Wombosvideo/tw-animate-css",
+    "description": "TailwindCSS v4.0 compatible replacement for `tailwindcss-animate`.",
+    "type": "development",
+    "usedIn": [
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "MIT License  Copyright (c) 2025 Wombosvideo  Permission is hereby granted, free of charge, to any person obtaining a copy"
+  },
+  {
+    "name": "typescript",
+    "license": "Apache-2.0",
+    "author": "Microsoft Corp.",
+    "repository": "https://github.com/microsoft/TypeScript",
+    "description": "TypeScript is a language for application scale JavaScript development",
+    "type": "development",
+    "usedIn": [
+      "apps/dashboard-admin/package.json",
+      "apps/dashboard-apbd/package.json",
+      "apps/dashboard-auditor/package.json",
+      "apps/dashboard-bank/package.json",
+      "apps/dashboard-institusi-pendidikan/package.json",
+      "apps/dashboard-kementerian/package.json",
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "Apache License\r \r Version 2.0, January 2004\r \r http://www.apache.org/licenses/"
+  },
+  {
+    "name": "vite",
+    "license": "MIT",
+    "author": "Evan You",
+    "repository": "https://github.com/vitejs/vite",
+    "description": "Native-ESM powered web dev build tool",
+    "type": "development",
+    "usedIn": [
+      "apps/dashboard-admin/package.json",
+      "apps/dashboard-publik/package.json"
+    ],
+    "licenseNotice": "# Vite core license Vite is released under the MIT license:  MIT License"
+  },
+  {
+    "name": "xlsx",
+    "license": "Apache-2.0",
+    "author": "sheetjs",
+    "repository": "git://github.com/SheetJS/sheetjs",
+    "description": "SheetJS Spreadsheet data parser and writer",
+    "type": "development",
+    "usedIn": [
+      "apps/transparansi-anggaran/apps/web-next/package.json"
+    ],
+    "licenseNotice": "Apache License                            Version 2.0, January 2004                         http://www.apache.org/licenses/     TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION"
+  },
+  {
+    "name": "zustand",
+    "license": "MIT",
+    "author": "Paul Henschel",
+    "repository": "https://github.com/pmndrs/zustand",
+    "description": "🐻 Bear necessities for state management in React",
+    "type": "production",
+    "usedIn": [
+      "apps/dashboard-apbd/package.json",
+      "apps/dashboard-auditor/package.json",
+      "apps/dashboard-bank/package.json",
+      "apps/dashboard-institusi-pendidikan/package.json",
+      "apps/dashboard-kementerian/package.json"
+    ],
+    "licenseNotice": "MIT License  Copyright (c) 2019 Paul Henschel  Permission is hereby granted, free of charge, to any person obtaining a copy"
+  }
+]
