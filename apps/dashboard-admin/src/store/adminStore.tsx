@@ -468,6 +468,10 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         if (currentUser.role === "ops_admin" || currentUser.role === "admin_kementerian") return action !== "delete";
         if (currentUser.role === "admin_wilayah") return action === "view";
       }
+      if (module === "Pengaturan API Bank") {
+        if (currentUser.role === "ops_admin") return action !== "delete";
+        if (currentUser.role === "admin_kementerian") return action === "view";
+      }
       return false;
     }
     if (action === "view") return mod.canView;

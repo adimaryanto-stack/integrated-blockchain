@@ -185,6 +185,7 @@ export const initialRolePermissions: RolePermissions[] = [
       "Pengaturan AI Aksara": { canView: true, canCreate: true, canEdit: true, canDelete: true },
       "Pengaturan API Polsek": { canView: true, canCreate: true, canEdit: true, canDelete: true },
       "Pengaturan API Data Sekolah": { canView: true, canCreate: true, canEdit: true, canDelete: true },
+      "Pengaturan API Bank": { canView: true, canCreate: true, canEdit: true, canDelete: true },
     },
   },
   {
@@ -203,6 +204,7 @@ export const initialRolePermissions: RolePermissions[] = [
       "Pengaturan AI Aksara": { canView: true, canCreate: true, canEdit: true, canDelete: false },
       "Pengaturan API Polsek": { canView: true, canCreate: true, canEdit: true, canDelete: false },
       "Pengaturan API Data Sekolah": { canView: true, canCreate: true, canEdit: true, canDelete: false },
+      "Pengaturan API Bank": { canView: true, canCreate: true, canEdit: true, canDelete: false },
     },
   },
   {
@@ -221,6 +223,7 @@ export const initialRolePermissions: RolePermissions[] = [
       "Pengaturan AI Aksara": { canView: true, canCreate: false, canEdit: false, canDelete: false },
       "Pengaturan API Polsek": { canView: true, canCreate: false, canEdit: false, canDelete: false },
       "Pengaturan API Data Sekolah": { canView: true, canCreate: true, canEdit: true, canDelete: false },
+      "Pengaturan API Bank": { canView: true, canCreate: false, canEdit: false, canDelete: false },
     },
   },
   {
@@ -239,6 +242,7 @@ export const initialRolePermissions: RolePermissions[] = [
       "Pengaturan AI Aksara": { canView: false, canCreate: false, canEdit: false, canDelete: false },
       "Pengaturan API Polsek": { canView: false, canCreate: false, canEdit: false, canDelete: false },
       "Pengaturan API Data Sekolah": { canView: true, canCreate: false, canEdit: false, canDelete: false },
+      "Pengaturan API Bank": { canView: false, canCreate: false, canEdit: false, canDelete: false },
     },
   },
   {
@@ -257,6 +261,7 @@ export const initialRolePermissions: RolePermissions[] = [
       "Pengaturan AI Aksara": { canView: false, canCreate: false, canEdit: false, canDelete: false },
       "Pengaturan API Polsek": { canView: false, canCreate: false, canEdit: false, canDelete: false },
       "Pengaturan API Data Sekolah": { canView: false, canCreate: false, canEdit: false, canDelete: false },
+      "Pengaturan API Bank": { canView: false, canCreate: false, canEdit: false, canDelete: false },
     },
   },
 ];

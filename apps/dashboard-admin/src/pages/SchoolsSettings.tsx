@@ -45,19 +45,19 @@ const PROVIDER_METADATA: Record<string, ProviderMeta> = {
   satudata: {
     name: "Satu Data Pendidikan RI",
     sub: "Pusdatin Interoperability Gateway",
-    keyUrl: "https://satudata.kemdikbud.go.id",
-    keyLabel: "Portal Satu Data Pendidikan (satudata.kemdikbud.go.id)",
+    keyUrl: "https://data.kemendikdasmen.go.id/",
+    keyLabel: "Portal Satu Data Kemendikdasmen (data.kemendikdasmen.go.id)",
     placeholder: "satudata_oauth_key_...",
-    defaultEndpoint: "https://api.satudata.kemdikbud.go.id/v2/institusi/all",
+    defaultEndpoint: "https://data.kemendikdasmen.go.id/api/v2/institusi/all",
     description: "Integrasi terpadu Satu Data Indonesia (Perpres No. 39/2019) yang menggabungkan seluruh jenjang dari PAUD hingga S1 (Kemendikdasmen & Kemendiktisaintek) secara nasional."
   },
   dapodik: {
     name: "Dapodik Kemendikdasmen",
     sub: "Data Pokok Pendidikan (PAUD-SMA/SMK)",
-    keyUrl: "https://dapo.kemdikbud.go.id/integrasi-api",
-    keyLabel: "Portal Integrasi Dapodik (dapo.kemdikbud.go.id)",
+    keyUrl: "https://dapo.kemendikdasmen.go.id/",
+    keyLabel: "Portal Integrasi Dapodik (dapo.kemendikdasmen.go.id)",
     placeholder: "dapo_live_sec_...",
-    defaultEndpoint: "https://api-dapodik.kemdikbud.go.id/v1/sekolah/nasional",
+    defaultEndpoint: "https://dapo.kemendikdasmen.go.id/api/v1/sekolah/nasional",
     description: "Layanan resmi sinkronisasi data sekolah PAUD, TK, SD, SMP, SMA, dan SMK (Negeri & Swasta) se-Indonesia."
   },
   pddikti: {

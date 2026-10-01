@@ -19,6 +19,7 @@ const routeModuleMap: Record<string, string> = {
   "/ai-settings": "Pengaturan AI Aksara",
   "/polsek-settings": "Pengaturan API Polsek",
   "/schools-settings": "Pengaturan API Data Sekolah",
+  "/bank-settings": "Pengaturan API Bank",
 };
 
 export function DashboardLayout({

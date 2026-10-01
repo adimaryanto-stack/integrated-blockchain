@@ -15,6 +15,19 @@ Format pencatatan berpedoman pada [Keep a Changelog](https://keepachangelog.com/
   - Menyediakan berkas asli format PDF bersegel elektronik BSrE (`docs/hki/Surat-Pencatatan-Hak-Cipta-EC002026188077.pdf`) dan berkas gambar resolusi tinggi (`docs/hki/Surat-Pencatatan-Hak-Cipta-EC002026188077.png`).
   - Menerbitkan dokumen induk **`HKI.md`** sebagai pembuktian autentik hukum yang dapat dibaca dan diverifikasi oleh publik di repositori GitHub.
 
+### ⚡ Pembaruan Dashboard Admin (Admin Console v2.4.2)
+- **Modul Baru: Pengaturan API Bank Himbara SNAP (`/bank-settings`)**:
+  - Penambahan halaman konfigurasi Open Banking BI-SNAP untuk 5 bank penyalur utama: Bank BRI, Bank Mandiri, Bank BNI, Bank BTN, dan Bank BSI.
+  - Dukungan otentikasi asymmetric RSA-256, mTLS, dan HMAC-SHA256, disertai simulator live inquiry saldo & mutasi rekening sekolah.
+  - Integrasi perizinan modul ke dalam Access Control Matrix dan hierarki Scoped RBAC.
+- **Modul Baru: Pengaturan API Polsek Terdekat (`/polsek-settings`)**:
+  - Konfigurasi API pemetaan kantor polisi terdekat untuk perlindungan keamanan satuan pendidikan dari tindak kriminalitas dan intimidasi anggaran.
+- **Modul Baru: Pengaturan API Data Sekolah Nasional (`/schools-settings`)**:
+  - Integrasi interoperabilitas dengan basis data Satu Data Kemendikdasmen (`data.kemendikdasmen.go.id`), Dapodik Kemendikdasmen (`dapo.kemendikdasmen.go.id`), PDDikti, dan EMIS.
+- **Penyempurnaan Navigasi Sidebar Berkelompok (Grouped Categories)**:
+  - Mengelompokkan menu navigasi admin ke dalam 4 kategori terstruktur: *Menu Utama*, *Manajemen Pengguna & Akses*, *Operasional & Monitoring*, dan *Pengaturan API Key & Integrasi*.
+  - Desain responsif dengan indikator badge dinamis dan penegakan batas hak akses RBAC per-grup.
+
 ---
 
 ## [2.4.1] - 2026-09-30

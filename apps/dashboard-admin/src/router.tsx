@@ -12,6 +12,7 @@ import { AccessControlMatrix } from "@/pages/AccessControlMatrix";
 import { AiSettings } from "@/pages/AiSettings";
 import { PolsekSettings } from "@/pages/PolsekSettings";
 import { SchoolsSettings } from "@/pages/SchoolsSettings";
+import { BankSettings } from "@/pages/BankSettings";
 
 export const router = createBrowserRouter([
   { path: "/login", element: <Login /> },
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
   { path: "/ai-settings", element: <AiSettings /> },
   { path: "/polsek-settings", element: <PolsekSettings /> },
   { path: "/schools-settings", element: <SchoolsSettings /> },
+  { path: "/bank-settings", element: <BankSettings /> },
   { path: "/bank-mutations", element: <BankMutations /> },
   { path: "/broadcast", element: <Broadcast /> },
   { path: "/wilayah", element: <MasterDataWilayah /> },

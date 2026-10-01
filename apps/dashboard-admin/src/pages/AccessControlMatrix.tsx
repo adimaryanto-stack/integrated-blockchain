@@ -30,6 +30,7 @@ const modulesList = [
   "Pengaturan AI Aksara",
   "Pengaturan API Polsek",
   "Pengaturan API Data Sekolah",
+  "Pengaturan API Bank",
 ];
 
 const roleOrder: AdminRole[] = [

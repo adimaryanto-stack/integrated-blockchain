@@ -74,6 +74,19 @@ Modul ini adalah dashboard ke-6 dari platform `integrated-blockchain` yang berja
     - Pengaturan *system prompt*, temperatur, dan batas output token.
     - Penyimpanan konfigurasi terpusat pada tabel `system_settings` PostgreSQL untuk melayani chatbot publik interaktif Aksara (Port 2019).
 
+12. **Pengaturan API Bank Himbara SNAP (`/bank-settings`):**
+    - Konfigurasi kredensial BI-SNAP Open Banking untuk 5 bank mitra (BRI, Mandiri, BNI, BTN, BSI).
+    - Pengaturan Partner ID, Client Secret, RSA Private Key, dan Endpoint URL.
+    - Mode operasional terpadu: Sandbox vs Live Production dengan fitur simulasi langsung inquiry rekening & mutasi kas sekolah.
+
+13. **Pengaturan API Polsek Terdekat (`/polsek-settings`):**
+    - Integrasi API geospasial pos kepolisian sektor terdekat dari satuan pendidikan.
+    - Radius pelacakan perimeter darurat (1-25 km), hotline siaga terverifikasi, dan sistem auto-dispatch pengaduan ancaman/intimidasi sekolah.
+
+14. **Pengaturan API Data Sekolah Nasional (`/schools-settings`):**
+    - Interoperabilitas Satu Data Kemendikdasmen (`data.kemendikdasmen.go.id`), Dapodik Kemendikdasmen (`dapo.kemendikdasmen.go.id`), PDDikti Kemendiktisaintek, dan EMIS Kemenag.
+    - Pengaturan otomatisasi validasi NPSN, sinkronisasi berkala, dan cakupan jenjang pendidikan nasional.
+
 ---
 
 ## Cara Menjalankan Secara Lokal
