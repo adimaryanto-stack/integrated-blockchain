@@ -12,6 +12,8 @@ import {
   KeyRound,
   ShieldCheck,
   Bot,
+  Siren,
+  GraduationCap,
 } from "lucide-react";
 import { useAdminStore } from "@/store/adminStore";
 
@@ -33,6 +35,8 @@ export function Sidebar() {
     { to: "/wilayah", label: "Master Data Wilayah", icon: MapPinned, module: "Master Data Wilayah" },
     { to: "/access-control", label: "Access Control Matrix", icon: KeyRound, module: "Access Control Matrix" },
     { to: "/ai-settings", label: "Pengaturan AI Aksara", icon: Bot, module: "Pengaturan AI Aksara" },
+    { to: "/polsek-settings", label: "Pengaturan API Polsek", icon: Siren, module: "Pengaturan API Polsek" },
+    { to: "/schools-settings", label: "Pengaturan API Data Sekolah", icon: GraduationCap, module: "Pengaturan API Data Sekolah" },
   ];
 
   // Filter menu items by RBAC — Beranda always visible, others check canAccess("module", "view")

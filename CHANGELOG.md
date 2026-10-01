@@ -6,6 +6,17 @@ Format pencatatan berpedoman pada [Keep a Changelog](https://keepachangelog.com/
 
 ---
 
+## [2.4.2] - 2026-10-01
+
+### 🏛️ Hak Kekayaan Intelektual (HKI Official Certification)
+- **Publikasi Berkas Resmi Surat Pencatatan Ciptaan (DJKI Kemenkumham RI)**:
+  - Melampirkan secara resmi berkas **Surat Pencatatan Ciptaan No. 001519028** (Nomor Permohonan: `EC002026188077`, Tanggal 1 Oktober 2026) yang diterbitkan oleh Direktur Jenderal Kekayaan Intelektual, Kementerian Hukum Republik Indonesia.
+  - Ciptaan dilindungi selama **50 tahun** sejak pertama kali diumumkan berdasarkan Pasal 72 UU No. 28 Tahun 2014 tentang Hak Cipta.
+  - Menyediakan berkas asli format PDF bersegel elektronik BSrE (`docs/hki/Surat-Pencatatan-Hak-Cipta-EC002026188077.pdf`) dan berkas gambar resolusi tinggi (`docs/hki/Surat-Pencatatan-Hak-Cipta-EC002026188077.png`).
+  - Menerbitkan dokumen induk **`HKI.md`** sebagai pembuktian autentik hukum yang dapat dibaca dan diverifikasi oleh publik di repositori GitHub.
+
+---
+
 ## [2.4.1] - 2026-09-30
 
 ### 🔒 Keamanan, Kebijakan Lisensi & Kepatuhan HKI (Security, Licensing & IP Compliance)

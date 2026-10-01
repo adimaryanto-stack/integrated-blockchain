@@ -16,13 +16,18 @@ const routeModuleMap: Record<string, string> = {
   "/broadcast": "Broadcast",
   "/wilayah": "Master Data Wilayah",
   "/access-control": "Access Control Matrix",
+  "/ai-settings": "Pengaturan AI Aksara",
+  "/polsek-settings": "Pengaturan API Polsek",
+  "/schools-settings": "Pengaturan API Data Sekolah",
 };
 
 export function DashboardLayout({
   pageTitle,
+  description: _description,
   children,
 }: {
   pageTitle: string;
+  description?: string;
   children: ReactNode;
 }) {
   const { currentUser, toasts, dismissToast, canAccess, quickLogin } = useAdminStore();

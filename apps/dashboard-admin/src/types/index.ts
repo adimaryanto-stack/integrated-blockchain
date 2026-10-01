@@ -204,3 +204,66 @@ export interface NlToSqlQueryLog {
   queriedAt: string;
   executedBy: string;
 }
+
+export interface PolsekApiConfig {
+  provider: "google_places" | "osm_overpass" | "polri_presisi" | "custom";
+  apiKey: string;
+  endpointUrl: string;
+  radiusKm: number;
+  emergencyHotline: string;
+  isActive: boolean;
+  fallbackOffline: boolean;
+  autoDispatchAlert: boolean;
+  updatedAt?: string;
+}
+
+export interface PolsekInfo {
+  id: string;
+  nama: string;
+  polres: string;
+  polda: string;
+  provinsi: string;
+  kabupatenKota: string;
+  kecamatan: string;
+  alamat: string;
+  telepon: string;
+  hotline: string;
+  latitude: number;
+  longitude: number;
+  jarakKm?: number;
+  mapsUrl?: string;
+  statusSiaga: string;
+}
+
+export interface SchoolsApiConfig {
+  provider: "dapodik" | "pddikti" | "satudata" | "emis" | "local_db";
+  apiKey: string;
+  clientId?: string;
+  clientSecret?: string;
+  endpointUrl: string;
+  jenjangScope: string[];
+  statusScope: "all" | "negeri" | "swasta";
+  syncInterval: "realtime" | "daily" | "weekly" | "manual";
+  isActive: boolean;
+  fallbackOffline: boolean;
+  autoValidateNpsn: boolean;
+  updatedAt?: string;
+}
+
+export interface SchoolSearchResult {
+  id: string;
+  npsn: string;
+  namaSatuan: string;
+  jenjang: Jenjang;
+  kementerianPembina: KementerianPembina;
+  statusKepemilikan: "Negeri" | "Swasta";
+  akreditasi?: string;
+  alamat?: string;
+  kecamatan?: string;
+  kabupatenKota?: string;
+  provinsi?: string;
+  totalSiswa?: number;
+  lastSyncAt?: string;
+}
+
+

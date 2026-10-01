@@ -5,11 +5,13 @@ export function Panel({
   action,
   children,
   accent,
+  className = "",
 }: {
   title?: string;
   action?: ReactNode;
   children: ReactNode;
   accent?: "ok" | "warn" | "danger";
+  className?: string;
 }) {
   const accentColor =
     accent === "ok"
@@ -22,7 +24,7 @@ export function Panel({
 
   return (
     <div
-      className={`rounded-md border border-line ${accentColor} border-l-[3px] bg-panel`}
+      className={`rounded-md border border-line ${accentColor} border-l-[3px] bg-panel ${className}`}
     >
       {(title || action) && (
         <div className="flex items-center justify-between border-b border-line px-4 py-3">

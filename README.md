@@ -1,6 +1,7 @@
 # 🏛️ Integrated Blockchain - Platform Transparansi Anggaran Pendidikan Indonesia
 
-[![Version](https://img.shields.io/badge/Version-v2.4.1%20(30%20Sept%202026)-blue.svg)](CHANGELOG.md)
+[![HKI Registered](https://img.shields.io/badge/Hak%20Cipta%20HKI-No.%20001519028%20(DJKI)-gold.svg)](HKI.md)
+[![Version](https://img.shields.io/badge/Version-v2.4.2%20(1%20Okt%202026)-blue.svg)](CHANGELOG.md)
 [![Status](https://img.shields.io/badge/All%2010%20Ports-100%25%20Verified%20Online-brightgreen.svg)](#-peta-10-port--akses-dashboard)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15%2F16-black.svg?logo=next.js&logoColor=white)](https://nextjs.org/)
@@ -12,10 +13,23 @@ Sistem tata kelola dan transparansi keuangan pendidikan Indonesia terintegrasi d
 
 ---
 
+## 🏛️ Hak Cipta Resmi Terdaftar (HKI Kementerian Hukum RI)
+
+> 🛡️ **SURAT PENCATATAN CIPTAAN No. 001519028** (Nomor Permohonan: `EC002026188077`, Tanggal 1 Oktober 2026)  
+> Diterbitkan oleh **Direktorat Jenderal Kekayaan Intelektual (DJKI), Kementerian Hukum Republik Indonesia**.  
+> **Pencipta & Pemegang Hak Cipta**: **Adi Maryanto**  
+> **Jenis Ciptaan**: Program Komputer  
+> **Judul Ciptaan**: *Integrated Blockchain – Platform Transparansi Anggaran Pendidikan Indonesia*  
+> **Masa Perlindungan**: Berlaku selama **50 tahun** sejak pertama kali diumumkan.  
+> 🔗 **[Lihat Sertifikat Lengkap & Unduh Berkas PDF Asli Bersegel BSrE di `HKI.md`](HKI.md)**
+
+---
+
 ## 🧭 Pusat Navigasi & Dokumentasi Proyek
 
 | Dokumen | Format | Deskripsi | Tautan Langsung |
 |---|:---:|---|:---:|
+| 🏛️ **Sertifikat Hak Cipta (HKI)** | `Markdown` / `PDF` | Surat Pencatatan Ciptaan resmi Kementerian Hukum RI (No. 001519028). | [**Buka `HKI.md`**](HKI.md) |
 | 🌐 **Panduan Visual & Interaktif** | `HTML` | Tampilan panduan grafis modern untuk pengguna umum / non-programmer. | [**Buka `README.html`**](README.html) |
 | 📝 **Changelog & Riwayat Rilis** | `Markdown` | Catatan lengkap versi, pembaruan terkini v2.4.1, dan log perbaikan sistem. | [**Buka `CHANGELOG.md`**](CHANGELOG.md) |
 | 📜 **Pemberitahuan Pihak Ketiga (HKI)** | `Markdown` | Pengakuan hak cipta & lisensi 52 dependensi open-source untuk pendaftaran HKI. | [**Buka `THIRD_PARTY_NOTICES.md`**](THIRD_PARTY_NOTICES.md) |
@@ -65,8 +79,11 @@ integrated-blockchain/
 │   ├── clean-cache.js                    # Pembersih cache .next & Turbopack 1-klik
 │   ├── setup-db.js                       # Inisialisasi & migrasi 35 tabel database
 │   └── setup-env.js                      # Generator berkas .env.local otomatis
+├── docs/
+│   └── hki/                              # Berkas Asli Surat Pencatatan Ciptaan DJKI (PDF & PNG)
 ├── start-all.bat / start-all.ps1         # Peluncur 1-Klik Seluruh Ekosistem 10 Layanan
 ├── stop-all.bat / stop-all.ps1           # Penghenti Aman Seluruh Port & Proses Node/Postgres
+├── HKI.md                                # Bukti Surat Pencatatan Ciptaan DJKI Kemenkumham RI
 ├── THIRD_PARTY_NOTICES.md                # Pengakuan Hak Cipta & Lisensi Dependensi Pihak Ketiga (HKI)
 ├── CHANGELOG.md                          # Catatan Rilis & Log Pembaruan Terkini
 ├── LICENSE                               # Dokumen Lisensi Resmi (Restricted Private Use Only)

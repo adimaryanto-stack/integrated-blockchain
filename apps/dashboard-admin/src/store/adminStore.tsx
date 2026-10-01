@@ -459,7 +459,17 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     const rolePerm = rolePermissions.find((r) => r.role === currentUser.role);
     if (!rolePerm) return false;
     const mod = rolePerm.permissions[module];
-    if (!mod) return false;
+    if (!mod) {
+      if (module === "Pengaturan API Polsek") {
+        if (currentUser.role === "ops_admin") return action !== "delete";
+        if (currentUser.role === "admin_kementerian") return action === "view";
+      }
+      if (module === "Pengaturan API Data Sekolah") {
+        if (currentUser.role === "ops_admin" || currentUser.role === "admin_kementerian") return action !== "delete";
+        if (currentUser.role === "admin_wilayah") return action === "view";
+      }
+      return false;
+    }
     if (action === "view") return mod.canView;
     if (action === "create") return mod.canCreate;
     if (action === "edit") return mod.canEdit;

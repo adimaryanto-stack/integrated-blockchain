@@ -28,6 +28,8 @@ const modulesList = [
   "Master Data Wilayah",
   "Access Control Matrix",
   "Pengaturan AI Aksara",
+  "Pengaturan API Polsek",
+  "Pengaturan API Data Sekolah",
 ];
 
 const roleOrder: AdminRole[] = [
