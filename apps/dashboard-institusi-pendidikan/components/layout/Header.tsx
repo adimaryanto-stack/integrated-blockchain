@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAppStore } from '@/lib/store';
 import { tahunAnggaranData } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
@@ -31,7 +32,9 @@ export default function Header({ title, subtitle, showYearSelector = true, showS
     notifications,
     markAsRead,
     markAllAsRead,
-    markAllAsUnread
+    markAllAsUnread,
+    currentUser,
+    setCurrentUser
   } = useAppStore();
   const [activeTahunList, setActiveTahunList] = useState<{ tahun: number; status: string }[]>(() => {
     if (tahunAnggaranData && tahunAnggaranData.length > 0) {
@@ -76,19 +79,46 @@ export default function Header({ title, subtitle, showYearSelector = true, showS
     }
   };
 
+  const syncUserStatus = async () => {
+    if (!currentUser?.username) return;
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, username, email, role, is_active')
+        .or(`id.eq.${currentUser.id},username.eq.${currentUser.username}`)
+        .limit(1);
+      if (!error && data && data.length > 0) {
+        const dbUser = data[0];
+        if (dbUser.is_active !== currentUser.is_active || dbUser.email !== currentUser.email) {
+          setCurrentUser({
+            ...currentUser,
+            is_active: dbUser.is_active,
+            email: dbUser.email || currentUser.email,
+          });
+        }
+      }
+    } catch (e) {}
+  };
+
   useEffect(() => {
     fetchYearsFromDb();
     checkDbHealth();
-    const interval = setInterval(checkDbHealth, 10000);
-    window.addEventListener('focus', () => {
+    syncUserStatus();
+    const interval = setInterval(() => {
+      checkDbHealth();
+      syncUserStatus();
+    }, 5000);
+    const onFocus = () => {
       fetchYearsFromDb();
       checkDbHealth();
-    });
+      syncUserStatus();
+    };
+    window.addEventListener('focus', onFocus);
     return () => {
       clearInterval(interval);
-      window.removeEventListener('focus', fetchYearsFromDb);
+      window.removeEventListener('focus', onFocus);
     };
-  }, []);
+  }, [currentUser?.username, currentUser?.id]);
 
   // Notification States
   const [showNotifications, setShowNotifications] = useState(false);
@@ -100,8 +130,25 @@ export default function Header({ title, subtitle, showYearSelector = true, showS
     setShowNotifications(prev => !prev);
   };
 
+  const isReadOnly = currentUser?.is_active === false;
+
   return (
     <header className="sticky top-0 z-20 bg-white/70 backdrop-blur-xl border-b border-border px-6 py-4">
+      {/* Sticky Read-Only Warning Banner */}
+      {isReadOnly && (
+        <div className="bg-rose-600 text-white px-6 py-2.5 -mx-6 -mt-4 mb-4 flex items-center justify-between text-xs shadow-md border-b border-rose-700 animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <span className="text-base leading-none">⛔</span>
+            <span className="leading-snug">
+              <strong>PERINGATAN:</strong> Akun {currentUser?.role === 'ADMIN' ? 'Admin Sekolah' : 'Operator'} Anda berstatus <strong>NON-AKTIF (Hanya Lihat)</strong>. Anda tidak dapat melakukan input, pengubahan data, persetujuan, atau pengunggahan dokumen. {currentUser?.role === 'ADMIN' ? 'Hubungi Super Admin Global untuk mengaktifkan kembali.' : 'Hubungi Admin Sekolah untuk mengaktifkan kembali.'}
+            </span>
+          </div>
+          <span className="text-[10px] bg-white/20 backdrop-blur-sm px-2.5 py-1 rounded-full uppercase font-bold tracking-wider shrink-0 border border-white/30">
+            Akses Dibatasi (Hanya Lihat)
+          </span>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button onClick={toggleSidebar} className="p-2 rounded-lg hover:bg-bg-card transition hidden lg:block">
@@ -253,6 +300,41 @@ export default function Header({ title, subtitle, showYearSelector = true, showS
               </>
             )}
           </div>
+
+          {/* User Profile Quick Pill / Link to Login */}
+          <Link
+            href="/login"
+            className={`flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full border shadow-xs transition-all text-xs ${
+              isReadOnly 
+                ? 'bg-rose-50/80 border-rose-300 hover:bg-rose-100/70' 
+                : 'bg-white/80 border-slate-200/80 hover:border-indigo-300 hover:bg-indigo-50/50'
+            }`}
+            title="Klik untuk ganti akun atau login"
+          >
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 ${
+              isReadOnly
+                ? 'bg-rose-600'
+                : currentUser?.role === 'OPERATOR' 
+                ? 'bg-gradient-to-br from-emerald-500 to-teal-600' 
+                : 'bg-gradient-to-br from-indigo-500 to-purple-600'
+            }`}>
+              {(currentUser?.username || 'KB').substring(0, 2).toUpperCase()}
+            </div>
+            <span className="font-semibold text-slate-700 hidden sm:inline truncate max-w-[120px]">
+              {currentUser?.username || 'admin.kbalikhlas'}
+            </span>
+            <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
+              isReadOnly
+                ? 'bg-rose-100 text-rose-700 border border-rose-300'
+                : currentUser?.role === 'OPERATOR' 
+                ? 'bg-emerald-100 text-emerald-800' 
+                : 'bg-indigo-100 text-indigo-800'
+            }`}>
+              {isReadOnly 
+                ? `${currentUser?.role === 'ADMIN' ? 'Admin' : 'Operator'} (Non-Aktif)` 
+                : currentUser?.role === 'OPERATOR' ? 'Operator' : 'Admin'}
+            </span>
+          </Link>
         </div>
       </div>
     </header>

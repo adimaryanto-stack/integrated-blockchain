@@ -6,11 +6,12 @@ import { useAppStore } from '@/lib/store';
 import { PaketProject, STATUS_LABELS, ProjectStatus } from '@/types';
 import { fmtRupiah } from '@/lib/utils/formatters';
 import Link from 'next/link';
-import { Plus, Search, FolderKanban, ArrowRight, Eye, Settings, Briefcase, Calendar, ChevronRight } from 'lucide-react';
+import { Plus, Search, FolderKanban, ArrowRight, Eye, Settings, Briefcase, Calendar, ChevronRight, Lock } from 'lucide-react';
 import TambahPaketModal from '@/components/paket-project/TambahPaketModal';
 
 export default function PaketProjectPage() {
-  const { activeTahun, paketProjectList, projectExpenses, projectVendors } = useAppStore();
+  const { activeTahun, paketProjectList, projectExpenses, projectVendors, currentUser } = useAppStore();
+  const isReadOnly = currentUser?.is_active === false;
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<'semua' | ProjectStatus>('semua');
@@ -131,13 +132,24 @@ export default function PaketProjectPage() {
             </div>
 
             {/* Add Button */}
-            <button
-              onClick={() => setTambahModalOpen(true)}
-              className="btn btn-primary bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/10 font-bold py-2.5 px-4 text-xs w-full lg:w-auto shrink-0 cursor-pointer flex items-center justify-center gap-1.5 rounded-xl transition-all"
-            >
-              <Plus size={14} />
-              Tambah Paket Project
-            </button>
+            {isReadOnly ? (
+              <button
+                disabled
+                className="btn py-2.5 px-4 text-xs bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-none w-full lg:w-auto shrink-0"
+                title="Akun Anda berstatus Non-Aktif (Hanya Lihat)."
+              >
+                <Lock size={14} />
+                Tambah Paket (Dinonaktifkan)
+              </button>
+            ) : (
+              <button
+                onClick={() => setTambahModalOpen(true)}
+                className="btn btn-primary bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/10 font-bold py-2.5 px-4 text-xs w-full lg:w-auto shrink-0 cursor-pointer flex items-center justify-center gap-1.5 rounded-xl transition-all"
+              >
+                <Plus size={14} />
+                Tambah Paket Project
+              </button>
+            )}
           </div>
 
           {/* Status Filters */}

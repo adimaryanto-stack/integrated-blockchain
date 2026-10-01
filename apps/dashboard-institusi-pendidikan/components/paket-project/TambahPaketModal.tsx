@@ -21,8 +21,11 @@ export default function TambahPaketModal({ isOpen, onClose, editProjectId }: Tam
     addPaketProject, 
     updatePaketProject, 
     addNotification,
-    addTransaksi
+    addTransaksi,
+    currentUser
   } = useAppStore();
+
+  const isReadOnly = currentUser?.is_active === false;
 
   const isEdit = !!editProjectId;
   const existingProject = isEdit ? paketProjectList.find(p => p.id === editProjectId) : null;
@@ -38,6 +41,10 @@ export default function TambahPaketModal({ isOpen, onClose, editProjectId }: Tam
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) {
+      alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat). Anda tidak dapat menambah atau mengubah paket project.');
+      return;
+    }
     if (!namaPaket.trim()) return;
 
     // Validation: cannot change status to 'selesai' if checklist is not 100%

@@ -4,7 +4,7 @@
 
 export type BudgetStatus = 'DRAFT' | 'ACTIVE' | 'CLOSED';
 export type Jenjang = 'UNIVERSITAS' | 'SMA' | 'SMP' | 'SD' | 'PAUD';
-export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'ADMIN_PROVINSI' | 'ADMIN_KABKOTA' | 'VIEWER' | 'AUDITOR' | 'PUBLIC_RESEARCHER';
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'ADMIN_PROVINSI' | 'ADMIN_KABKOTA' | 'VIEWER' | 'AUDITOR' | 'PUBLIC_RESEARCHER' | 'OPERATOR';
 
 export interface TahunAnggaran {
   id: string;
@@ -137,6 +137,7 @@ export interface User {
   institusi_id?: string;
   is_active: boolean;
   created_at: string;
+  password?: string;
 }
 
 export interface DashboardSummary {

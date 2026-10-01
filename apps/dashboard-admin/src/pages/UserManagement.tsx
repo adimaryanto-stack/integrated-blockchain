@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Panel } from "@/components/ui/Panel";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Modal } from "@/components/ui/Modal";
+import { SchoolNpsnSelector } from "@/components/SchoolNpsnSelector";
 import { useAdminStore } from "@/store/adminStore";
 import type { Dashboard, PlatformUser, UserStatus, BankHimbara, KementerianPembina, Jenjang } from "@/types";
 import {
@@ -20,6 +21,8 @@ import {
   Phone,
   Mail,
   Building,
+  Loader2,
+  Sparkles,
 } from "lucide-react";
 
 const dashboards: Dashboard[] = [
@@ -41,6 +44,8 @@ export function UserManagement() {
     resetPassword,
     currentUser,
     canAccess,
+    searchSchools,
+    lookupSchoolByNpsn,
   } = useAdminStore();
 
   const [activeDashboard, setActiveDashboard] = useState<Dashboard>("Institusi Pendidikan");
@@ -51,6 +56,10 @@ export function UserManagement() {
   const [kecamatan, setKecamatan] = useState("");
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Live on-demand school lookup when typing NPSN in search bar
+  const [npsnMatchedSchool, setNpsnMatchedSchool] = useState<any>(null);
+  const [isSearchingNpsn, setIsSearchingNpsn] = useState(false);
 
   // Modals state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -113,6 +122,39 @@ export function UserManagement() {
     return result;
   }, [users, currentUser, institutions]);
 
+  // Live on-demand school lookup when typing NPSN or school name in search bar
+  useEffect(() => {
+    const trimmed = search.trim();
+    if (!trimmed || trimmed.length < 3) {
+      setNpsnMatchedSchool(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingNpsn(true);
+      try {
+        const isNpsnQuery = /^\d+$/.test(trimmed);
+        if (isNpsnQuery) {
+          const lookup = await lookupSchoolByNpsn(trimmed);
+          if (lookup.found && lookup.schools && lookup.schools.length > 0) {
+            setNpsnMatchedSchool(lookup.schools[0]);
+          } else {
+            setNpsnMatchedSchool(null);
+          }
+        } else {
+          await searchSchools(trimmed);
+          setNpsnMatchedSchool(null);
+        }
+      } catch (err) {
+        console.error("Search error:", err);
+      } finally {
+        setIsSearchingNpsn(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [search, lookupSchoolByNpsn, searchSchools]);
+
   // Filtered institutions for hierarchy
   const filteredInstitutions = useMemo(() => {
     if (!isInstitusi) return [];
@@ -122,47 +164,53 @@ export function UserManagement() {
       const matchProv = !provinsi || i.provinsi === provinsi;
       const matchKab = !kabKota || i.kabupatenKota === kabKota;
       const matchKec = !kecamatan || i.kecamatan === kecamatan;
-      const matchSearch =
-        !search ||
-        i.namaSatuan.toLowerCase().includes(search.toLowerCase()) ||
-        i.npsn.includes(search);
-      return matchKem && matchJen && matchProv && matchKab && matchKec && matchSearch;
+      return matchKem && matchJen && matchProv && matchKab && matchKec;
     });
-  }, [isInstitusi, kementerian, jenjang, provinsi, kabKota, kecamatan, search, institutions]);
+  }, [isInstitusi, kementerian, jenjang, provinsi, kabKota, kecamatan, institutions]);
 
   // Filtered rows for current dashboard tab
   const rows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+
     if (isInstitusi) {
-      const allowedInstIds = new Set(filteredInstitutions.map((i) => i.id));
+      const hasHierarchyFilter = !!(kementerian || jenjang || provinsi || kabKota || kecamatan);
+      const allowedInstIds = hasHierarchyFilter ? new Set(filteredInstitutions.map((i) => i.id)) : null;
+
       return scopedUsers.filter((u) => {
         if (u.dashboard !== "Institusi Pendidikan") return false;
-        if (!u.institutionId || !allowedInstIds.has(u.institutionId)) return false;
-        if (search) {
-          const matchUser =
-            u.name.toLowerCase().includes(search.toLowerCase()) ||
-            u.email.toLowerCase().includes(search.toLowerCase());
-          const inst = institutions.find((i) => i.id === u.institutionId);
-          const matchInst =
-            inst?.namaSatuan.toLowerCase().includes(search.toLowerCase()) ||
-            inst?.npsn.includes(search);
-          return matchUser || matchInst;
+
+        // If hierarchical dropdown filters are active, check if user's school matches
+        if (allowedInstIds && (!u.institutionId || !allowedInstIds.has(u.institutionId))) {
+          return false;
         }
-        return true;
+
+        if (!q) return true;
+
+        const inst = institutions.find((i) => i.id === u.institutionId || i.npsn === u.npsn);
+        const matchName = u.name?.toLowerCase().includes(q);
+        const matchEmail = u.email?.toLowerCase().includes(q);
+        const matchPhone = u.phone?.toLowerCase().includes(q);
+        const matchUserNpsn = u.npsn?.toLowerCase().includes(q);
+        const matchUserInst = u.institutionName?.toLowerCase().includes(q);
+        const matchInstNpsn = inst?.npsn?.toLowerCase().includes(q);
+        const matchInstName = inst?.namaSatuan?.toLowerCase().includes(q);
+        const matchLocation = inst?.kabupatenKota?.toLowerCase().includes(q) || inst?.kecamatan?.toLowerCase().includes(q);
+
+        return matchName || matchEmail || matchPhone || matchUserNpsn || matchUserInst || matchInstNpsn || matchInstName || matchLocation;
       });
     }
 
     return scopedUsers.filter((u) => {
       if (u.dashboard !== activeDashboard) return false;
-      if (search) {
-        return (
-          u.name.toLowerCase().includes(search.toLowerCase()) ||
-          u.email.toLowerCase().includes(search.toLowerCase()) ||
-          (u.bankName && u.bankName.toLowerCase().includes(search.toLowerCase()))
-        );
-      }
-      return true;
+      if (!q) return true;
+      return (
+        u.name?.toLowerCase().includes(q) ||
+        u.email?.toLowerCase().includes(q) ||
+        (u.phone && u.phone.toLowerCase().includes(q)) ||
+        (u.bankName && u.bankName.toLowerCase().includes(q))
+      );
     });
-  }, [isInstitusi, activeDashboard, scopedUsers, filteredInstitutions, search, institutions]);
+  }, [isInstitusi, activeDashboard, scopedUsers, filteredInstitutions, search, institutions, kementerian, jenjang, provinsi, kabKota, kecamatan]);
 
   // Selection handlers
   const toggleAll = () => {
@@ -187,14 +235,14 @@ export function UserManagement() {
     setSelectedIds(new Set());
   };
 
-  // Open Add modal
-  const handleOpenAdd = () => {
+  // Open Add modal (optional preset school from NPSN quick matcher)
+  const handleOpenAdd = (presetSchool?: any) => {
     setFormData({
       name: "",
       email: "",
       phone: "",
-      dashboard: activeDashboard,
-      institutionId: institutions[0]?.id || "",
+      dashboard: "Institusi Pendidikan",
+      institutionId: presetSchool ? presetSchool.id : (institutions[0]?.id || ""),
       bankName: "BRI",
       status: "aktif",
     });
@@ -418,15 +466,27 @@ export function UserManagement() {
       )}
 
       {/* Search and Bulk Action Toolbar */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="relative flex-1 min-w-[260px]">
-          <Search size={15} className="absolute left-3 top-2.5 text-muted" />
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="relative flex-1 min-w-[280px]">
+          <Search size={15} className="absolute left-3 top-2.5 text-muted pointer-events-none" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari nama pengguna, email, NPSN, atau nama satuan pendidikan..."
-            className="focus-ring w-full rounded-sm border border-line bg-panel py-2 pl-9 pr-3 text-xs text-ink shadow-sm"
+            placeholder="Cari nama pengguna, email, NPSN (contoh: 69893669), atau nama satuan..."
+            className="focus-ring w-full rounded-sm border border-line bg-panel py-2 pl-9 pr-8 text-xs text-ink shadow-sm"
           />
+          <div className="absolute right-2.5 top-2.5 flex items-center gap-1">
+            {isSearchingNpsn && <Loader2 size={13} className="animate-spin text-navy" />}
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="text-muted hover:text-ink"
+              >
+                <XCircle size={14} />
+              </button>
+            )}
+          </div>
         </div>
 
         {selectedIds.size > 0 && (
@@ -455,6 +515,86 @@ export function UserManagement() {
         )}
       </div>
 
+      {/* Quick Search Helper Chips */}
+      <div className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px] text-muted">
+        <span className="font-medium text-navy flex items-center gap-1">
+          <Sparkles size={12} /> Coba cari NPSN / Pengguna:
+        </span>
+        <button
+          type="button"
+          onClick={() => setSearch("69893669")}
+          className="rounded bg-panel hover:bg-base text-ink px-2 py-0.5 border border-line font-mono font-semibold"
+        >
+          69893669 (KB AL-IKHLAS)
+        </button>
+        <button
+          type="button"
+          onClick={() => setSearch("admin.kbalikhlas")}
+          className="rounded bg-panel hover:bg-base text-ink px-2 py-0.5 border border-line font-mono font-semibold"
+        >
+          admin.kbalikhlas
+        </button>
+        <button
+          type="button"
+          onClick={() => setSearch("admin@kbalikhlas.sch.id")}
+          className="rounded bg-panel hover:bg-base text-ink px-2 py-0.5 border border-line font-mono font-semibold"
+        >
+          admin@kbalikhlas.sch.id
+        </button>
+        <button
+          type="button"
+          onClick={() => setSearch("10208665")}
+          className="rounded bg-panel hover:bg-base text-ink px-2 py-0.5 border border-line font-mono font-semibold"
+        >
+          10208665 (SDN 030415)
+        </button>
+      </div>
+
+      {/* Live NPSN Match Banner */}
+      {npsnMatchedSchool && (
+        <div className="mb-4 rounded-sm border border-navy/30 bg-navy/5 p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-sm animate-in fade-in">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-navy text-white">
+              <Building size={20} />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-bold text-sm text-ink">{npsnMatchedSchool.namaSatuan}</span>
+                <span className="rounded bg-navy text-white px-2 py-0.5 text-[11px] font-mono font-bold tracking-wide">
+                  NPSN: {npsnMatchedSchool.npsn}
+                </span>
+                <span className="rounded bg-navy/10 text-navy px-2 py-0.5 text-[10px] font-semibold">
+                  {npsnMatchedSchool.jenjang} · {npsnMatchedSchool.kementerianPembina}
+                </span>
+              </div>
+              <div className="text-xs text-muted mt-0.5">
+                📍 {npsnMatchedSchool.kabupatenKota}, {npsnMatchedSchool.provinsi}
+                {npsnMatchedSchool.users && npsnMatchedSchool.users.length > 0 ? (
+                  <span className="ml-2 font-semibold text-status-ok">
+                    ✓ {npsnMatchedSchool.users.length} akun terdaftar di sistem
+                  </span>
+                ) : (
+                  <span className="ml-2 font-medium text-status-warn">
+                    ⚠️ Belum ada akun pengguna untuk sekolah ini
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {canCreate && (
+            <button
+              type="button"
+              onClick={() => handleOpenAdd(npsnMatchedSchool)}
+              className="focus-ring inline-flex items-center gap-1.5 rounded-sm bg-navy px-3 py-1.5 text-xs font-semibold text-white hover:bg-navy-light shadow-sm"
+            >
+              <UserPlus size={13} />
+              + Buat Akun Sekolah Ini
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Users Table */}
       <Panel>
         <div className="overflow-x-auto">
@@ -479,7 +619,7 @@ export function UserManagement() {
             </thead>
             <tbody className="divide-y divide-line">
               {rows.map((u) => {
-                const inst = institutions.find((i) => i.id === u.institutionId);
+                const inst = institutions.find((i) => i.id === u.institutionId || i.npsn === u.npsn);
                 return (
                   <tr key={u.id} className="hover:bg-base/40 transition-colors">
                     <td className="py-3">
@@ -507,19 +647,32 @@ export function UserManagement() {
                     </td>
                     {isInstitusi && (
                       <td className="py-3">
-                        {inst ? (
-                          <div>
-                            <div className="font-medium text-ink flex items-center gap-1">
-                              <Building size={12} className="text-muted shrink-0" />
-                              <span>{inst.namaSatuan}</span>
+                        {(() => {
+                          const schoolName = inst?.namaSatuan || u.institutionName;
+                          const schoolNpsn = inst?.npsn || u.npsn;
+                          const schoolJenjang = inst?.jenjang || (schoolName?.startsWith("KB") ? "PAUD" : "SD");
+                          const schoolKem = inst?.kementerianPembina || "Kemendikdasmen";
+                          if (!schoolName && !schoolNpsn) return <span className="text-muted">—</span>;
+                          return (
+                            <div>
+                              <div className="font-semibold text-ink flex items-center gap-1.5">
+                                <Building size={13} className="text-navy shrink-0" />
+                                <span>{schoolName || "—"}</span>
+                              </div>
+                              <div className="text-[10px] text-muted font-mono mt-0.5 flex flex-wrap items-center gap-1.5">
+                                {schoolNpsn && (
+                                  <span className="rounded bg-navy/10 px-1.5 py-0.2 text-navy font-bold">
+                                    NPSN: {schoolNpsn}
+                                  </span>
+                                )}
+                                <span>·</span>
+                                <span>{schoolJenjang}</span>
+                                <span>·</span>
+                                <span>{schoolKem}</span>
+                              </div>
                             </div>
-                            <div className="text-[10px] text-muted font-mono">
-                              NPSN: {inst.npsn} · {inst.jenjang} · {inst.kementerianPembina}
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-muted">—</span>
-                        )}
+                          );
+                        })()}
                       </td>
                     )}
                     {activeDashboard === "Bank" && (
@@ -672,22 +825,13 @@ export function UserManagement() {
           </div>
 
           {formData.dashboard === "Institusi Pendidikan" && (
-            <div>
-              <label className="mb-1 block font-semibold text-ink">Satuan Pendidikan Rujukan</label>
-              <select
-                value={formData.institutionId}
-                onChange={(e) => setFormData({ ...formData, institutionId: e.target.value })}
-                className="focus-ring w-full rounded border border-line p-2 text-ink"
-                required
-              >
-                <option value="">Pilih Satuan Pendidikan</option>
-                {institutions.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.namaSatuan} (NPSN: {i.npsn}) — {i.kementerianPembina} ({i.kabupatenKota})
-                  </option>
-                ))}
-              </select>
-            </div>
+            <SchoolNpsnSelector
+              value={formData.institutionId}
+              onChange={(schoolId) => setFormData({ ...formData, institutionId: schoolId })}
+              institutions={institutions}
+              searchSchools={searchSchools}
+              required
+            />
           )}
 
           {formData.dashboard === "Bank" && (
@@ -796,20 +940,13 @@ export function UserManagement() {
           </div>
 
           {formData.dashboard === "Institusi Pendidikan" && (
-            <div>
-              <label className="mb-1 block font-semibold text-ink">Satuan Pendidikan</label>
-              <select
-                value={formData.institutionId}
-                onChange={(e) => setFormData({ ...formData, institutionId: e.target.value })}
-                className="focus-ring w-full rounded border border-line p-2 text-ink"
-              >
-                {institutions.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.namaSatuan} (NPSN: {i.npsn})
-                  </option>
-                ))}
-              </select>
-            </div>
+            <SchoolNpsnSelector
+              value={formData.institutionId}
+              onChange={(schoolId) => setFormData({ ...formData, institutionId: schoolId })}
+              institutions={institutions}
+              searchSchools={searchSchools}
+              required
+            />
           )}
 
           {formData.dashboard === "Bank" && (

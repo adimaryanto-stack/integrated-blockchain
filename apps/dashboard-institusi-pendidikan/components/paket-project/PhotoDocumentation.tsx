@@ -3,14 +3,15 @@
 import { useState, useMemo } from 'react';
 import { useAppStore } from '@/lib/store';
 import { TahapProject, ProjectPhoto, TAHAP_LABELS } from '@/types';
-import { Camera, Trash2, Calendar, FileText, Check, Plus, Image as ImageIcon } from 'lucide-react';
+import { Camera, Trash2, Calendar, FileText, Check, Plus, Image as ImageIcon, Lock } from 'lucide-react';
 
 interface PhotoDocumentationProps {
   projectId: string;
 }
 
 export default function PhotoDocumentation({ projectId }: PhotoDocumentationProps) {
-  const { projectPhotos, addProjectPhoto, removeProjectPhoto, addNotification } = useAppStore();
+  const { projectPhotos, addProjectPhoto, removeProjectPhoto, addNotification, currentUser } = useAppStore();
+  const isReadOnly = currentUser?.is_active === false;
 
   const [activeTab, setActiveTab] = useState<TahapProject>('pra_produksi');
   const [caption, setCaption] = useState('');
@@ -22,6 +23,10 @@ export default function PhotoDocumentation({ projectId }: PhotoDocumentationProp
   }, [projectPhotos, projectId, activeTab]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isReadOnly) {
+      alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat). Anda tidak dapat mengunggah foto.');
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -34,7 +39,7 @@ export default function PhotoDocumentation({ projectId }: PhotoDocumentationProp
         file_url: reader.result as string,
         caption: caption.trim() || 'Dokumentasi kegiatan',
         tanggal_ambil: new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
-        uploaded_by: 'admin.sd01menteng',
+        uploaded_by: currentUser?.username || 'admin.kbalikhlas',
         created_at: new Date().toISOString(),
       };
 
@@ -52,9 +57,10 @@ export default function PhotoDocumentation({ projectId }: PhotoDocumentationProp
   };
 
   const handleSaveCaption = (photoId: string) => {
-    // Simply mutate or find and set in local store
-    // Since Zustand does not have direct update for photos (only add/remove), we can simulate by editing list in store.
-    // Let's implement update in store? Or we can just use the store setter.
+    if (isReadOnly) {
+      alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat).');
+      return;
+    }
     const store = useAppStore.getState();
     store.setProjectPhotos(prev =>
       prev.map(p => p.id === photoId ? { ...p, caption: editingCaptionText } : p)
@@ -82,37 +88,46 @@ export default function PhotoDocumentation({ projectId }: PhotoDocumentationProp
       </div>
 
       {/* Upload Zone & Caption Form */}
-      <div className="glass-card p-5 border border-slate-200/60">
-        <h4 className="text-xs font-bold text-text-primary mb-3 flex items-center gap-1.5">
-          <span>📸</span> Unggah Foto Dokumentasi Baru
-        </h4>
-
-        <div className="flex flex-col md:flex-row gap-4 items-stretch">
-          <div className="flex-1 space-y-3">
-            <input
-              type="text"
-              placeholder="Berikan keterangan/caption singkat mengenai foto ini..."
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-text-primary focus:outline-none focus:border-blue-500 focus:bg-white transition-all placeholder:text-text-muted font-medium"
-            />
-            <p className="text-[10px] text-text-muted font-medium">
-              Tahap Aktif: <span className="font-extrabold text-blue-600 uppercase">{TAHAP_LABELS[activeTab]}</span>
-            </p>
+      {isReadOnly ? (
+        <div className="glass-card p-4 border border-rose-200 bg-rose-50/70 rounded-2xl flex items-center gap-3 shadow-xs">
+          <Lock size={18} className="text-rose-600 shrink-0" />
+          <div className="text-xs text-rose-900 leading-snug">
+            <span className="font-bold">Unggah Dokumentasi Dinonaktifkan:</span> Akun Anda saat ini berstatus <strong>NON-AKTIF (Hanya Lihat)</strong>. Anda hanya dapat melihat foto-foto dokumentasi yang telah tersimpan.
           </div>
-
-          <label className="flex-shrink-0 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all cursor-pointer select-none">
-            <Camera size={16} />
-            <span>PILIH & UNGGAH FOTO</span>
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileUpload}
-            />
-          </label>
         </div>
-      </div>
+      ) : (
+        <div className="glass-card p-5 border border-slate-200/60">
+          <h4 className="text-xs font-bold text-text-primary mb-3 flex items-center gap-1.5">
+            <span>📸</span> Unggah Foto Dokumentasi Baru
+          </h4>
+
+          <div className="flex flex-col md:flex-row gap-4 items-stretch">
+            <div className="flex-1 space-y-3">
+              <input
+                type="text"
+                placeholder="Berikan keterangan/caption singkat mengenai foto ini..."
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-text-primary focus:outline-none focus:border-blue-500 focus:bg-white transition-all placeholder:text-text-muted font-medium"
+              />
+              <p className="text-[10px] text-text-muted font-medium">
+                Tahap Aktif: <span className="font-extrabold text-blue-600 uppercase">{TAHAP_LABELS[activeTab]}</span>
+              </p>
+            </div>
+
+            <label className="flex-shrink-0 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all cursor-pointer select-none">
+              <Camera size={16} />
+              <span>PILIH & UNGGAH FOTO</span>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+            </label>
+          </div>
+        </div>
+      )}
 
       {/* Gallery Grid */}
       {filteredPhotos.length > 0 ? (
@@ -127,13 +142,15 @@ export default function PhotoDocumentation({ projectId }: PhotoDocumentationProp
                   alt={photo.caption}
                   className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                 />
-                <button
-                  onClick={() => removeProjectPhoto(photo.id)}
-                  className="absolute top-2.5 right-2.5 p-2 bg-black/60 hover:bg-rose-600 text-white rounded-full transition shadow cursor-pointer opacity-0 group-hover:opacity-100"
-                  title="Hapus foto"
-                >
-                  <Trash2 size={12} />
-                </button>
+                {!isReadOnly && (
+                  <button
+                    onClick={() => removeProjectPhoto(photo.id)}
+                    className="absolute top-2.5 right-2.5 p-2 bg-black/60 hover:bg-rose-600 text-white rounded-full transition shadow cursor-pointer opacity-0 group-hover:opacity-100"
+                    title="Hapus foto"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                )}
               </div>
 
               {/* Card Meta & Caption */}

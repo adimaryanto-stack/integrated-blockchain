@@ -5,7 +5,7 @@ import Header from '@/components/layout/Header';
 import { useAppStore } from '@/lib/store';
 import { STATUS_LABELS, ProjectStatus } from '@/types';
 import Link from 'next/link';
-import { ChevronRight, Calendar, User, Eye, ArrowLeft, Camera, FileText, Briefcase, Settings, CloudUpload } from 'lucide-react';
+import { ChevronRight, Calendar, User, Eye, ArrowLeft, Camera, FileText, Briefcase, Settings, CloudUpload, Lock } from 'lucide-react';
 import PhotoDocumentation from '@/components/paket-project/PhotoDocumentation';
 import ExpenseTable from '@/components/paket-project/ExpenseTable';
 import VendorForm from '@/components/paket-project/VendorForm';
@@ -68,7 +68,8 @@ export default function PaketProjectDetailPage(props: { params: Promise<{ id: st
   const params = use(props.params);
   const projectId = params.id;
 
-  const { paketProjectList, removePaketProject, addNotification } = useAppStore();
+  const { paketProjectList, removePaketProject, addNotification, currentUser } = useAppStore();
+  const isReadOnly = currentUser?.is_active === false;
 
   const project = useMemo(() => {
     return paketProjectList.find((p) => p.id === projectId);
@@ -81,6 +82,10 @@ export default function PaketProjectDetailPage(props: { params: Promise<{ id: st
 
   const handleSaveToSupabase = async () => {
     if (!project) return;
+    if (isReadOnly) {
+      alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat). Anda tidak dapat menyimpan data ke Cloud.');
+      return;
+    }
     setIsSavingSupabase(true);
     try {
       // 1. Save Project Info
@@ -285,25 +290,38 @@ export default function PaketProjectDetailPage(props: { params: Promise<{ id: st
           </div>
 
           <div className="flex gap-2 w-full md:w-auto">
-            <button
-              onClick={handleSaveToSupabase}
-              disabled={isSavingSupabase}
-              className={`btn py-2 px-4 flex items-center justify-center gap-1.5 text-xs font-bold rounded-xl transition w-full md:w-auto cursor-pointer ${
-                isSavingSupabase
-                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                  : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/15'
-              }`}
-            >
-              <CloudUpload size={14} />
-              {isSavingSupabase ? 'Menyimpan...' : 'Simpan ke Cloud'}
-            </button>
-            <button
-              onClick={() => setEditModalOpen(true)}
-              className="btn py-2 px-4 bg-slate-100 hover:bg-slate-200 text-text-primary flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer rounded-xl transition w-full md:w-auto"
-            >
-              <Settings size={14} />
-              Edit Info Paket
-            </button>
+            {isReadOnly ? (
+              <button
+                disabled
+                className="btn py-2 px-4 flex items-center justify-center gap-1.5 text-xs font-bold rounded-xl transition w-full md:w-auto bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shadow-none"
+                title="Akun Anda berstatus Non-Aktif (Hanya Lihat)."
+              >
+                <Lock size={14} />
+                Mode Hanya Lihat (Cloud Dikunci)
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={handleSaveToSupabase}
+                  disabled={isSavingSupabase}
+                  className={`btn py-2 px-4 flex items-center justify-center gap-1.5 text-xs font-bold rounded-xl transition w-full md:w-auto cursor-pointer ${
+                    isSavingSupabase
+                      ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/15'
+                  }`}
+                >
+                  <CloudUpload size={14} />
+                  {isSavingSupabase ? 'Menyimpan...' : 'Simpan ke Cloud'}
+                </button>
+                <button
+                  onClick={() => setEditModalOpen(true)}
+                  className="btn py-2 px-4 bg-slate-100 hover:bg-slate-200 text-text-primary flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer rounded-xl transition w-full md:w-auto"
+                >
+                  <Settings size={14} />
+                  Edit Info Paket
+                </button>
+              </>
+            )}
           </div>
         </div>
 

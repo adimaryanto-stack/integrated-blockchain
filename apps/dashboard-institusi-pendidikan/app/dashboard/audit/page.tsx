@@ -10,7 +10,7 @@ import {
   ShieldAlert, ShieldCheck, AlertTriangle, Play,
   Loader2, CheckCircle2, FileText, RefreshCw, Info,
   HelpCircle, MapPin, Calendar, User, Wrench, Send,
-  MessageSquare, FileSearch, X, Award, Check
+  MessageSquare, FileSearch, X, Award, Check, Lock
 } from 'lucide-react';
 
 interface ChatMessage {
@@ -21,7 +21,9 @@ interface ChatMessage {
 }
 
 export default function AuditPage() {
-  const { activeTahun } = useAppStore();
+  const { activeTahun, currentUser } = useAppStore();
+  const isOperator = currentUser?.role === 'OPERATOR';
+  const isReadOnly = isOperator || currentUser?.is_active === false;
   const schoolId = 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7';
   const schoolName = 'KB AL-IKHLAS';
   const npsn = '69893669';
@@ -113,6 +115,10 @@ export default function AuditPage() {
 
   // Run Gemini AI Scan specifically for KB AL-IKHLAS
   const handleStartScan = () => {
+    if (isReadOnly) {
+      alert('Akses Ditolak: Fitur AI Compliance Scanner hanya dapat dijalankan oleh Admin Sekolah yang aktif.');
+      return;
+    }
     setScanStatus('SCANNING');
     setScanProgress(0);
     
@@ -408,23 +414,34 @@ export default function AuditPage() {
                   <p className="text-[10px] text-text-muted mt-0.5">NPSN: {npsn} • Kab. Aceh Barat</p>
                 </div>
 
-                <button
-                  onClick={handleStartScan}
-                  disabled={scanStatus === 'SCANNING'}
-                  className="w-full btn btn-primary py-2.5 text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/10 cursor-pointer disabled:opacity-50"
-                >
-                  {scanStatus === 'SCANNING' ? (
-                    <>
-                      <Loader2 className="animate-spin" size={14} />
-                      <span>Sedang Memindai... ({Math.round(scanProgress)}%)</span>
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw size={14} />
-                      <span>Jalankan AI Audit Scan Sekarang</span>
-                    </>
-                  )}
-                </button>
+                {isReadOnly ? (
+                  <button
+                    disabled
+                    className="w-full btn bg-slate-100 text-slate-400 border border-slate-200 py-2.5 text-xs font-bold flex items-center justify-center gap-2 cursor-not-allowed opacity-75 shadow-none"
+                    title={isOperator ? "Audit Scanner hanya dapat dijalankan oleh Admin Sekolah. Operator berstatus Read Only." : "Akun Admin Anda berstatus non-aktif. Tidak dapat menjalankan audit scan."}
+                  >
+                    <Lock size={14} />
+                    <span>Pemindaian Terkunci (Mode Baca Saja)</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleStartScan}
+                    disabled={scanStatus === 'SCANNING'}
+                    className="w-full btn btn-primary py-2.5 text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/10 cursor-pointer disabled:opacity-50"
+                  >
+                    {scanStatus === 'SCANNING' ? (
+                      <>
+                        <Loader2 className="animate-spin" size={14} />
+                        <span>Sedang Memindai... ({Math.round(scanProgress)}%)</span>
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw size={14} />
+                        <span>Jalankan AI Audit Scan Sekarang</span>
+                      </>
+                    )}
+                  </button>
+                )}
 
                 {scanStatus === 'SCANNING' && (
                   <div className="space-y-2 pt-2 animate-fade-in">

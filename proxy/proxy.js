@@ -602,12 +602,14 @@ async function fetchOverpassPolsek(lat, lon, radiusKm = 15, timeoutSec = 8) {
 (
   node["amenity"="police"](around:${radiusMeters},${lat},${lon});
   way["amenity"="police"](around:${radiusMeters},${lat},${lon});
+  relation["amenity"="police"](around:${radiusMeters},${lat},${lon});
 );
-out center tags 10;`;
+out center tags 15;`;
 
   const endpoints = [
     'https://overpass-api.de/api/interpreter',
-    'https://lz4.overpass-api.de/api/interpreter'
+    'https://lz4.overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter'
   ];
 
   for (const url of endpoints) {
@@ -622,7 +624,14 @@ out center tags 10;`;
         signal: AbortSignal.timeout(timeoutSec * 1000)
       });
       if (res.ok) {
-        const data = await res.json();
+        const text = await res.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          // If server returned XML error page with 200 OK
+          continue;
+        }
         if (Array.isArray(data.elements) && data.elements.length > 0) {
           return data.elements.map((el) => {
             const itemLat = el.lat || el.center?.lat || lat;

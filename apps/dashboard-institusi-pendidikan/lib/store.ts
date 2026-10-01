@@ -81,6 +81,26 @@ interface AppState {
   updateProjectVendor: (id: string, data: Partial<ProjectVendor>) => void;
   removeProjectVendor: (id: string) => void;
   setProjectVendors: (list: ProjectVendor[] | ((prev: ProjectVendor[]) => ProjectVendor[])) => void;
+
+  // Auth state
+  currentUser: CurrentSchoolUser;
+  setCurrentUser: (user: CurrentSchoolUser) => void;
+  logout: () => void;
+}
+
+export interface CurrentSchoolUser {
+  id: string;
+  username: string;
+  email: string;
+  role: 'ADMIN' | 'OPERATOR';
+  nama_sekolah: string;
+  npsn: string;
+  is_active?: boolean;
+}
+
+export function isReadOnlyUser(user: CurrentSchoolUser | null | undefined): boolean {
+  if (!user) return false;
+  return user.is_active === false;
 }
 
 // Seed data for KB AL-IKHLAS
@@ -395,5 +415,42 @@ export const useAppStore = create<AppState>((set) => ({
   setProjectVendors: (list) => set((state) => ({
     projectVendors: typeof list === 'function' ? list(state.projectVendors) : list
   })),
+
+  // Auth state implementation
+  currentUser: {
+    id: 'u-kbalikhlas-admin',
+    username: 'admin.kbalikhlas',
+    email: 'admin@kbalikhlas.sch.id',
+    role: 'ADMIN',
+    nama_sekolah: 'KB AL-IKHLAS',
+    npsn: '69893669',
+    is_active: true
+  },
+  setCurrentUser: (user) => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('active_school_user', JSON.stringify(user));
+      } catch (e) {}
+    }
+    set({ currentUser: user });
+  },
+  logout: () => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('active_school_user');
+      } catch (e) {}
+    }
+    set({
+      currentUser: {
+        id: 'u-kbalikhlas-admin',
+        username: 'admin.kbalikhlas',
+        email: 'admin@kbalikhlas.sch.id',
+        role: 'ADMIN',
+        nama_sekolah: 'KB AL-IKHLAS',
+        npsn: '69893669',
+        is_active: true
+      }
+    });
+  },
 }));
 

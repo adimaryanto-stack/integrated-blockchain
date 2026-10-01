@@ -60,6 +60,8 @@ export interface PlatformUser {
   id: string;
   dashboard: Dashboard;
   institutionId?: string;
+  institutionName?: string;
+  npsn?: string;
   bankName?: BankHimbara;
   name: string;
   email: string;

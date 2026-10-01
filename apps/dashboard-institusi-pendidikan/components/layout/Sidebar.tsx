@@ -6,9 +6,9 @@ import { useAppStore } from '@/lib/store';
 import {
   LayoutDashboard, DollarSign, MapPin, Building2,
   GraduationCap, Users, ChevronDown, ChevronRight,
-  Menu, X, Landmark, School, ShieldCheck, CreditCard, ClipboardList, FolderKanban
+  Menu, X, Landmark, School, ShieldCheck, CreditCard, ClipboardList, FolderKanban, LogOut
 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 
 const jenjangItems = [
   { label: 'Universitas', href: '/dashboard/jenjang/universitas' },
@@ -20,14 +20,21 @@ const jenjangItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { sidebarOpen, toggleSidebar, dbData, isSupabaseMode } = useAppStore();
+  const { sidebarOpen, toggleSidebar, dbData, isSupabaseMode, currentUser, setCurrentUser, logout } = useAppStore();
   const [jenjangOpen, setJenjangOpen] = useState(pathname.includes('/jenjang'));
 
-  const activeUser = useMemo(() => {
-    return {
-      username: 'KB AL-IKHLAS',
-      email: 'operator@kbalikhlas.sch.id'
-    };
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('active_school_user');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.username && parsed.username !== currentUser?.username) {
+            setCurrentUser(parsed);
+          }
+        } catch (e) {}
+      }
+    }
   }, []);
 
   const isActive = (href: string) => pathname === href;
@@ -114,15 +121,55 @@ export default function Sidebar() {
 
         {/* Footer */}
         <div className="p-4 border-t border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-[10px] font-extrabold text-white">
-              {activeUser.username.substring(0, 2).toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-text-primary truncate">{activeUser.username}</p>
-              <p className="text-[10px] text-text-muted truncate">{activeUser.email}</p>
-            </div>
-          </div>
+          {(() => {
+            const isReadOnly = currentUser?.is_active === false;
+            return (
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white shrink-0 ${
+                    isReadOnly
+                      ? 'bg-rose-600 shadow-sm'
+                      : currentUser?.role === 'OPERATOR' 
+                      ? 'bg-gradient-to-br from-emerald-500 to-teal-600' 
+                      : 'bg-gradient-to-br from-indigo-500 to-purple-600'
+                  }`}>
+                    {(currentUser?.username || 'KB').substring(0, 2).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-xs font-semibold text-text-primary truncate">{currentUser?.username || 'admin.kbalikhlas'}</p>
+                    </div>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <span className={`text-[9px] px-1.5 py-0.2 rounded font-semibold uppercase tracking-wider ${
+                        isReadOnly
+                          ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                          : currentUser?.role === 'OPERATOR' 
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
+                          : 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                      }`}>
+                        {isReadOnly ? 'Non-Aktif' : currentUser?.role === 'OPERATOR' ? 'Operator' : 'Admin'}
+                      </span>
+                      <span className="text-[10px] text-text-muted truncate max-w-[80px]" title={currentUser?.email}>
+                        {currentUser?.email?.split('@')[0]}
+                      </span>
+                    </div>
+                  </div>
+                  <Link
+                    href="/login"
+                    title="Ganti Akun / Logout"
+                    className="p-1.5 text-text-muted hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors shrink-0"
+                  >
+                    <LogOut size={15} />
+                  </Link>
+                </div>
+                {isReadOnly && (
+                  <div className="px-2 py-1 rounded bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-semibold text-center leading-tight">
+                    🔒 Akses Non-Aktif (Hanya Lihat)
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </aside>
     </>

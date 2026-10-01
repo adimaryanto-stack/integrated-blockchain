@@ -444,6 +444,15 @@ export function updateUsersData(newData: User[]) {
 
 export let usersData: User[] = [
   {
+    id: 'u-kbalikhlas-admin',
+    username: 'admin.kbalikhlas',
+    email: 'admin@kbalikhlas.sch.id',
+    role: 'ADMIN',
+    is_active: true,
+    created_at: '2026-10-01',
+    institusi_id: 'NPSN 69893669'
+  },
+  {
     id: 'u-sdn01menteng',
     username: 'admin.sd01menteng',
     email: 'admin@sdn01menteng.sch.id',

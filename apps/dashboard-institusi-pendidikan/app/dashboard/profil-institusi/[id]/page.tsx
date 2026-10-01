@@ -20,7 +20,7 @@ import {
   Users, Award, BookOpen, Coins, UploadCloud, FolderOpen,
   FileCheck, X, Briefcase, Calendar, MapPin, User, RefreshCw, FileSearch, Wrench,
   Plus, MessageSquare, Send, Eye, Paperclip, Camera, Trash2, Settings, MoreHorizontal,
-  ShoppingBag, GraduationCap
+  ShoppingBag, GraduationCap, Lock
 } from 'lucide-react';
 import Tesseract from 'tesseract.js';
 import { parseReceiptText } from '@/lib/utils/ocrParser';
@@ -57,7 +57,10 @@ export default function ProfilInstitusiDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
-  const { activeTahun, dbData, isSupabaseMode, addNotification, transaksiList, setTransaksiList } = useAppStore();
+  const { activeTahun, dbData, isSupabaseMode, addNotification, transaksiList, setTransaksiList, currentUser } = useAppStore();
+  const isOperator = currentUser?.role === 'OPERATOR';
+  // Sesuai matriks hak akses: Profil Institusi -> Admin Sekolah (Edit / Manage), Operator Sekolah (View Only)
+  const isReadOnly = isOperator || currentUser?.is_active === false;
 
   const profilData = useMemo(() => getProfilInstitusi(id, activeTahun), [id, activeTahun, dbData, isSupabaseMode, transaksiList]);
 
@@ -409,12 +412,21 @@ export default function ProfilInstitusiDetailPage() {
 
   // ===== Audit update handler =====
   const updateAnomalyStatus = (newStatus: 'TEMUAN' | 'INVESTIGASI' | 'SELESAI') => {
+    if (isReadOnly) {
+      alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat).');
+      return;
+    }
     setAnomalies(prev => prev.map(a => a.institusi_id === id ? { ...a, status: newStatus } : a));
   };
 
   // ===== Shared Cell Render Helpers & Inline Editor =====
   const handleSaveEdit = () => {
     if (!editingCell) return;
+    if (isReadOnly) {
+      alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat).');
+      setEditingCell(null);
+      return;
+    }
     const numVal = parseFloat(editValue) || 0;
 
     if (editingCell.type === 'sumberDana') {
@@ -512,6 +524,13 @@ export default function ProfilInstitusiDetailPage() {
 
   const renderEditableCellSD = (row: SumberDanaInstitusi, field: 'nominal' | 'realisasi') => {
     const value = row[field];
+    if (isReadOnly) {
+      return (
+        <td className="sheet-cell text-right font-mono text-text-secondary select-none">
+          {fmtRupiah(value)}
+        </td>
+      );
+    }
     const isEditing = editingCell?.type === 'sumberDana' && editingCell?.id === row.id && editingCell?.field === field;
     return (
       <td
@@ -543,6 +562,13 @@ export default function ProfilInstitusiDetailPage() {
 
   const renderEditableCellPB = (row: PengeluaranBulananInstitusi, field: 'nominal_pengeluaran' | 'qty') => {
     const value = row[field];
+    if (isReadOnly) {
+      return (
+        <td className="sheet-cell text-right font-mono text-text-secondary select-none">
+          {field === 'qty' ? value : fmtRupiah(value)}
+        </td>
+      );
+    }
     const isEditing = editingCell?.type === 'pengeluaran' && editingCell?.id === row.id && editingCell?.field === field;
     return (
       <td
@@ -660,6 +686,10 @@ export default function ProfilInstitusiDetailPage() {
   // ===== VERCEL-STYLE 2: Tambah Pengeluaran submit handler =====
   const handleAddTransaksiSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) {
+      alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat).');
+      return;
+    }
     const subtotalItems = formItems.reduce((sum, item) => sum + (item.qty * item.price), 0);
     const calculatedPajak = Math.round((subtotalItems * formPajak) / 100);
     const overallTotal = subtotalItems + formOngkir + calculatedPajak;
@@ -811,6 +841,10 @@ export default function ProfilInstitusiDetailPage() {
 
   // ===== VERCEL-STYLE 4: Send chat message & AI Reply simulation =====
   const handleSendChat = () => {
+    if (isReadOnly) {
+      alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat).');
+      return;
+    }
     if (!chatInput.trim()) return;
 
     const userMsg: ChatMessage = {
@@ -856,6 +890,10 @@ export default function ProfilInstitusiDetailPage() {
   // ===== Simulated file upload handler (tab 4) =====
   const handleUploadFile = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) {
+      alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat).');
+      return;
+    }
     if (!uploadFileName) return;
 
     setIsUploading(true);
@@ -1226,13 +1264,24 @@ export default function ProfilInstitusiDetailPage() {
                   <h3 className="text-base font-bold text-text-primary">Daftar Pengeluaran Riil</h3>
                   <p className="text-xs text-text-muted mt-0.5">Ditemukan {filteredTransaksi.length} transaksi untuk kategori terpilih</p>
                 </div>
-                <button
-                  onClick={() => setTambahModalOpen(true)}
-                  className="btn btn-primary shadow-lg shadow-indigo-500/10 font-bold py-2 px-4 text-xs"
-                >
-                  <Plus size={14} />
-                  Tambah Pengeluaran
-                </button>
+                {isReadOnly ? (
+                  <button
+                    disabled
+                    className="btn bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed font-bold py-2 px-4 text-xs flex items-center gap-1.5 opacity-75"
+                    title="Akses dibatasi: Akun non-aktif hanya memiliki hak baca saja"
+                  >
+                    <Lock size={14} />
+                    <span>Tambah Pengeluaran (Terkunci)</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setTambahModalOpen(true)}
+                    className="btn btn-primary shadow-lg shadow-indigo-500/10 font-bold py-2 px-4 text-xs"
+                  >
+                    <Plus size={14} />
+                    Tambah Pengeluaran
+                  </button>
+                )}
               </div>
 
               {/* Filter Pills */}
@@ -1291,12 +1340,15 @@ export default function ProfilInstitusiDetailPage() {
                           </div>
                         </td>
                         <td
-                          className={`sheet-cell text-right font-bold font-mono text-xs sheet-cell-editable ${
+                          className={`sheet-cell text-right font-bold font-mono text-xs ${
+                            !isReadOnly ? 'sheet-cell-editable' : ''
+                          } ${
                             editingCell?.type === 'transaksi' && editingCell?.id === tr.id && editingCell?.field === 'nominal'
                               ? 'sheet-cell-editing'
                               : 'text-text-primary'
                           }`}
                           onClick={() => {
+                            if (isReadOnly) return;
                             setEditingCell({ type: 'transaksi', id: tr.id, field: 'nominal' });
                             setEditValue(tr.nominal.toString());
                           }}
@@ -1499,24 +1551,32 @@ export default function ProfilInstitusiDetailPage() {
                   
                   {activeAnomaly ? (
                     <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
-                      <button
-                        onClick={() => updateAnomalyStatus('TEMUAN')}
-                        className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-colors ${activeAnomaly.status === 'TEMUAN' ? 'bg-rose-600 text-white shadow-sm' : 'text-text-secondary hover:bg-slate-200'}`}
-                      >
-                        Temuan
-                      </button>
-                      <button
-                        onClick={() => updateAnomalyStatus('INVESTIGASI')}
-                        className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-colors ${activeAnomaly.status === 'INVESTIGASI' ? 'bg-indigo-600 text-white shadow-sm' : 'text-text-secondary hover:bg-slate-200'}`}
-                      >
-                        Investigasi
-                      </button>
-                      <button
-                        onClick={() => updateAnomalyStatus('SELESAI')}
-                        className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-colors ${activeAnomaly.status === 'SELESAI' ? 'bg-emerald-600 text-white shadow-sm' : 'text-text-secondary hover:bg-slate-200'}`}
-                      >
-                        Selesai
-                      </button>
+                      {isReadOnly ? (
+                        <span className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-slate-200 text-text-muted flex items-center gap-1">
+                          <Lock size={10} /> Status: {activeAnomaly.status}
+                        </span>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => updateAnomalyStatus('TEMUAN')}
+                            className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-colors ${activeAnomaly.status === 'TEMUAN' ? 'bg-rose-600 text-white shadow-sm' : 'text-text-secondary hover:bg-slate-200'}`}
+                          >
+                            Temuan
+                          </button>
+                          <button
+                            onClick={() => updateAnomalyStatus('INVESTIGASI')}
+                            className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-colors ${activeAnomaly.status === 'INVESTIGASI' ? 'bg-indigo-600 text-white shadow-sm' : 'text-text-secondary hover:bg-slate-200'}`}
+                          >
+                            Investigasi
+                          </button>
+                          <button
+                            onClick={() => updateAnomalyStatus('SELESAI')}
+                            className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-colors ${activeAnomaly.status === 'SELESAI' ? 'bg-emerald-600 text-white shadow-sm' : 'text-text-secondary hover:bg-slate-200'}`}
+                          >
+                            Selesai
+                          </button>
+                        </>
+                      )}
                     </div>
                   ) : null}
                 </div>
@@ -1594,13 +1654,20 @@ export default function ProfilInstitusiDetailPage() {
                       <FileText size={16} className="text-indigo-500" />
                       Dokumen Pendukung (SPJ)
                     </h3>
-                    <button
-                      onClick={() => setUploadModalOpen(true)}
-                      className="btn btn-ghost py-1 px-2.5 text-[11px] font-bold flex items-center gap-1"
-                    >
-                      <UploadCloud size={12} />
-                      Unggah SPJ
-                    </button>
+                    {isReadOnly ? (
+                      <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-lg">
+                        <Lock size={12} />
+                        Unggah SPJ
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => setUploadModalOpen(true)}
+                        className="btn btn-ghost py-1 px-2.5 text-[11px] font-bold flex items-center gap-1"
+                      >
+                        <UploadCloud size={12} />
+                        Unggah SPJ
+                      </button>
+                    )}
                   </div>
 
                   <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
@@ -1681,7 +1748,7 @@ export default function ProfilInstitusiDetailPage() {
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Kirim pertanyaan klarifikasi audit baru di sini..."
+                  placeholder={isReadOnly ? 'Mode Baca Saja: Akun non-aktif tidak dapat mengirim pesan' : 'Kirim pertanyaan klarifikasi audit baru di sini...'}
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -1689,12 +1756,12 @@ export default function ProfilInstitusiDetailPage() {
                   }}
                   className="search-input flex-1 pl-4"
                   style={{ width: 'auto' }}
-                  disabled={isAiReplying}
+                  disabled={isAiReplying || isReadOnly}
                 />
                 <button
                   onClick={handleSendChat}
                   className="btn btn-primary px-4 py-2 text-xs flex items-center justify-center font-bold"
-                  disabled={isAiReplying || !chatInput.trim()}
+                  disabled={isAiReplying || !chatInput.trim() || isReadOnly}
                 >
                   <Send size={12} />
                   Kirim
@@ -2024,23 +2091,33 @@ export default function ProfilInstitusiDetailPage() {
 
               {/* Action Buttons */}
               <div className="flex gap-2 justify-end border-t border-slate-100 pt-4 mt-2">
-                <button
-                  type="submit"
-                  className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all uppercase ${
-                    formItems.reduce((sum, item) => sum + (item.qty * item.price), 0) +
-                    formOngkir +
-                    Math.round((formItems.reduce((sum, item) => sum + (item.qty * item.price), 0) * formPajak) / 100) > 0
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md cursor-pointer'
-                      : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                  }`}
-                  disabled={
-                    formItems.reduce((sum, item) => sum + (item.qty * item.price), 0) +
-                    formOngkir +
-                    Math.round((formItems.reduce((sum, item) => sum + (item.qty * item.price), 0) * formPajak) / 100) === 0
-                  }
-                >
-                  SIMPAN TRANSAKSI
-                </button>
+                {isReadOnly ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="px-6 py-2.5 rounded-xl text-xs font-bold bg-slate-200 text-slate-400 cursor-not-allowed flex items-center gap-1.5 uppercase"
+                  >
+                    <Lock size={12} /> AKUN NON-AKTIF (TERKUNCI)
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all uppercase ${
+                      formItems.reduce((sum, item) => sum + (item.qty * item.price), 0) +
+                      formOngkir +
+                      Math.round((formItems.reduce((sum, item) => sum + (item.qty * item.price), 0) * formPajak) / 100) > 0
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md cursor-pointer'
+                        : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    }`}
+                    disabled={
+                      formItems.reduce((sum, item) => sum + (item.qty * item.price), 0) +
+                      formOngkir +
+                      Math.round((formItems.reduce((sum, item) => sum + (item.qty * item.price), 0) * formPajak) / 100) === 0
+                    }
+                  >
+                    SIMPAN TRANSAKSI
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setTambahModalOpen(false)}
@@ -2247,13 +2324,24 @@ export default function ProfilInstitusiDetailPage() {
                 >
                   Batal
                 </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={isUploading}
-                >
-                  {isUploading ? 'Mengunggah...' : 'Unggah & Scan'}
-                </button>
+                {isReadOnly ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="btn bg-slate-200 text-slate-400 cursor-not-allowed flex items-center gap-1.5"
+                  >
+                    <Lock size={14} />
+                    <span>Terkunci</span>
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={isUploading}
+                  >
+                    {isUploading ? 'Mengunggah...' : 'Unggah & Scan'}
+                  </button>
+                )}
               </div>
             </form>
           </div>

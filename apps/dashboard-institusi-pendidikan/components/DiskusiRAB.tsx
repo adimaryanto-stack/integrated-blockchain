@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { supabaseRealtime } from '@/lib/supabaseRealtime';
-import { MessageCircle, Send, User, Trash2, Clock, Loader2, MessageSquare, AlertTriangle } from 'lucide-react';
+import { MessageCircle, Send, User, Trash2, Clock, Loader2, MessageSquare, AlertTriangle, Lock } from 'lucide-react';
+import { useAppStore } from '@/lib/store';
 
 interface DiskusiMessage {
   id: string;
@@ -12,9 +13,16 @@ interface DiskusiMessage {
   created_at: string;
 }
 
-export default function DiskusiRAB() {
+interface DiskusiRABProps {
+  readOnly?: boolean;
+}
+
+export default function DiskusiRAB({ readOnly }: DiskusiRABProps = {}) {
+  const { currentUser } = useAppStore();
+  const isReadOnly = readOnly ?? (currentUser?.is_active === false);
+
   const [messages, setMessages] = useState<DiskusiMessage[]>([]);
-  const [namaPengirim, setNamaPengirim] = useState('');
+  const [namaPengirim, setNamaPengirim] = useState(currentUser?.username || '');
   const [pesan, setPesan] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
@@ -101,10 +109,14 @@ export default function DiskusiRAB() {
   // Send a message
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) {
+      alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat). Anda tidak dapat mengirim komentar.');
+      return;
+    }
     if (!pesan.trim()) return;
 
     setIsSending(true);
-    const senderName = namaPengirim.trim() || 'Warga Anonim';
+    const senderName = namaPengirim.trim() || currentUser?.username || 'Warga Anonim';
 
     const { error: insertError } = await supabase
       .from('diskusi_rab')
@@ -127,6 +139,10 @@ export default function DiskusiRAB() {
 
   // Delete a message
   const handleDelete = async (id: string) => {
+    if (isReadOnly || currentUser?.role === 'OPERATOR') {
+      alert('Akses Ditolak: Hanya Admin Sekolah aktif yang dapat menghapus komentar.');
+      return;
+    }
     const { error: deleteError } = await supabase
       .from('diskusi_rab')
       .delete()
@@ -192,43 +208,73 @@ export default function DiskusiRAB() {
       </div>
 
       <div className="p-5 space-y-5">
+        {/* Read-Only Notice */}
+        {isReadOnly && (
+          <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs font-semibold flex items-center gap-2">
+            <Lock size={15} className="text-rose-600 shrink-0" />
+            <span>Mode Hanya Lihat: Akun Anda berstatus NON-AKTIF. Form komentar dan pengiriman pesan dinonaktifkan.</span>
+          </div>
+        )}
+
         {/* Input Form */}
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="relative">
             <User size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
             <input
               type="text"
-              placeholder="Nama Anda (Opsional, kosongkan untuk Anonim)"
+              disabled={isReadOnly}
+              placeholder={isReadOnly ? "Input nama dikunci (Mode Hanya Lihat)" : "Nama Anda (Opsional, kosongkan untuk Anonim)"}
               value={namaPengirim}
               onChange={(e) => setNamaPengirim(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:bg-white transition-all placeholder:text-text-muted"
+              className={`w-full pl-10 pr-4 py-2.5 text-xs rounded-xl transition-all ${
+                isReadOnly
+                  ? 'bg-slate-100 border border-slate-200 text-slate-400 cursor-not-allowed'
+                  : 'bg-slate-50 border border-slate-200 focus:outline-none focus:border-blue-500 focus:bg-white placeholder:text-text-muted'
+              }`}
             />
           </div>
           <div className="relative">
             <textarea
-              placeholder="Berikan komentar, pertanyaan, atau diskusi mengenai rencana anggaran ini..."
+              disabled={isReadOnly}
+              placeholder={isReadOnly ? "Komentar dinonaktifkan karena akun berstatus non-aktif..." : "Berikan komentar, pertanyaan, atau diskusi mengenai rencana anggaran ini..."}
               value={pesan}
               onChange={(e) => setPesan(e.target.value)}
               rows={3}
-              className="w-full px-4 py-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:bg-white transition-all placeholder:text-text-muted resize-none leading-relaxed"
+              className={`w-full px-4 py-3 text-xs rounded-xl resize-none leading-relaxed transition-all ${
+                isReadOnly
+                  ? 'bg-slate-100 border border-slate-200 text-slate-400 cursor-not-allowed'
+                  : 'bg-slate-50 border border-slate-200 focus:outline-none focus:border-blue-500 focus:bg-white placeholder:text-text-muted'
+              }`}
             />
           </div>
           <div className="flex justify-end">
             <button
               type="submit"
-              disabled={!pesan.trim() || isSending}
+              disabled={isReadOnly || !pesan.trim() || isSending}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                pesan.trim() && !isSending
+                isReadOnly
+                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
+                  : pesan.trim() && !isSending
                   ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/20 cursor-pointer'
                   : 'bg-slate-200 text-slate-400 cursor-not-allowed'
               }`}
             >
-              {isSending ? (
-                <Loader2 size={14} className="animate-spin" />
+              {isReadOnly ? (
+                <>
+                  <Lock size={14} />
+                  Komentar Dikunci (Non-Aktif)
+                </>
+              ) : isSending ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  Mengirim...
+                </>
               ) : (
-                <Send size={14} />
+                <>
+                  <Send size={14} />
+                  Kirim Komentar
+                </>
               )}
-              Kirim Komentar
             </button>
           </div>
         </form>
@@ -286,14 +332,16 @@ export default function DiskusiRAB() {
                     </p>
                   </div>
 
-                  {/* Delete button (Super Admin) */}
-                  <button
-                    onClick={() => handleDelete(msg.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all cursor-pointer shrink-0"
-                    title="Hapus komentar"
-                  >
-                    <Trash2 size={12} />
-                  </button>
+                  {/* Delete button (Admin Only) */}
+                  {!isReadOnly && currentUser?.role !== 'OPERATOR' && (
+                    <button
+                      onClick={() => handleDelete(msg.id)}
+                      className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all cursor-pointer shrink-0"
+                      title="Hapus komentar"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  )}
                 </div>
               </div>
             ))

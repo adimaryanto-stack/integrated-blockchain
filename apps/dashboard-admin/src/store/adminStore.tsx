@@ -58,11 +58,13 @@ interface AdminStoreContextType {
   bulkUpdateStatus: (ids: string[], status: UserStatus) => void;
   resetPassword: (userId: string) => string;
 
-  // Institutions
+  // Institutions & School Search
   institutions: InstitutionMaster[];
   addInstitution: (inst: Omit<InstitutionMaster, "id" | "createdAt">) => void;
   updateInstitution: (id: string, updates: Partial<InstitutionMaster>) => void;
   deleteInstitution: (id: string) => void;
+  searchSchools: (query: string) => Promise<InstitutionMaster[]>;
+  lookupSchoolByNpsn: (npsn: string) => Promise<any>;
 
   // Audit Logs
   auditLogs: AuditLogEntry[];
@@ -256,13 +258,37 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
               email: lu.email,
               phone: lu.phone || "08123456789",
               dashboard: lu.dashboard,
-              institutionId: lu.institution_id || lu.institutionId,
+              institutionId: lu.institutionId || lu.institution_id,
+              institutionName: lu.institutionName,
+              npsn: lu.npsn,
               bankName: lu.bank_name || lu.bankName,
               status: lu.status || "aktif",
               invitedBy: lu.invitedBy || "Sistem",
               createdAt: lu.created_at || lu.createdAt || "2026-01-01",
             }));
             setUsers(mapped);
+
+            // Ensure any institutions linked to users exist in institutions array
+            setInstitutions((prev) => {
+              const existingMap = new Map(prev.map((i) => [i.id, i]));
+              mapped.forEach((u: any) => {
+                if (u.institutionId && !existingMap.has(u.institutionId)) {
+                  existingMap.set(u.institutionId, {
+                    id: u.institutionId,
+                    npsn: u.npsn || "69893669",
+                    namaSatuan: u.institutionName || "KB AL-IKHLAS",
+                    jenjang: (u.institutionName && u.institutionName.startsWith("KB")) ? "PAUD" : "SD",
+                    kementerianPembina: "Kemendikdasmen",
+                    provinsi: u.provinsi || "Aceh",
+                    kabupatenKota: u.kabupatenKota || "Kab. Aceh Barat",
+                    kecamatan: "Samatiga",
+                    status: "aktif",
+                    createdAt: "2026-07-13",
+                  });
+                }
+              });
+              return Array.from(existingMap.values());
+            });
           }
         }
 
@@ -482,13 +508,29 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
   };
 
   // User Management Methods
-  const addUser = (userData: Omit<PlatformUser, "id" | "createdAt">) => {
+  const addUser = async (userData: Omit<PlatformUser, "id" | "createdAt">) => {
+    const tempId = `usr-${Date.now().toString().slice(-5)}`;
     const newUser: PlatformUser = {
       ...userData,
-      id: `usr-${Date.now().toString().slice(-5)}`,
+      id: tempId,
       createdAt: new Date().toISOString().split("T")[0],
     };
     setUsers((prev) => [newUser, ...prev]);
+
+    try {
+      const res = await fetch(`${ADMIN_API_BASE}/users`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userData),
+      });
+      if (res.ok) {
+        const serverUser = await res.json();
+        setUsers((prev) => prev.map((u) => (u.id === tempId ? { ...u, ...serverUser } : u)));
+      }
+    } catch (e) {
+      console.warn("Failed to persist user to backend:", e);
+    }
+
     recordAudit({
       actor: currentUser ? `${currentUser.name} (${currentUser.role})` : "Admin",
       actorScope: currentUser?.scopeType || "global",
@@ -501,11 +543,22 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     showToast(`Pengguna ${newUser.name} berhasil ditambahkan!`, "success");
   };
 
-  const updateUser = (id: string, updates: Partial<PlatformUser>) => {
+  const updateUser = async (id: string, updates: Partial<PlatformUser>) => {
     const prevUser = users.find((u) => u.id === id);
     if (!prevUser) return;
     const updatedUser = { ...prevUser, ...updates };
     setUsers((prev) => prev.map((u) => (u.id === id ? updatedUser : u)));
+
+    try {
+      await fetch(`${ADMIN_API_BASE}/users/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+    } catch (e) {
+      console.warn("Failed to update user on backend:", e);
+    }
+
     recordAudit({
       actor: currentUser ? `${currentUser.name} (${currentUser.role})` : "Admin",
       actorScope: currentUser?.scopeType || "global",
@@ -519,10 +572,19 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     showToast(`Data pengguna ${updatedUser.name} berhasil disimpan!`, "success");
   };
 
-  const deleteUser = (id: string) => {
+  const deleteUser = async (id: string) => {
     const target = users.find((u) => u.id === id);
     if (!target) return;
     setUsers((prev) => prev.filter((u) => u.id !== id));
+
+    try {
+      await fetch(`${ADMIN_API_BASE}/users/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+    } catch (e) {
+      console.warn("Failed to delete user on backend:", e);
+    }
+
     recordAudit({
       actor: currentUser ? `${currentUser.name} (${currentUser.role})` : "Admin",
       actorScope: currentUser?.scopeType || "global",
@@ -535,10 +597,24 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     showToast(`Pengguna ${target.name} telah dihapus!`, "warning");
   };
 
-  const bulkUpdateStatus = (ids: string[], status: UserStatus) => {
+  const bulkUpdateStatus = async (ids: string[], status: UserStatus) => {
     setUsers((prev) =>
       prev.map((u) => (ids.includes(u.id) ? { ...u, status } : u))
     );
+
+    try {
+      const res = await fetch(`${ADMIN_API_BASE}/users/bulk-action`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids, status }),
+      });
+      if (res.ok) {
+        console.log(`[AdminStore] Bulk updated ${ids.length} users to ${status}`);
+      }
+    } catch (e) {
+      console.warn("Failed to bulk update status on backend:", e);
+    }
+
     recordAudit({
       actor: currentUser ? `${currentUser.name} (${currentUser.role})` : "Admin",
       actorScope: currentUser?.scopeType || "global",
@@ -618,6 +694,58 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       beforeState: target as unknown as Record<string, any>,
     });
     showToast(`Satuan ${target.namaSatuan} telah dihapus!`, "warning");
+  };
+
+  // High-performance live search across 468,724 schools in PostgreSQL
+  const searchSchools = async (query: string): Promise<InstitutionMaster[]> => {
+    const trimmed = (query || "").trim();
+    if (!trimmed) return institutions.slice(0, 50);
+    try {
+      const res = await fetch(`${ADMIN_API_BASE}/institutions?search=${encodeURIComponent(trimmed)}&limit=30`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          // Merge to institutions state so lookups succeed anywhere
+          setInstitutions((prev) => {
+            const existingMap = new Map(prev.map((i) => [i.id, i]));
+            data.forEach((d: InstitutionMaster) => existingMap.set(d.id, d));
+            return Array.from(existingMap.values());
+          });
+          return data;
+        }
+      }
+    } catch (err) {
+      console.error("Error searching schools:", err);
+    }
+    // Local fallback
+    const q = trimmed.toLowerCase();
+    return institutions.filter(
+      (i) => i.npsn.includes(q) || i.namaSatuan.toLowerCase().includes(q)
+    );
+  };
+
+  // Dedicated lookup for an NPSN returning school + associated user accounts
+  const lookupSchoolByNpsn = async (npsn: string): Promise<any> => {
+    const trimmed = (npsn || "").trim();
+    if (!trimmed) return { found: false, schools: [] };
+    try {
+      const res = await fetch(`${ADMIN_API_BASE}/schools/lookup?npsn=${encodeURIComponent(trimmed)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.found && Array.isArray(data.schools)) {
+          // Merge found schools into institutions state
+          setInstitutions((prev) => {
+            const existingMap = new Map(prev.map((i) => [i.id, i]));
+            data.schools.forEach((d: InstitutionMaster) => existingMap.set(d.id, d));
+            return Array.from(existingMap.values());
+          });
+        }
+        return data;
+      }
+    } catch (err) {
+      console.error("Error looking up school by NPSN:", err);
+    }
+    return { found: false, schools: [] };
   };
 
   // Data Source Methods
@@ -1170,6 +1298,8 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         addInstitution,
         updateInstitution,
         deleteInstitution,
+        searchSchools,
+        lookupSchoolByNpsn,
 
         auditLogs,
         addAuditLog: recordAudit,

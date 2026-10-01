@@ -7,7 +7,7 @@ import {
   TAHAP_LABELS, JENIS_PAJAK_LABELS, DEFAULT_TAX_RATES
 } from '@/types';
 import { fmtRupiah } from '@/lib/utils/formatters';
-import { Plus, Trash2, Tag, Percent, Receipt, FileText, AlertTriangle, Pencil, Copy } from 'lucide-react';
+import { Plus, Trash2, Tag, Percent, Receipt, FileText, AlertTriangle, Pencil, Copy, Lock } from 'lucide-react';
 
 interface ExpenseTableProps {
   projectId: string;
@@ -19,8 +19,10 @@ export default function ExpenseTable({ projectId }: ExpenseTableProps) {
     addProjectExpense,
     updateProjectExpense,
     removeProjectExpense,
-    addNotification
+    addNotification,
+    currentUser
   } = useAppStore();
+  const isReadOnly = currentUser?.is_active === false;
 
   // Filter expenses belonging to this project
   const expenses = useMemo(() => {
@@ -47,6 +49,10 @@ export default function ExpenseTable({ projectId }: ExpenseTableProps) {
   };
 
   const handleStartEdit = (expense: ProjectExpense) => {
+    if (isReadOnly) {
+      alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat).');
+      return;
+    }
     setOpenFormStage(expense.tahap);
     setEditingExpenseId(expense.id);
     setNamaItem(expense.nama_item);
@@ -60,6 +66,10 @@ export default function ExpenseTable({ projectId }: ExpenseTableProps) {
   };
 
   const handleDuplicateExpense = (expense: ProjectExpense) => {
+    if (isReadOnly) {
+      alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat).');
+      return;
+    }
     const duplicated: ProjectExpense = {
       ...expense,
       id: `exp-${Date.now()}`,
@@ -89,6 +99,10 @@ export default function ExpenseTable({ projectId }: ExpenseTableProps) {
   };
 
   const handleSaveExpense = (tahap: TahapProject) => {
+    if (isReadOnly) {
+      alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat).');
+      return;
+    }
     if (!namaItem.trim() || jumlah <= 0 || hargaSatuan <= 0) return;
 
     const subtotal = jumlah * hargaSatuan;
@@ -184,20 +198,26 @@ export default function ExpenseTable({ projectId }: ExpenseTableProps) {
                 <span className="text-[10px] text-text-muted font-bold font-mono">
                   Subtotal: Rp {fmtRupiah(stageTotal)}
                 </span>
-                <button
-                  onClick={() => {
-                    if (openFormStage === stage && !editingExpenseId) {
-                      handleCancelForm();
-                    } else {
-                      handleCancelForm();
-                      setOpenFormStage(stage);
-                    }
-                  }}
-                  className="btn py-1.5 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 flex items-center gap-1 text-[10px] font-semibold cursor-pointer rounded-lg"
-                >
-                  <Plus size={12} />
-                  Tambah Item
-                </button>
+                {!isReadOnly ? (
+                  <button
+                    onClick={() => {
+                      if (openFormStage === stage && !editingExpenseId) {
+                        handleCancelForm();
+                      } else {
+                        handleCancelForm();
+                        setOpenFormStage(stage);
+                      }
+                    }}
+                    className="btn py-1.5 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 flex items-center gap-1 text-[10px] font-semibold cursor-pointer rounded-lg"
+                  >
+                    <Plus size={12} />
+                    Tambah Item
+                  </button>
+                ) : (
+                  <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                    🔒 Hanya Lihat
+                  </span>
+                )}
               </div>
             </div>
 
@@ -412,29 +432,33 @@ export default function ExpenseTable({ projectId }: ExpenseTableProps) {
                           {fmtRupiah(row.total_setelah_pajak)}
                         </td>
                         <td className="sheet-cell text-center">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button
-                              onClick={() => handleStartEdit(row)}
-                              className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-slate-100 transition cursor-pointer"
-                              title="Edit Pekerjaan"
-                            >
-                              <Pencil size={12} />
-                            </button>
-                            <button
-                              onClick={() => handleDuplicateExpense(row)}
-                              className="p-1 rounded text-slate-400 hover:text-emerald-600 hover:bg-slate-100 transition cursor-pointer"
-                              title="Duplikat Pekerjaan"
-                            >
-                              <Copy size={12} />
-                            </button>
-                            <button
-                              onClick={() => removeProjectExpense(row.id)}
-                              className="p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-slate-100 transition cursor-pointer"
-                              title="Hapus Pekerjaan"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
+                          {!isReadOnly ? (
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                onClick={() => handleStartEdit(row)}
+                                className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-slate-100 transition cursor-pointer"
+                                title="Edit Pekerjaan"
+                              >
+                                <Pencil size={12} />
+                              </button>
+                              <button
+                                onClick={() => handleDuplicateExpense(row)}
+                                className="p-1 rounded text-slate-400 hover:text-emerald-600 hover:bg-slate-100 transition cursor-pointer"
+                                title="Duplikat Pekerjaan"
+                              >
+                                <Copy size={12} />
+                              </button>
+                              <button
+                                onClick={() => removeProjectExpense(row.id)}
+                                className="p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-slate-100 transition cursor-pointer"
+                                title="Hapus Pekerjaan"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-text-muted font-mono">—</span>
+                          )}
                         </td>
                       </tr>
                     ))

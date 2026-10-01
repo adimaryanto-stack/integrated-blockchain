@@ -8,7 +8,7 @@ import { fmtRupiah } from '@/lib/utils/formatters';
 import {
   CreditCard, Search, Plus, Eye, X, Calendar, User, Building2,
   CheckCircle2, AlertTriangle, ShieldAlert, ShieldCheck, Tag, ShoppingBag, Landmark,
-  Camera, Trash2, Settings, MoreHorizontal, BookOpen, Wrench, Users, GraduationCap, RefreshCw
+  Camera, Trash2, Settings, MoreHorizontal, BookOpen, Wrench, Users, GraduationCap, RefreshCw, Lock
 } from 'lucide-react';
 import Tesseract from 'tesseract.js';
 import { parseReceiptText } from '@/lib/utils/ocrParser';
@@ -32,7 +32,8 @@ interface TransaksiGlobal {
 }
 
 export default function PengeluaranPage() {
-  const { activeTahun, dbData, isSupabaseMode, addNotification, transaksiList, setTransaksiList } = useAppStore();
+  const { activeTahun, dbData, isSupabaseMode, addNotification, transaksiList, setTransaksiList, currentUser } = useAppStore();
+  const isReadOnly = currentUser?.is_active === false;
   const allInstitusi = useMemo(() => getAllInstitusi(), [dbData, isSupabaseMode]);
 
   // Dynamically filter transactions for the active school (KB AL-IKHLAS) and active year
@@ -82,6 +83,10 @@ export default function PengeluaranPage() {
 
   const handleSaveEdit = () => {
     if (!editingCell) return;
+    if (isReadOnly) {
+      setEditingCell(null);
+      return;
+    }
     const numVal = parseFloat(editValue) || 0;
     if (editingCell.field === 'nominal') {
       setTransaksiList(prev => prev.map(t => {
@@ -124,6 +129,10 @@ export default function PengeluaranPage() {
   };
 
   const handleOpenTambahModal = () => {
+    if (isReadOnly) {
+      alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat). Anda tidak dapat menambah pengeluaran.');
+      return;
+    }
     setFormIsEditMode(false);
     setEditId(null);
     setFormTanggal('2026-06-06');
@@ -138,6 +147,10 @@ export default function PengeluaranPage() {
   };
 
   const handleOpenEditModal = (row: TransaksiGlobal) => {
+    if (isReadOnly) {
+      alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat). Anda tidak dapat mengubah data transaksi!');
+      return;
+    }
     setFormIsEditMode(true);
     setEditId(row.id);
     setFormTanggal(dateToYmd(row.tanggal));
@@ -296,6 +309,10 @@ export default function PengeluaranPage() {
   // Add Transaksi Handler
   const handleAddTransaksiSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) {
+      alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat). Anda tidak dapat menyimpan atau mengubah transaksi.');
+      return;
+    }
     const subtotalItems = formItems.reduce((sum, item) => sum + (item.qty * item.price), 0);
     const calculatedPajak = Math.round((subtotalItems * formPajak) / 100);
     const overallTotal = subtotalItems + formOngkir + calculatedPajak;
@@ -566,13 +583,24 @@ export default function PengeluaranPage() {
               </select>
             </div>
 
-            <button
-              onClick={handleOpenTambahModal}
-              className="btn btn-primary shadow-lg shadow-indigo-500/10 font-bold py-2 px-4 text-xs w-full lg:w-auto shrink-0 cursor-pointer"
-            >
-              <Plus size={14} />
-              Tambah Pengeluaran
-            </button>
+            {isReadOnly ? (
+              <button
+                disabled
+                className="btn py-2 px-4 text-xs bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-none w-full lg:w-auto shrink-0"
+                title="Akun Anda berstatus Non-Aktif (Hanya Lihat)."
+              >
+                <Lock size={14} />
+                Tambah Pengeluaran (Dinonaktifkan)
+              </button>
+            ) : (
+              <button
+                onClick={handleOpenTambahModal}
+                className="btn btn-primary shadow-lg shadow-indigo-500/10 font-bold py-2 px-4 text-xs w-full lg:w-auto shrink-0 cursor-pointer"
+              >
+                <Plus size={14} />
+                Tambah Pengeluaran
+              </button>
+            )}
           </div>
 
           {/* Category Filter Pills */}
@@ -665,13 +693,26 @@ export default function PengeluaranPage() {
                             <Eye size={12} />
                             Struk
                           </button>
-                          <button
-                            onClick={() => handleOpenEditModal(row)}
-                            className="btn py-1.5 px-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
-                          >
-                            <Settings size={12} />
-                            Detail
-                          </button>
+                          {isReadOnly ? (
+                            <button
+                              onClick={() => {
+                                setSelectedTransaksi(row);
+                                setDetailModalOpen(true);
+                              }}
+                              className="btn py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-text-primary flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
+                            >
+                              <Eye size={12} />
+                              Lihat
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleOpenEditModal(row)}
+                              className="btn py-1.5 px-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
+                            >
+                              <Settings size={12} />
+                              Detail
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -1130,23 +1171,34 @@ export default function PengeluaranPage() {
 
               {/* Action Buttons */}
               <div className="flex gap-2 justify-end border-t border-slate-100 pt-4 mt-2">
-                <button
-                  type="submit"
-                  className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all uppercase ${
-                    formItems.reduce((sum, item) => sum + (item.qty * item.price), 0) +
-                    formOngkir +
-                    Math.round((formItems.reduce((sum, item) => sum + (item.qty * item.price), 0) * formPajak) / 100) > 0
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md cursor-pointer'
-                      : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                  }`}
-                  disabled={
-                    formItems.reduce((sum, item) => sum + (item.qty * item.price), 0) +
-                    formOngkir +
-                    Math.round((formItems.reduce((sum, item) => sum + (item.qty * item.price), 0) * formPajak) / 100) === 0
-                  }
-                >
-                  SIMPAN TRANSAKSI
-                </button>
+                {isReadOnly ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="px-6 py-2.5 rounded-xl text-xs font-bold uppercase transition-all bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed flex items-center gap-1.5"
+                  >
+                    <Lock size={14} />
+                    AKUN NON-AKTIF (HANYA LIHAT)
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all uppercase ${
+                      formItems.reduce((sum, item) => sum + (item.qty * item.price), 0) +
+                      formOngkir +
+                      Math.round((formItems.reduce((sum, item) => sum + (item.qty * item.price), 0) * formPajak) / 100) > 0
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md cursor-pointer'
+                        : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    }`}
+                    disabled={
+                      formItems.reduce((sum, item) => sum + (item.qty * item.price), 0) +
+                      formOngkir +
+                      Math.round((formItems.reduce((sum, item) => sum + (item.qty * item.price), 0) * formPajak) / 100) === 0
+                    }
+                  >
+                    SIMPAN TRANSAKSI
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setTambahModalOpen(false)}

@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { useAppStore } from '@/lib/store';
 import { ProjectVendor, JenisPajak, JENIS_PAJAK_LABELS, DEFAULT_TAX_RATES } from '@/types';
 import { fmtRupiah } from '@/lib/utils/formatters';
-import { User, Phone, Briefcase, Plus, Trash2, Tag, Landmark, ShieldCheck, Pencil } from 'lucide-react';
+import { User, Phone, Briefcase, Plus, Trash2, Tag, Landmark, ShieldCheck, Pencil, Lock } from 'lucide-react';
 
 interface VendorFormProps {
   projectId: string;
@@ -16,8 +16,10 @@ export default function VendorForm({ projectId }: VendorFormProps) {
     addProjectVendor,
     updateProjectVendor,
     removeProjectVendor,
-    addNotification
+    addNotification,
+    currentUser
   } = useAppStore();
+  const isReadOnly = currentUser?.is_active === false;
 
   const vendors = useMemo(() => {
     return projectVendors.filter(v => v.project_id === projectId);
@@ -42,6 +44,10 @@ export default function VendorForm({ projectId }: VendorFormProps) {
   };
 
   const handleStartEdit = (vendor: ProjectVendor) => {
+    if (isReadOnly) {
+      alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat).');
+      return;
+    }
     setIsAdding(true);
     setEditingVendorId(vendor.id);
     setNamaVendor(vendor.nama_vendor);
@@ -67,6 +73,10 @@ export default function VendorForm({ projectId }: VendorFormProps) {
 
   const handleSaveVendor = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) {
+      alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat).');
+      return;
+    }
     if (!namaVendor.trim()) return;
 
     const nilaiPajakKontrak = Math.round((nilaiAnggaranKontrak * persentasePajakKontrak) / 100);
@@ -123,29 +133,31 @@ export default function VendorForm({ projectId }: VendorFormProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {vendors.map((v) => (
           <div key={v.id} className="glass-card p-5 border border-slate-200/60 relative group flex flex-col justify-between hover:border-slate-300 transition shadow-sm">
-            <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
-              <button
-                onClick={() => handleStartEdit(v)}
-                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition cursor-pointer"
-                title="Edit Vendor"
-              >
-                <Pencil size={14} />
-              </button>
-              <button
-                onClick={() => {
-                  removeProjectVendor(v.id);
-                  addNotification({
-                    message: `Vendor "${v.nama_vendor}" telah dihapus.`,
-                    type: 'warning',
-                    link: `/dashboard/rencana-anggaran/paket-project/${projectId}`,
-                  });
-                }}
-                className="p-2 text-slate-400 hover:text-rose-500 hover:bg-slate-100 rounded-lg transition cursor-pointer"
-                title="Hapus Vendor"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
+            {!isReadOnly && (
+              <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                <button
+                  onClick={() => handleStartEdit(v)}
+                  className="p-2 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition cursor-pointer"
+                  title="Edit Vendor"
+                >
+                  <Pencil size={14} />
+                </button>
+                <button
+                  onClick={() => {
+                    removeProjectVendor(v.id);
+                    addNotification({
+                      message: `Vendor "${v.nama_vendor}" telah dihapus.`,
+                      type: 'warning',
+                      link: `/dashboard/rencana-anggaran/paket-project/${projectId}`,
+                    });
+                  }}
+                  className="p-2 text-slate-400 hover:text-rose-500 hover:bg-slate-100 rounded-lg transition cursor-pointer"
+                  title="Hapus Vendor"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            )}
 
             <div className="space-y-4">
               {/* Vendor Title */}
@@ -203,7 +215,7 @@ export default function VendorForm({ projectId }: VendorFormProps) {
         ))}
 
         {/* Add Vendor Card Trigger */}
-        {!isAdding && (
+        {!isAdding && !isReadOnly && (
           <button
             onClick={() => setIsAdding(true)}
             className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-2xl p-6 text-center hover:bg-slate-50 transition cursor-pointer flex flex-col items-center justify-center min-h-[220px]"
@@ -212,6 +224,13 @@ export default function VendorForm({ projectId }: VendorFormProps) {
             <span className="text-xs font-bold text-text-secondary">Tambah Vendor Pelaksana</span>
             <span className="text-[9px] text-text-muted mt-1 uppercase font-semibold">Tentukan vendor & PIC pelaksana project</span>
           </button>
+        )}
+        {!isAdding && isReadOnly && (
+          <div className="border-2 border-dashed border-slate-200 bg-slate-50/40 rounded-2xl p-6 text-center flex flex-col items-center justify-center min-h-[220px] opacity-75">
+            <Lock size={24} className="text-slate-400 mb-2" />
+            <span className="text-xs font-bold text-text-secondary">Tambah Vendor Dinonaktifkan</span>
+            <span className="text-[10px] text-text-muted mt-1">Akun non-aktif (mode baca saja)</span>
+          </div>
         )}
       </div>
 

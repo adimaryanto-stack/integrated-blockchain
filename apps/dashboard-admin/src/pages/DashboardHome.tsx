@@ -15,6 +15,11 @@ import {
   Clock,
   School,
   ExternalLink,
+  CreditCard,
+  Bot,
+  Siren,
+  GraduationCap,
+  Key
 } from "lucide-react";
 
 export function DashboardHome() {
@@ -358,6 +363,112 @@ export function DashboardHome() {
               className="focus-ring block w-full rounded-sm bg-navy py-2 text-center text-xs font-semibold text-white hover:bg-navy-light transition-colors"
             >
               Buka Manajemen Pengguna Berjenjang
+            </Link>
+          </div>
+        </Panel>
+      </div>
+
+      {/* Gateway API Integrasi Nasional (Port 2028 & Eksternal) */}
+      <div className="mt-6">
+        <Panel
+          title="Status Integrasi API Gateway Eksternal & Satwil (Port 2028)"
+          action={
+            <span className="text-[11px] font-semibold text-muted flex items-center gap-1">
+              <Key size={12} className="text-navy" /> 4 Layanan Terhubung
+            </span>
+          }
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
+            {/* Card 1: Bank Himbara SNAP */}
+            <Link
+              to="/bank-settings"
+              className="p-3.5 rounded-lg border border-line bg-panel hover:border-navy hover:shadow-sm transition-all group block"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="p-2 rounded bg-navy/10 text-navy group-hover:bg-navy group-hover:text-white transition-colors">
+                  <CreditCard size={18} />
+                </div>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  SNAP BI v1.1
+                </span>
+              </div>
+              <p className="text-xs font-bold text-ink group-hover:text-navy">API Bank Himbara</p>
+              <p className="text-[11px] text-muted mt-0.5 line-clamp-2">
+                Sinkronisasi saldo & mutasi rekening giro sekolah (BRI, Mandiri, BNI, BTN, BSI).
+              </p>
+              <div className="mt-3 pt-2 border-t border-line flex items-center justify-between text-[11px] font-semibold text-navy">
+                <span>Konfigurasi SNAP</span>
+                <ArrowRight size={11} className="group-hover:translate-x-1 transition-transform" />
+              </div>
+            </Link>
+
+            {/* Card 2: AI Aksara (Gemini) */}
+            <Link
+              to="/ai-settings"
+              className="p-3.5 rounded-lg border border-line bg-panel hover:border-navy hover:shadow-sm transition-all group block"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="p-2 rounded bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                  <Bot size={18} />
+                </div>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                  Gemini 2.5
+                </span>
+              </div>
+              <p className="text-xs font-bold text-ink group-hover:text-navy">API AI Aksara</p>
+              <p className="text-[11px] text-muted mt-0.5 line-clamp-2">
+                Asisten percakapan cerdas analisis data anggaran & regulasi BOS/BOP Indonesia.
+              </p>
+              <div className="mt-3 pt-2 border-t border-line flex items-center justify-between text-[11px] font-semibold text-navy">
+                <span>Setup Token AI</span>
+                <ArrowRight size={11} className="group-hover:translate-x-1 transition-transform" />
+              </div>
+            </Link>
+
+            {/* Card 3: Polsek Terdekat */}
+            <Link
+              to="/polsek-settings"
+              className="p-3.5 rounded-lg border border-line bg-panel hover:border-navy hover:shadow-sm transition-all group block"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="p-2 rounded bg-red-50 text-red-600 group-hover:bg-red-600 group-hover:text-white transition-colors">
+                  <Siren size={18} />
+                </div>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                  OSM + 110
+                </span>
+              </div>
+              <p className="text-xs font-bold text-ink group-hover:text-navy">API Polsek Terdekat</p>
+              <p className="text-[11px] text-muted mt-0.5 line-clamp-2">
+                Deteksi otomatis kantor polisi/Polsek terdekat dari pelapor se-Indonesia.
+              </p>
+              <div className="mt-3 pt-2 border-t border-line flex items-center justify-between text-[11px] font-semibold text-navy">
+                <span>Kelola Satwil</span>
+                <ArrowRight size={11} className="group-hover:translate-x-1 transition-transform" />
+              </div>
+            </Link>
+
+            {/* Card 4: Data Sekolah Nasional */}
+            <Link
+              to="/schools-settings"
+              className="p-3.5 rounded-lg border border-line bg-panel hover:border-navy hover:shadow-sm transition-all group block"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="p-2 rounded bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                  <GraduationCap size={18} />
+                </div>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  468.724 Satuan
+                </span>
+              </div>
+              <p className="text-xs font-bold text-ink group-hover:text-navy">API Data Sekolah</p>
+              <p className="text-[11px] text-muted mt-0.5 line-clamp-2">
+                Dapodik Kemendikdasmen, Satu Data, PDDikti & EMIS dari PAUD s/d S1.
+              </p>
+              <div className="mt-3 pt-2 border-t border-line flex items-center justify-between text-[11px] font-semibold text-navy">
+                <span>Sinkronisasi Data</span>
+                <ArrowRight size={11} className="group-hover:translate-x-1 transition-transform" />
+              </div>
             </Link>
           </div>
         </Panel>

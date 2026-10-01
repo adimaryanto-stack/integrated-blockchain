@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Panel } from "@/components/ui/Panel";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -37,6 +38,7 @@ import {
   MapPin,
   Building2,
   Radio,
+  CreditCard,
 } from "lucide-react";
 
 // Pool wilayah skala nasional (Kabupaten/Kota & Provinsi se-Indonesia)
@@ -317,14 +319,24 @@ export function BankMutations() {
             {/* Quick Actions Toolbar */}
             <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 shrink-0">
 
+              {/* Link to Dedicated Bank API Settings (SNAP BI) */}
+              <Link
+                to="/bank-settings"
+                className="focus-ring inline-flex items-center gap-1.5 rounded-sm border border-navy/40 bg-navy/10 px-3.5 py-1.5 text-xs font-bold text-navy hover:bg-navy/20 shadow-sm transition-colors"
+                title="Buka Pengaturan API Bank Himbara (BI SNAP)"
+              >
+                <CreditCard size={13} />
+                <span>Pengaturan API Key Bank</span>
+              </Link>
+
               {/* Shortcut to GET JSON Bank Explorer */}
               <button
                 onClick={() => openApiSetupModal(briConfig || bankApiConfigs[0], "test_get")}
-                className="focus-ring inline-flex items-center gap-1.5 rounded-sm border border-navy/40 bg-navy/10 px-3.5 py-1.5 text-xs font-bold text-navy hover:bg-navy/20 shadow-sm transition-colors"
+                className="focus-ring inline-flex items-center gap-1.5 rounded-sm border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-sm transition-colors"
                 title="Eksplorasi Snapshot GET JSON Bank Himbara"
               >
                 <Code size={13} />
-                <span>Pengaturan & GET JSON Bank</span>
+                <span>GET JSON Explorer</span>
               </button>
 
               <button

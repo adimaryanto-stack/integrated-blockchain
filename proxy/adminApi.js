@@ -107,20 +107,32 @@ router.post('/logout', (req, res) => {
 router.get('/users', async (req, res) => {
   try {
     const result = await adminDbPool.query(`
-      SELECT u.id, u.username, u.email, u.role, u.is_active, u.created_at,
-             p.name as provinsi_name, r.name as regency_name
+      SELECT u.id, u.username, u.email, u.role, u.is_active, u.created_at, u.institusi_id,
+             p.name as provinsi_name, r.name as regency_name,
+             s.id as school_id, s.name as school_name, s.npsn as school_npsn,
+             s.location as school_location
       FROM users u
       LEFT JOIN provinces p ON u.provinsi_id = p.id
       LEFT JOIN regencies r ON u.kabupaten_kota_id = r.id
+      LEFT JOIN schools s ON s.id::text = u.institusi_id OR s.npsn = u.institusi_id
       ORDER BY u.created_at ASC
     `);
 
     const mapped = result.rows.map((u, idx) => {
       let dashboard = 'Institusi Pendidikan';
-      if (u.role === 'SUPER_ADMIN') dashboard = 'Admin';
-      else if (u.role === 'ADMIN' || u.role === 'ADMIN_PROVINSI' || u.role === 'ADMIN_KABKOTA') dashboard = 'Kementerian';
-      else if (u.role === 'AUDITOR') dashboard = 'Auditor';
-      else if (u.role === 'PUBLIC_RESEARCHER') dashboard = 'Publik';
+      if (u.school_id || u.institusi_id || u.role === 'OPERATOR' || u.role === 'ADMIN_SATUAN') {
+        dashboard = 'Institusi Pendidikan';
+      } else if (u.role === 'SUPER_ADMIN') {
+        dashboard = 'Admin';
+      } else if (u.role === 'AUDITOR') {
+        dashboard = 'Auditor';
+      } else if (u.role === 'PUBLIC_RESEARCHER') {
+        dashboard = 'Publik';
+      } else {
+        dashboard = 'Kementerian';
+      }
+
+      const schoolId = u.school_id || u.institusi_id;
 
       return {
         id: u.id || `usr-db-${idx}`,
@@ -130,7 +142,11 @@ router.get('/users', async (req, res) => {
         status: u.is_active ? 'aktif' : 'nonaktif',
         phone: '0812' + Math.floor(10000000 + Math.random() * 90000000),
         createdAt: u.created_at || '2026-01-01',
-        institutionId: dashboard === 'Institusi Pendidikan' ? '939291b2-29b9-48ae-b5f1-839be49ba376' : undefined,
+        institutionId: schoolId || undefined,
+        institutionName: u.school_name || undefined,
+        npsn: u.school_npsn || undefined,
+        provinsi: u.provinsi_name || undefined,
+        kabupatenKota: u.regency_name || undefined,
       };
     });
 
@@ -141,28 +157,170 @@ router.get('/users', async (req, res) => {
   }
 });
 
+// Quick lookup endpoint: search school by NPSN & get associated users
+router.get('/schools/lookup', async (req, res) => {
+  try {
+    const q = (req.query.npsn || req.query.q || '').trim();
+    if (!q) return res.status(400).json({ error: 'Parameter npsn atau q diperlukan' });
+
+    const schoolRes = await adminDbPool.query(`
+      SELECT s.id, s.name as "namaSatuan", s.npsn, s.location, s.accreditation,
+             r.name as "kabupatenKota", p.name as "provinsi", s.created_at as "createdAt"
+      FROM schools s
+      LEFT JOIN regencies r ON s.regency_id = r.id
+      LEFT JOIN provinces p ON r.province_id = p.id
+      WHERE s.npsn = $1 OR s.name ILIKE $2
+      LIMIT 10
+    `, [q, `%${q}%`]);
+
+    if (schoolRes.rows.length === 0) {
+      return res.json({ found: false, schools: [] });
+    }
+
+    const schoolsWithUsers = await Promise.all(schoolRes.rows.map(async (row) => {
+      const usersRes = await adminDbPool.query(`
+        SELECT id, username as name, email, role, is_active as "isActive", created_at as "createdAt"
+        FROM users
+        WHERE institusi_id = $1 OR institusi_id = $2
+      `, [row.id, row.npsn]);
+
+      return {
+        id: row.id,
+        npsn: row.npsn,
+        namaSatuan: row.namaSatuan,
+        jenjang: deriveJenjang(row.namaSatuan),
+        kementerianPembina: deriveKementerian(row.namaSatuan),
+        provinsi: row.provinsi || 'DKI Jakarta',
+        kabupatenKota: row.kabupatenKota || 'Pusat',
+        kecamatan: extractKecamatan(row.location),
+        status: 'aktif',
+        users: usersRes.rows,
+      };
+    }));
+
+    res.json({ found: true, count: schoolsWithUsers.length, schools: schoolsWithUsers });
+  } catch (err) {
+    console.error('Error lookup school:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.post('/users', async (req, res) => {
-  const newUser = {
-    id: `usr-${Date.now().toString().slice(-4)}`,
-    created_at: new Date().toISOString().substring(0, 10),
-    ...req.body
-  };
-  recordAudit(`Membuat pengguna baru: ${newUser.name}`, `platform_users`, newUser.id);
-  res.status(201).json(newUser);
+  try {
+    const { name, email, phone, dashboard, institutionId, status } = req.body;
+    const id = `usr-${Date.now().toString().slice(-6)}`;
+    const isActive = status !== 'nonaktif';
+    const role = dashboard === 'Institusi Pendidikan' ? 'ADMIN' : (dashboard === 'Auditor' ? 'AUDITOR' : 'USER');
+
+    let targetSchoolId = null;
+    let targetRegencyId = null;
+
+    if (institutionId) {
+      const sRes = await adminDbPool.query('SELECT id, regency_id FROM schools WHERE id::text = $1 OR npsn = $1 LIMIT 1', [institutionId]);
+      if (sRes.rows.length > 0) {
+        targetSchoolId = sRes.rows[0].id;
+        targetRegencyId = sRes.rows[0].regency_id;
+      }
+    }
+
+    await adminDbPool.query(`
+      INSERT INTO users (id, username, email, role, is_active, created_at, institusi_id, kabupaten_kota_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      ON CONFLICT (id) DO UPDATE SET username = EXCLUDED.username, email = EXCLUDED.email, institusi_id = EXCLUDED.institusi_id
+    `, [
+      id,
+      name,
+      email,
+      role,
+      isActive,
+      new Date().toISOString().substring(0, 10),
+      targetSchoolId || institutionId || null,
+      targetRegencyId
+    ]);
+
+    const newUser = {
+      id,
+      name,
+      email,
+      phone: phone || '081234567890',
+      dashboard,
+      institutionId: targetSchoolId || institutionId,
+      status: status || 'aktif',
+      createdAt: new Date().toISOString().substring(0, 10),
+    };
+
+    recordAudit(`Membuat pengguna baru: ${newUser.name}`, `platform_users`, newUser.id);
+    res.status(201).json(newUser);
+  } catch (err) {
+    console.error('Error creating user:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
-router.patch('/users/:id', (req, res) => {
-  recordAudit(`Memperbarui pengguna: ${req.params.id}`, `platform_users`, req.params.id);
-  res.json({ id: req.params.id, ...req.body });
+router.patch('/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, status, institutionId } = req.body;
+
+    const updates = [];
+    const params = [id];
+
+    if (name) {
+      params.push(name);
+      updates.push(`username = $${params.length}`);
+    }
+    if (email) {
+      params.push(email);
+      updates.push(`email = $${params.length}`);
+    }
+    if (status !== undefined) {
+      params.push(status === 'aktif');
+      updates.push(`is_active = $${params.length}`);
+    }
+    if (institutionId !== undefined) {
+      // Find school if exists
+      const sRes = await adminDbPool.query('SELECT id, regency_id FROM schools WHERE id::text = $1 OR npsn = $1 LIMIT 1', [institutionId]);
+      const validInstId = sRes.rows.length > 0 ? sRes.rows[0].id : institutionId;
+      params.push(validInstId);
+      updates.push(`institusi_id = $${params.length}`);
+    }
+
+    if (updates.length > 0) {
+      await adminDbPool.query(`UPDATE users SET ${updates.join(', ')} WHERE id = $1 OR username = $1`, params);
+      console.log(`[AdminAPI] Updated user ${id}:`, updates.join(', '));
+    }
+
+    recordAudit(`Memperbarui pengguna: ${id}`, `platform_users`, id);
+    res.json({ id, ...req.body });
+  } catch (err) {
+    console.error('Error updating user:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
-router.delete('/users/:id', (req, res) => {
-  recordAudit(`Menghapus pengguna: ${req.params.id}`, `platform_users`, req.params.id);
-  res.json({ message: "Pengguna berhasil dihapus", id: req.params.id });
+router.delete('/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await adminDbPool.query(`DELETE FROM users WHERE id = $1 OR username = $1`, [id]);
+    recordAudit(`Menghapus pengguna: ${id}`, `platform_users`, id);
+    res.json({ message: "Pengguna berhasil dihapus", id });
+  } catch (err) {
+    console.error('Error deleting user:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
-router.post('/users/bulk-action', (req, res) => {
+router.post('/users/bulk-action', async (req, res) => {
   const { ids, action, status } = req.body;
+  try {
+    if (Array.isArray(ids) && ids.length > 0) {
+      const isActive = status === 'aktif';
+      await adminDbPool.query(`UPDATE users SET is_active = $1 WHERE id = ANY($2::text[]) OR username = ANY($2::text[])`, [isActive, ids]);
+      console.log(`[AdminAPI] Bulk updated ${ids.length} users: is_active = ${isActive}`);
+    }
+  } catch (err) {
+    console.error('Error bulk updating users:', err);
+  }
   recordAudit(`Aksi massal (${action || status}) pada ${ids?.length || 0} pengguna`, `platform_users`, ids?.join(',') || '');
   res.json({ message: "Aksi massal berhasil diterapkan", count: ids?.length || 0 });
 });

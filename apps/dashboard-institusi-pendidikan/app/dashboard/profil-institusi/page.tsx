@@ -9,18 +9,20 @@ export default function ProfilInstitusiPage() {
   const router = useRouter();
 
   useEffect(() => {
-    supabase
-      .from('institusi_pendidikan')
-      .select('id')
-      .eq('npsn', '69893669')
-      .limit(1)
-      .then(({ data }) => {
+    async function redirect() {
+      try {
+        const { data } = await supabase
+          .from('institusi_pendidikan')
+          .select('id')
+          .eq('npsn', '69893669')
+          .limit(1);
         const targetId = data?.[0]?.id || 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7';
         router.replace(`/dashboard/profil-institusi/${targetId}`);
-      })
-      .catch(() => {
+      } catch {
         router.replace('/dashboard/profil-institusi/e45bdf94-41c6-4ee0-9864-8c3c7c4576f7');
-      });
+      }
+    }
+    redirect();
   }, [router]);
 
   return (

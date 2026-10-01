@@ -63,9 +63,9 @@ export default function KabupatenKotaPage() {
             .order('nama_kabupaten_kota', { ascending: true })
             .then(({ data: kks }) => {
               if (!isMounted) return;
-              const mapped = (kks || []).map((kk: any) => ({
+              const mapped: AlokasiKabupatenKota[] = (kks || []).map((kk: any) => ({
                 id: kk.id,
-                tahun_anggaran_id: String(activeTahun),
+                alokasi_provinsi_id: kk.provinsi_id || selectedProvinsiId,
                 kabupaten_kota_id: kk.id,
                 kabupaten_kota: {
                   id: kk.id,
@@ -74,6 +74,7 @@ export default function KabupatenKotaPage() {
                   nama_kabupaten_kota: kk.nama_kabupaten_kota,
                   tipe: kk.tipe,
                 },
+                provinsi_nama: selectedProvinsiNama,
                 nominal_alokasi: Number(kk.nominal_alokasi || 0),
                 realisasi_total: Number(kk.realisasi_total || 0),
                 selisih: Number(kk.nominal_alokasi || 0) - Number(kk.realisasi_total || 0),
@@ -81,7 +82,7 @@ export default function KabupatenKotaPage() {
                   Number(kk.nominal_alokasi) > 0
                     ? Math.round((Number(kk.realisasi_total) / Number(kk.nominal_alokasi)) * 1000) / 10
                     : 0,
-                updated_at: kk.updated_at,
+                updated_at: kk.updated_at || new Date().toISOString(),
               }));
               setData(mapped);
               setLoading(false);

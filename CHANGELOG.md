@@ -4,6 +4,43 @@ Semua perubahan penting pada proyek **Integrated Blockchain - Platform Transpara
 
 Format pencatatan berpedoman pada [Keep a Changelog](https://keepachangelog.com/id-ID/1.0.0/) dan menganut prinsip [Semantic Versioning](https://semver.org/lang/id/).
 
+## [2.4.3] - 2026-10-01
+
+### 🔐 Sistem Otentikasi Sekolah & Penegakan Mode Baca (School Auth & Read-Only Enforcement)
+- **Halaman Login Mandiri Institusi Pendidikan (`/login`)**:
+  - Penambahan halaman login mandiri pada Dashboard Institusi Pendidikan (Port 2024) dilengkapi fitur *quick switch* akun preset (Admin Sekolah, Operator Sekolah, dan Peninjau).
+  - Indikator kesehatan database live (*PostgreSQL & Proxy Status Indicator*) pada form otentikasi.
+  - Fitur toggle visibilitas kata sandi dan validasi kredensial lokal.
+- **Sinkronisasi Status Pengguna Real-Time (`syncUserStatus`)**:
+  - Polling otomatis setiap 5 detik dan setiap fokus jendela browser (`window.focus`) ke tabel `public.users` PostgreSQL lokal.
+  - Deteksi instan saat status akun dinonaktifkan (`is_active = false`) oleh Super Admin di Dashboard Admin (Port 2026).
+- **Banner Peringatan Sticky & Pembatasan Hak Akses (Read-Only Mode)**:
+  - Banner peringatan merah sticky pada Header saat akun non-aktif: *⛔ PERINGATAN: Akun Anda berstatus NON-AKTIF (Hanya Lihat)...*.
+  - Pemblokiran menyeluruh seluruh tombol aksi mutasi data (Tambah/Edit/Hapus RAB, Pengeluaran, Vendor SPJ, Unggah Kuitansi OCR, dan Persetujuan Audit) ketika status akun non-aktif (`isReadOnly`).
+- **Pembaruan Manajemen Pengguna Sekolah (`/dashboard/users`)**:
+  - Sinkronisasi langsung tabel pengguna sekolah ke database PostgreSQL (`public.users`).
+  - Pemisahan hak akses: Admin Sekolah dapat mengelola akun Operator Sekolah, sedangkan Operator Sekolah memiliki akses mandiri untuk memperbarui email dan kata sandinya sendiri tanpa dapat mengubah role akun.
+  - Indikator badge profil pengguna cepat (*user pill*) di Header yang terhubung langsung ke pergantian akun.
+
+### 🏢 Peningkatan Dashboard Admin (Admin Console v2.4.3)
+- **Komponen Pencarian Cerdas Satuan Pendidikan (`SchoolNpsnSelector`)**:
+  - Pemilihan satuan pendidikan berbasis autocomplete dengan debounce pencarian NPSN dan nama sekolah dari basis data nasional (Dapodik, PDDikti, EMIS).
+  - Tampilan chip identitas sekolah (NPSN, Jenjang, Kementerian Pembina, Wilayah Kabupaten/Kota) secara otomatis.
+- **Banner Pencocokan Live NPSN pada Manajemen Pengguna**:
+  - Deteksi otomatis nomor NPSN saat mengetik pada kotak pencarian pengguna `UserManagement.tsx`.
+  - Menampilkan kartu pratinjau informasi sekolah rujukan, status jumlah akun terdaftar, dan tombol pintas 1-klik *+ Buat Akun Sekolah Ini*.
+- **Widget Integrasi Gateway API Nasional pada Beranda Admin**:
+  - Penambahan panel status 4 gerbang API eksternal di `DashboardHome.tsx`: Bank Himbara SNAP BI v1.1, AI Aksara (Gemini), Polsek Terdekat (OSM + 110), dan Data Sekolah Nasional (468.724 Satuan).
+  - Tombol tautan cepat konfigurasi API Key Bank di halaman Mutasi Bank (`BankMutations.tsx`).
+
+### ⚡ Akselerasi & Penguatan Proxy API Gateway (Port 2028)
+- **Endpoint Lookup Satuan Pendidikan (`GET /api/schools/lookup`)**:
+  - Pencarian fleksibel sekolah berdasarkan NPSN atau nama dengan relasi join tabel `schools`, `regencies`, `provinces`, dan penghitungan live akun pengguna sekolah dari `users`.
+- **Persistensi Penuh Manajemen Pengguna ke PostgreSQL**:
+  - Endpoint `POST /api/users`, `PATCH /api/users/:id`, `DELETE /api/users/:id`, dan `POST /api/users/bulk-action` kini tersinkronisasi 100% secara langsung ke tabel `public.users` dengan integritas foreign key satuan pendidikan dan kabupaten/kota.
+- **Peningkatan Keandalan API Polsek Terdekat**:
+  - Penambahan endpoint mirror `overpass.kumi.systems` dan parsing aman terhadap respons non-JSON/XML untuk mencegah kegagalan pencarian kantor polisi terdekat.
+
 ---
 
 ## [2.4.2] - 2026-10-01
