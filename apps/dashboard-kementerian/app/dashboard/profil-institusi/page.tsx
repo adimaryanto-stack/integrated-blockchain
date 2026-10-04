@@ -291,9 +291,9 @@ export default function ProfilInstitusiPage() {
                   <Icon size={16} className={`${item.text} opacity-60`} />
                 </div>
                 <div className="mt-3 flex items-baseline gap-1.5">
-                  <span className={`text-2xl font-bold font-mono ${item.text}`}>{item.filteredCount}</span>
+                  <span className={`text-2xl font-bold font-mono ${item.text}`}>{item.filteredCount.toLocaleString('id-ID')}</span>
                   {item.filteredCount !== item.totalCount && (
-                    <span className="text-[10px] text-slate-400 font-medium">/ {item.totalCount} total</span>
+                    <span className="text-[10px] text-slate-400 font-medium">/ {item.totalCount.toLocaleString('id-ID')} total</span>
                   )}
                 </div>
               </div>
