@@ -23,7 +23,7 @@ Sistem **Integrated Blockchain - Platform Transparansi Anggaran Pendidikan Indon
    - `proxy/proxy.js` (Port 2028: PostgREST REST API Gateway & Security Filter Engine)
    - `proxy/connectionProbe.js` (Port 2028: Real-Live Network Diagnostic Probe — TLS, DNS, HTTP Inspector)
 3. **Skema & Desain Basis Data Relasional**: Struktur 35+ tabel master, relasi entitas (*ERD*), view agregasi (*materialized view*), dan trigger otomatis (*cascading delete*) pada PostgreSQL.
-4. **Logika Bisnis & Algoritma Khusus**: Formula distribusi transfer dana berjenjang, validasi ambang batas 20% APBD (UUD 1945), rekonsiliasi kas bank multi-rekening, dan alur pelaporan korupsi dana pendidikan ke KPK/Kejaksaan/BPK-BPKP.
+4. **Logika Bisnis & Algoritma Khusus**: Formula distribusi transfer dana berjenjang, validasi ambang batas 20% APBD (UUD 1945), rekonsiliasi kas bank multi-rekening, mesin kalkulasi spasial jarak terdekat (Haversine distance engine), dan alur pelaporan korupsi dana pendidikan ke KPK/Kejaksaan/BPK-BPKP.
 
 ---
 
@@ -141,6 +141,11 @@ Selain pustaka perangkat lunak di atas, proyek ini memanfaatkan aset pendukung b
 - **Kode & Nomenklatur Wilayah**: Berdasarkan Keputusan Menteri Dalam Negeri (Kepmendagri) tentang Kode dan Data Wilayah Administrasi Pemerintahan.
 - **Data APBN / APBD**: Berdasarkan Undang-Undang APBN Republik Indonesia dan Peraturan Daerah APBD Provinsi Lampung.
 - *Catatan Hukum*: Berdasarkan **Pasal 42 Undang-Undang Republik Indonesia Nomor 28 Tahun 2014 tentang Hak Cipta**, hasil karya berupa peraturan perundang-undangan, pidato kenegaraan, putusan pengadilan, dan kitab suci tidak memiliki hak cipta (merupakan informasi publik/domain publik).
+
+### 5. Direktori Kantor Aparat Penegak Hukum & Pengawas Keuangan Negara (KPK, Kejaksaan, BPK, BPKP, Polri)
+- **Sumber Data & Lokasi Kantor**: Berdasarkan data resmi publik yang dipublikasikan oleh Komisi Pemberantasan Korupsi (kpk.go.id), Kejaksaan Republik Indonesia (kejaksaan.go.id), Badan Pemeriksa Keuangan (bpk.go.id), Badan Pengawasan Keuangan dan Pembangunan (bpkp.go.id), dan Kepolisian Negara Republik Indonesia (polri.go.id).
+- **Layanan Navigasi Peta Eksternal**: Tautan navigasi Google Maps (`https://www.google.com/maps/dir/`) disediakan sebagai rujukan tautan luar (*external hyperlink navigation*) ke fasilitas umum instansi pemerintah.
+- **Sifat Data**: Informasi Publik Terbuka sesuai Undang-Undang Republik Indonesia Nomor 14 Tahun 2008 tentang Keterbukaan Informasi Publik.
 
 ---
 

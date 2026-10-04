@@ -510,13 +510,13 @@
             <input type="hidden" id="selectedAgencyInput" value="BPK_BPKP">
           </div>
 
-          <!-- Dynamic Nearest Polsek Card (Real spatial lookup) -->
-          <div id="nearestPolsekCard" style="background: #F1F5F9; border: 1px solid #CBD5E1; border-radius: 14px; padding: 14px 18px; margin-bottom: 24px;">
+          <!-- Dynamic Nearest APH Office Card (Real spatial lookup for KPK, Kejaksaan, BPK/BPKP, Polsek, & Sinergi APH) -->
+          <div id="nearestPolsekCard" style="background: #F1F5F9; border: 1px solid #CBD5E1; border-radius: 14px; padding: 14px 18px; margin-bottom: 24px; transition: all 0.25s ease;">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
               <div style="display: flex; align-items: center; gap: 12px;">
-                <span class="material-symbols-outlined" style="color: #1E293B; font-size: 26px;">local_police</span>
+                <span id="aphCardIcon" class="material-symbols-outlined" style="color: #1E293B; font-size: 26px;">local_police</span>
                 <div>
-                  <div style="font-size: 11px; font-weight: 800; color: #64748B; letter-spacing: 0.04em;">SATWIL KEPOLISIAN TERDEKAT DARI SASARAN:</div>
+                  <div id="aphCardHeaderLabel" style="font-size: 11px; font-weight: 800; color: #64748B; letter-spacing: 0.04em;">SATWIL KEPOLISIAN TERDEKAT DARI SASARAN:</div>
                   <div style="font-size: 14px; font-weight: 800; color: #0F172A;" id="polsekNamePreview">
                     Polsek Metro Menteng (0.6 km)
                   </div>
@@ -530,19 +530,19 @@
                   <span class="material-symbols-outlined" style="font-size: 16px;">directions</span>
                   <span>Rute Maps</span>
                 </a>
-                <button type="button" onclick="detectUserLocationPolsek()" class="portal-btn" style="background: #E2E8F0; color: #0F172A; font-size: 12px; padding: 6px 12px;">
+                <button type="button" onclick="detectUserLocationAph()" class="portal-btn" style="background: #E2E8F0; color: #0F172A; font-size: 12px; padding: 6px 12px;">
                   <span class="material-symbols-outlined" style="font-size: 16px;">my_location</span>
                   <span>Cari Ulang</span>
                 </button>
               </div>
             </div>
 
-            <!-- Alternative Nearest Polsek Selector Dropdown -->
+            <!-- Alternative Nearest Polsek / APH Selector Dropdown -->
             <div id="polsekAlternativeContainer" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #CBD5E1;">
-              <label for="polsekSelectorDropdown" style="font-size: 11.5px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">
+              <label id="aphDropdownLabel" for="polsekSelectorDropdown" style="font-size: 11.5px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">
                 PILIH KANTOR POLISI TERDEKAT LAINNYA:
               </label>
-              <select id="polsekSelectorDropdown" onchange="onSelectPolsekDropdown(this.value)" class="input-control" style="font-size: 12.5px; padding: 7px 10px; background: #FFFFFF; cursor: pointer;">
+              <select id="polsekSelectorDropdown" onchange="onSelectAphDropdown(this.value)" class="input-control" style="font-size: 12.5px; padding: 7px 10px; background: #FFFFFF; cursor: pointer;">
               </select>
             </div>
           </div>
@@ -875,8 +875,82 @@
   </footer>
 
   <script>
+    // ── Unified Indonesia APH Offices Database ──
+    // Setiap entry memiliki field `mapsQuery` yang dipakai sebagai destination text di Google Maps
+    // agar navigasi tidak nyasar ke titik koordinat acak.
+    const INDONESIA_APH_OFFICES = [
+      // KPK RI
+      { id: 'kpk-01', agency: 'KPK', agencyLabel: 'KPK RI', nama: 'Gedung Merah Putih KPK RI (Pusat Dumas)', wilayah: 'Pusat / Dumas Nasional', alamat: 'Jl. Kuningan Persada Kav. 4, Setiabudi, Jakarta Selatan 12950', hotline: '198', statusSiaga: 'Layanan Pengaduan Dumas 08.00–17.00 WIB & Hotline 198', lat: -6.2078, lon: 106.8309, mapsQuery: 'Komisi Pemberantasan Korupsi (KPK) Gedung Merah Putih, Jl. Kuningan Persada, Jakarta Selatan' },
+      { id: 'kpk-02', agency: 'KPK', agencyLabel: 'KPK RI', nama: 'Gedung ACLC KPK (Gedung C1 / Edukasi & Dumas)', wilayah: 'Sentra Edukasi & Dumas', alamat: 'Jl. H. R. Rasuna Said Kav. C-1, Karet Kuningan, Setiabudi, Jakarta Selatan 12920', hotline: '198', statusSiaga: 'Dumas & Portal JAGA Terintegrasi', lat: -6.2160, lon: 106.8300, mapsQuery: 'Gedung ACLC KPK, Jl. H. R. Rasuna Said, Karet Kuningan, Jakarta Selatan' },
+      { id: 'kpk-03', agency: 'KPK', agencyLabel: 'KPK RI', nama: 'Satgas Korsup KPK Wilayah II (Jabar & Banten)', wilayah: 'Jawa Barat & Banten', alamat: 'Gedung Keuangan Negara Bandung, Jl. Asia Afrika No. 114, Kota Bandung', hotline: '198', statusSiaga: 'Supervisi Pencegahan Tipikor Jabar & Banten', lat: -6.9218, lon: 107.6079, mapsQuery: 'Gedung Keuangan Negara Bandung, Jl. Asia Afrika, Kota Bandung' },
+      { id: 'kpk-04', agency: 'KPK', agencyLabel: 'KPK RI', nama: 'Satgas Korsup KPK Wilayah III (Jateng, DIY & Jatim)', wilayah: 'Jawa Tengah, DIY & Jawa Timur', alamat: 'Gedung Keuangan Negara Semarang, Jl. Pemuda No. 2, Kota Semarang', hotline: '198', statusSiaga: 'Supervisi Wilayah III', lat: -6.9700, lon: 110.4180, mapsQuery: 'Gedung Keuangan Negara Semarang, Jl. Pemuda No. 2, Kota Semarang' },
+      { id: 'kpk-05', agency: 'KPK', agencyLabel: 'KPK RI', nama: 'Satgas Korsup KPK Wilayah I (Sumatera)', wilayah: 'Sumatera', alamat: 'Gedung Keuangan Negara Medan, Jl. Balai Kota No. 2, Kota Medan', hotline: '198', statusSiaga: 'Supervisi Wilayah I Sumatera', lat: 3.5824, lon: 98.6718, mapsQuery: 'Gedung Keuangan Negara Medan, Jl. Balai Kota, Kota Medan' },
+      { id: 'kpk-06', agency: 'KPK', agencyLabel: 'KPK RI', nama: 'Satgas Korsup KPK Wilayah IV (Kalimantan, Sulawesi, Bali)', wilayah: 'Indonesia Tengah', alamat: 'Gedung Keuangan Negara Makassar, Jl. Urip Sumoharjo No. 20, Kota Makassar', hotline: '198', statusSiaga: 'Supervisi Wilayah IV', lat: -5.1450, lon: 119.4270, mapsQuery: 'Gedung Keuangan Negara Makassar, Jl. Urip Sumoharjo, Kota Makassar' },
+      { id: 'kpk-07', agency: 'KPK', agencyLabel: 'KPK RI', nama: 'Satgas Korsup KPK Wilayah V (Papua & Maluku)', wilayah: 'Indonesia Timur', alamat: 'Jl. Percetakan Negara No. 10, Gurabesi, Jayapura Utara, Kota Jayapura', hotline: '198', statusSiaga: 'Supervisi Wilayah V Papua Maluku', lat: -2.5330, lon: 140.7180, mapsQuery: 'Kantor KPK Wilayah Papua, Jl. Percetakan Negara, Gurabesi, Jayapura Utara' },
+
+      // Kejaksaan Republik Indonesia (Pidsus)
+      { id: 'kej-01', agency: 'KEJAKSAAN', agencyLabel: 'Kejaksaan', nama: 'Kejaksaan Negeri Jakarta Pusat', wilayah: 'Jakarta Pusat', alamat: 'Jl. Merpati, Gunung Sahari Selatan, Kemayoran, Jakarta Pusat 10610', hotline: '150227', statusSiaga: 'Seksi Tindak Pidana Khusus (Pidsus) Siaga', lat: -6.1535, lon: 106.8426, mapsQuery: 'Kejaksaan Negeri Jakarta Pusat, Jl. Merpati, Kemayoran, Jakarta Pusat' },
+      { id: 'kej-02', agency: 'KEJAKSAAN', agencyLabel: 'Kejaksaan', nama: 'Kejaksaan Tinggi DKI Jakarta', wilayah: 'DKI Jakarta', alamat: 'Jl. H. R. Rasuna Said Kav. 8-9, Kuningan Timur, Setiabudi, Jakarta Selatan 12950', hotline: '150227', statusSiaga: 'Bidang Pidsus Kejati DKI Siaga', lat: -6.2250, lon: 106.8310, mapsQuery: 'Kejaksaan Tinggi DKI Jakarta, Jl. H. R. Rasuna Said, Kuningan, Jakarta Selatan' },
+      { id: 'kej-03', agency: 'KEJAKSAAN', agencyLabel: 'Kejaksaan', nama: 'Kejaksaan Agung Republik Indonesia (Gedung Bundar Pidsus)', wilayah: 'Nasional / Jampidsus', alamat: 'Jl. Sultan Hasanuddin No. 1, Kebayoran Baru, Jakarta Selatan 12130', hotline: '150227', statusSiaga: 'Dumas Presisi Jampidsus Kejagung RI', lat: -6.2409, lon: 106.7979, mapsQuery: 'Kejaksaan Agung Republik Indonesia, Jl. Sultan Hasanuddin, Kebayoran Baru, Jakarta Selatan' },
+      { id: 'kej-04', agency: 'KEJAKSAAN', agencyLabel: 'Kejaksaan', nama: 'Kejaksaan Negeri Jakarta Timur', wilayah: 'Jakarta Timur', alamat: 'Jl. Bekasi Timur IV, Cipinang Besar Utara, Jatinegara, Jakarta Timur 13340', hotline: '150227', statusSiaga: 'Seksi Pidsus Siaga', lat: -6.2177, lon: 106.8755, mapsQuery: 'Kejaksaan Negeri Jakarta Timur, Jl. Bekasi Timur, Cipinang Besar Utara, Jatinegara, Jakarta Timur' },
+      { id: 'kej-05', agency: 'KEJAKSAAN', agencyLabel: 'Kejaksaan', nama: 'Kejaksaan Negeri Jakarta Selatan', wilayah: 'Jakarta Selatan', alamat: 'Jl. Tanjung No. 1, Pasar Minggu, Jakarta Selatan 12520', hotline: '150227', statusSiaga: 'Seksi Pidsus Siaga', lat: -6.2905, lon: 106.8305, mapsQuery: 'Kejaksaan Negeri Jakarta Selatan, Jl. Tanjung, Pasar Minggu, Jakarta Selatan' },
+      { id: 'kej-06', agency: 'KEJAKSAAN', agencyLabel: 'Kejaksaan', nama: 'Kejaksaan Negeri Kota Depok', wilayah: 'Kota Depok (Dekat UI Depok)', alamat: 'Jl. Boulevard Grand Depok City, Jatimulya, Cilodong, Kota Depok 16413', hotline: '150227', statusSiaga: 'Seksi Pidsus Kejari Depok Siaga', lat: -6.4150, lon: 106.8300, mapsQuery: 'Kejaksaan Negeri Kota Depok, Jl. Boulevard Grand Depok City, Depok' },
+      { id: 'kej-07', agency: 'KEJAKSAAN', agencyLabel: 'Kejaksaan', nama: 'Kejaksaan Negeri Kota Bandung', wilayah: 'Kota Bandung (Dekat ITB & Unpad)', alamat: 'Jl. Jakarta No. 42, Kebonwaru, Batununggal, Kota Bandung 40272', hotline: '150227', statusSiaga: 'Seksi Pidsus Tipikor Kejari Bandung Siaga', lat: -6.9160, lon: 107.6360, mapsQuery: 'Kejaksaan Negeri Kota Bandung, Jl. Jakarta No. 42, Batununggal, Kota Bandung' },
+      { id: 'kej-08', agency: 'KEJAKSAAN', agencyLabel: 'Kejaksaan', nama: 'Kejaksaan Tinggi Jawa Barat', wilayah: 'Provinsi Jawa Barat', alamat: 'Jl. LLRE Martadinata No. 54, Citarum, Bandung Wetan, Kota Bandung 40115', hotline: '150227', statusSiaga: 'Bidang Pidsus Kejati Jabar Siaga', lat: -6.9062, lon: 107.6194, mapsQuery: 'Kejaksaan Tinggi Jawa Barat, Jl. LLRE Martadinata, Bandung Wetan, Kota Bandung' },
+      { id: 'kej-09', agency: 'KEJAKSAAN', agencyLabel: 'Kejaksaan', nama: 'Kejaksaan Negeri Kabupaten Bogor', wilayah: 'Kab. Bogor (Dekat IPB Dramaga)', alamat: 'Komplek Perkantoran Pemda Cibinong, Jl. Tegar Beriman, Cibinong, Kab. Bogor 16914', hotline: '150227', statusSiaga: 'Seksi Pidsus Kejari Cibinong Siaga', lat: -6.4840, lon: 106.8400, mapsQuery: 'Kejaksaan Negeri Kabupaten Bogor, Jl. Tegar Beriman, Cibinong, Bogor' },
+      { id: 'kej-10', agency: 'KEJAKSAAN', agencyLabel: 'Kejaksaan', nama: 'Kejaksaan Negeri Kota Semarang', wilayah: 'Kota Semarang (Dekat Undip & Unnes)', alamat: 'Jl. Abdulrahman Saleh No. 222, Kalibanteng Kulon, Semarang 50145', hotline: '150227', statusSiaga: 'Seksi Pidsus Kejari Semarang Siaga', lat: -6.9890, lon: 110.3800, mapsQuery: 'Kejaksaan Negeri Kota Semarang, Jl. Abdulrahman Saleh, Semarang' },
+      { id: 'kej-11', agency: 'KEJAKSAAN', agencyLabel: 'Kejaksaan', nama: 'Kejaksaan Tinggi Jawa Tengah', wilayah: 'Provinsi Jawa Tengah', alamat: 'Jl. Pahlawan No. 14, Mugassari, Semarang Selatan 50249', hotline: '150227', statusSiaga: 'Bidang Pidsus Kejati Jateng Siaga', lat: -6.9930, lon: 110.4200, mapsQuery: 'Kejaksaan Tinggi Jawa Tengah, Jl. Pahlawan, Mugassari, Semarang Selatan' },
+      { id: 'kej-12', agency: 'KEJAKSAAN', agencyLabel: 'Kejaksaan', nama: 'Kejaksaan Negeri Sleman (Dekat UGM & UNY)', wilayah: 'Kab. Sleman, D.I. Yogyakarta', alamat: 'Jl. Parasamya, Tridadi, Sleman, D.I. Yogyakarta 55511', hotline: '150227', statusSiaga: 'Seksi Pidsus Kejari Sleman Siaga', lat: -7.7157, lon: 110.3562, mapsQuery: 'Kejaksaan Negeri Sleman, Jl. Parasamya, Tridadi, Sleman, Yogyakarta' },
+      { id: 'kej-13', agency: 'KEJAKSAAN', agencyLabel: 'Kejaksaan', nama: 'Kejaksaan Tinggi D.I. Yogyakarta', wilayah: 'Provinsi D.I. Yogyakarta', alamat: 'Jl. Sukonandi No. 4, Semaki, Umbulharjo, Kota Yogyakarta 55166', hotline: '150227', statusSiaga: 'Bidang Pidsus Kejati DIY Siaga', lat: -7.7980, lon: 110.3870, mapsQuery: 'Kejaksaan Tinggi DI Yogyakarta, Jl. Sukonandi, Semaki, Umbulharjo, Yogyakarta' },
+      { id: 'kej-14', agency: 'KEJAKSAAN', agencyLabel: 'Kejaksaan', nama: 'Kejaksaan Negeri Surabaya (Dekat Unair & Unesa)', wilayah: 'Kota Surabaya', alamat: 'Jl. Sukomanunggal Jaya No. 1, Sukomanunggal, Kota Surabaya 60188', hotline: '150227', statusSiaga: 'Seksi Pidsus Kejari Surabaya Siaga', lat: -7.2750, lon: 112.7050, mapsQuery: 'Kejaksaan Negeri Surabaya, Jl. Sukomanunggal Jaya, Sukomanunggal, Surabaya' },
+      { id: 'kej-15', agency: 'KEJAKSAAN', agencyLabel: 'Kejaksaan', nama: 'Kejaksaan Tinggi Jawa Timur', wilayah: 'Provinsi Jawa Timur', alamat: 'Jl. Ahmad Yani No. 54-56, Gayungan, Kota Surabaya 60235', hotline: '150227', statusSiaga: 'Bidang Pidsus Kejati Jatim Siaga', lat: -7.3270, lon: 112.7300, mapsQuery: 'Kejaksaan Tinggi Jawa Timur, Jl. Ahmad Yani, Gayungan, Surabaya' },
+      { id: 'kej-16', agency: 'KEJAKSAAN', agencyLabel: 'Kejaksaan', nama: 'Kejaksaan Negeri Medan (Dekat USU)', wilayah: 'Kota Medan', alamat: 'Jl. Kejaksaan No. 1, Petisah Tengah, Medan Petisah, Medan 20112', hotline: '150227', statusSiaga: 'Seksi Pidsus Kejari Medan Siaga', lat: -3.5900, lon: 98.6720, mapsQuery: 'Kejaksaan Negeri Medan, Jl. Kejaksaan No. 1, Petisah Tengah, Medan' },
+      { id: 'kej-17', agency: 'KEJAKSAAN', agencyLabel: 'Kejaksaan', nama: 'Kejaksaan Negeri Makassar (Dekat Unhas)', wilayah: 'Kota Makassar', alamat: 'Jl. Boulevard No. 1, Masale, Panakkukang, Makassar 90231', hotline: '150227', statusSiaga: 'Seksi Pidsus Kejari Makassar Siaga', lat: -5.1500, lon: 119.4400, mapsQuery: 'Kejaksaan Negeri Makassar, Jl. Boulevard, Masale, Panakkukang, Makassar' },
+      { id: 'kej-18', agency: 'KEJAKSAAN', agencyLabel: 'Kejaksaan', nama: 'Kejaksaan Negeri Bandar Lampung (Dekat Unila)', wilayah: 'Kota Bandar Lampung', alamat: 'Jl. Pulau Sebesi No. 93, Sukarame, Kota Bandar Lampung 35131', hotline: '150227', statusSiaga: 'Seksi Pidsus Kejari Bandar Lampung Siaga', lat: -5.3850, lon: 105.2950, mapsQuery: 'Kejaksaan Negeri Bandar Lampung, Jl. Pulau Sebesi, Sukarame, Bandar Lampung' },
+
+      // BPK & BPKP RI
+      { id: 'bpk-01', agency: 'BPK_BPKP', agencyLabel: 'BPK RI', nama: 'Badan Pemeriksa Keuangan (BPK RI Pusat)', wilayah: 'Pusat / Nasional', alamat: 'Jl. Gatot Subroto No. 31, Bendungan Hilir, Tanah Abang, Jakarta Pusat 10210', hotline: '1500-275', statusSiaga: 'Dumas & Whistleblowing System BPK RI', lat: -6.2056, lon: 106.8028, mapsQuery: 'Badan Pemeriksa Keuangan (BPK RI Pusat), Jl. Gatot Subroto No. 31, Bendungan Hilir, Jakarta' },
+      { id: 'bpkp-01', agency: 'BPK_BPKP', agencyLabel: 'BPKP RI', nama: 'Badan Pengawasan Keuangan dan Pembangunan (BPKP Pusat)', wilayah: 'Pusat / Investigasi Forensik', alamat: 'Jl. Pramuka No. 33, Utan Kayu Utara, Matraman, Jakarta Timur 13120', hotline: '1500-275', statusSiaga: 'Deputi Investigasi & Audit Forensik Keuangan', lat: -6.1923, lon: 106.8737, mapsQuery: 'Badan Pengawasan Keuangan dan Pembangunan (BPKP Pusat), Jl. Pramuka No. 33, Matraman, Jakarta Timur' },
+      { id: 'bpk-02', agency: 'BPK_BPKP', agencyLabel: 'BPK RI', nama: 'BPK RI Kantor Perwakilan Provinsi DKI Jakarta', wilayah: 'Provinsi DKI Jakarta', alamat: 'Jl. MT Haryono Kav. 34, Pancoran, Jakarta Selatan 12770', hotline: '1500-275', statusSiaga: 'Audit Pengawasan Entitas Pemerintah Daerah', lat: -6.2445, lon: 106.8518, mapsQuery: 'BPK RI Perwakilan Provinsi DKI Jakarta, Jl. MT Haryono, Pancoran, Jakarta Selatan' },
+      { id: 'bpkp-02', agency: 'BPK_BPKP', agencyLabel: 'BPKP RI', nama: 'BPKP Perwakilan Provinsi DKI Jakarta', wilayah: 'Provinsi DKI Jakarta', alamat: 'Jl. Hayam Wuruk No. 7, Gambir, Jakarta Pusat 10120', hotline: '1500-275', statusSiaga: 'Pengawasan Keuangan dan Pembangunan DKI', lat: -6.1680, lon: 106.8200, mapsQuery: 'BPKP Perwakilan Provinsi DKI Jakarta, Jl. Hayam Wuruk No. 7, Gambir, Jakarta Pusat' },
+      { id: 'bpk-03', agency: 'BPK_BPKP', agencyLabel: 'BPK RI', nama: 'BPK RI Kantor Perwakilan Provinsi Jawa Barat', wilayah: 'Provinsi Jawa Barat', alamat: 'Jl. Haji Kurdi No. 164, Pelindung Hewan, Astanaanyar, Kota Bandung 40243', hotline: '1500-275', statusSiaga: 'Layanan Dumas BPK Jabar', lat: -6.9435, lon: 107.6070, mapsQuery: 'BPK RI Perwakilan Provinsi Jawa Barat, Jl. Haji Kurdi No. 164, Astanaanyar, Kota Bandung' },
+      { id: 'bpkp-03', agency: 'BPK_BPKP', agencyLabel: 'BPKP RI', nama: 'BPKP Perwakilan Provinsi Jawa Barat', wilayah: 'Provinsi Jawa Barat', alamat: 'Jl. Cikutra No. 159, Cikutra, Cibeunying Kidul, Kota Bandung 40124', hotline: '1500-275', statusSiaga: 'Bidang Investigasi Forensik BPKP Jabar', lat: -6.8950, lon: 107.6350, mapsQuery: 'BPKP Perwakilan Provinsi Jawa Barat, Jl. Cikutra No. 159, Cibeunying Kidul, Kota Bandung' },
+      { id: 'bpk-04', agency: 'BPK_BPKP', agencyLabel: 'BPK RI', nama: 'BPK RI Kantor Perwakilan Provinsi Jawa Tengah', wilayah: 'Provinsi Jawa Tengah', alamat: 'Jl. Perintis Kemerdekaan No. 175, Pudakpayung, Semarang 50265', hotline: '1500-275', statusSiaga: 'Layanan Pengaduan BPK Jateng', lat: -7.0850, lon: 110.4150, mapsQuery: 'BPK RI Perwakilan Provinsi Jawa Tengah, Jl. Perintis Kemerdekaan, Pudakpayung, Semarang' },
+      { id: 'bpkp-04', agency: 'BPK_BPKP', agencyLabel: 'BPKP RI', nama: 'BPKP Perwakilan Provinsi Jawa Tengah', wilayah: 'Provinsi Jawa Tengah', alamat: 'Jl. Raya Batursari, Mranggen, Kab. Demak / Semarang 59567', hotline: '1500-275', statusSiaga: 'Bidang Investigasi BPKP Jateng', lat: -7.0500, lon: 110.4400, mapsQuery: 'BPKP Perwakilan Provinsi Jawa Tengah, Jl. Raya Batursari, Mranggen, Semarang' },
+      { id: 'bpk-05', agency: 'BPK_BPKP', agencyLabel: 'BPK RI', nama: 'BPK RI Kantor Perwakilan Provinsi D.I. Yogyakarta', wilayah: 'Provinsi D.I. Yogyakarta', alamat: 'Jl. HOS Cokroaminoto No. 52, Tegalrejo, Kota Yogyakarta 55244', hotline: '1500-275', statusSiaga: 'Layanan Pengaduan BPK DIY', lat: -7.7950, lon: 110.3550, mapsQuery: 'BPK RI Perwakilan Provinsi DI Yogyakarta, Jl. HOS Cokroaminoto No. 52, Tegalrejo, Yogyakarta' },
+      { id: 'bpkp-05', agency: 'BPK_BPKP', agencyLabel: 'BPKP RI', nama: 'BPKP Perwakilan Provinsi D.I. Yogyakarta', wilayah: 'Provinsi D.I. Yogyakarta', alamat: 'Jl. Parangtritis KM 5.5, Tarudan, Bangunharjo, Sewon, Bantul 55188', hotline: '1500-275', statusSiaga: 'Bidang Investigasi BPKP DIY', lat: -7.8420, lon: 110.3620, mapsQuery: 'BPKP Perwakilan Provinsi DI Yogyakarta, Jl. Parangtritis, Sewon, Bantul, Yogyakarta' },
+      { id: 'bpk-06', agency: 'BPK_BPKP', agencyLabel: 'BPK RI', nama: 'BPK RI Kantor Perwakilan Provinsi Jawa Timur', wilayah: 'Provinsi Jawa Timur', alamat: 'Jl. Raya Juanda Semambung, Gedangan, Kab. Sidoarjo 61254', hotline: '1500-275', statusSiaga: 'Layanan Pengaduan BPK Jatim', lat: -7.3750, lon: 112.7650, mapsQuery: 'BPK RI Perwakilan Provinsi Jawa Timur, Jl. Raya Juanda Semambung, Gedangan, Sidoarjo' },
+      { id: 'bpkp-06', agency: 'BPK_BPKP', agencyLabel: 'BPKP RI', nama: 'BPKP Perwakilan Provinsi Jawa Timur', wilayah: 'Provinsi Jawa Timur', alamat: 'Jl. Raya Bandara Juanda No. 38, Semambung, Sidoarjo 61254', hotline: '1500-275', statusSiaga: 'Bidang Investigasi BPKP Jatim', lat: -7.3780, lon: 112.7620, mapsQuery: 'BPKP Perwakilan Provinsi Jawa Timur, Jl. Raya Bandara Juanda, Semambung, Sidoarjo' },
+      { id: 'bpk-07', agency: 'BPK_BPKP', agencyLabel: 'BPK RI', nama: 'BPK RI Kantor Perwakilan Provinsi Sumatera Utara', wilayah: 'Provinsi Sumatera Utara', alamat: 'Jl. Imam Bonjol No. 22, Petisah Tengah, Medan 20112', hotline: '1500-275', statusSiaga: 'Layanan Pengaduan BPK Sumut', lat: -3.5850, lon: 98.6750, mapsQuery: 'BPK RI Perwakilan Provinsi Sumatera Utara, Jl. Imam Bonjol No. 22, Medan' },
+      { id: 'bpk-08', agency: 'BPK_BPKP', agencyLabel: 'BPK RI', nama: 'BPK RI Kantor Perwakilan Provinsi Sulawesi Selatan', wilayah: 'Provinsi Sulawesi Selatan', alamat: 'Jl. A. P. Pettarani No. 1, Banta-Bantaeng, Rappocini, Makassar 90222', hotline: '1500-275', statusSiaga: 'Layanan Pengaduan BPK Sulsel', lat: -5.1600, lon: 119.4350, mapsQuery: 'BPK RI Perwakilan Provinsi Sulawesi Selatan, Jl. AP Pettarani, Rappocini, Makassar' },
+      { id: 'bpk-09', agency: 'BPK_BPKP', agencyLabel: 'BPK RI', nama: 'BPK RI Kantor Perwakilan Provinsi Lampung', wilayah: 'Provinsi Lampung', alamat: 'Jl. Pangeran Emir M. Noer No. 11, Sumur Putri, Bandar Lampung 35215', hotline: '1500-275', statusSiaga: 'Layanan Pengaduan BPK Lampung', lat: -5.4380, lon: 105.2500, mapsQuery: 'BPK RI Perwakilan Provinsi Lampung, Jl. Pangeran Emir M. Noer, Sumur Putri, Bandar Lampung' },
+
+      // Kepolisian (Polsek Terdekat)
+      { id: 'pol-01', agency: 'POLSEK', agencyLabel: 'Kepolisian', nama: 'Polsek Metro Menteng', wilayah: 'Polres Metro Jakarta Pusat', alamat: 'Jl. Cut Meutia (Pegangsaan Barat), Menteng, Jakarta Pusat 10310', hotline: '110', statusSiaga: 'Siaga SPKT 24 Jam', lat: -6.1876, lon: 106.8333, mapsQuery: 'Polsek Metro Menteng, Jl. Pegangsaan Barat No. 1, Menteng, Jakarta Pusat' },
+      { id: 'pol-02', agency: 'POLSEK', agencyLabel: 'Kepolisian', nama: 'Polsek Metro Senen (Wilayah Kampus Salemba UI)', wilayah: 'Polres Metro Jakarta Pusat', alamat: 'Jl. Pasar Senen No. 1, Senen, Jakarta Pusat 10410', hotline: '110', statusSiaga: 'Siaga SPKT 24 Jam', lat: -6.1722, lon: 106.8433, mapsQuery: 'Polsek Metro Senen, Jl. Stasiun Senen No. 1, Senen, Jakarta Pusat' },
+      { id: 'pol-03', agency: 'POLSEK', agencyLabel: 'Kepolisian', nama: 'Polsek Matraman', wilayah: 'Polres Metro Jakarta Timur', alamat: 'Jl. Matraman Raya No. 11, Matraman, Jakarta Timur 13140', hotline: '110', statusSiaga: 'Siaga SPKT 24 Jam', lat: -6.2025, lon: 106.8570, mapsQuery: 'Polsek Matraman, Jl. Matraman Raya, Matraman, Jakarta Timur' },
+      { id: 'pol-04', agency: 'POLSEK', agencyLabel: 'Kepolisian', nama: 'Polsek Pulogadung', wilayah: 'Polres Metro Jakarta Timur', alamat: 'Jl. Cipinang Baru Raya No. 1, Pulogadung, Jakarta Timur 13240', hotline: '110', statusSiaga: 'Siaga SPKT 24 Jam', lat: -6.1950, lon: 106.8920, mapsQuery: 'Polsek Pulogadung, Jl. Cipinang Baru Raya, Pulogadung, Jakarta Timur' },
+      { id: 'pol-05', agency: 'POLSEK', agencyLabel: 'Kepolisian', nama: 'Polsek Metro Gambir', wilayah: 'Polres Metro Jakarta Pusat', alamat: 'Jl. Cideng Barat No. 12, Gambir, Jakarta Pusat 10150', hotline: '110', statusSiaga: 'Siaga SPKT 24 Jam', lat: -6.1730, lon: 106.8120, mapsQuery: 'Polsek Metro Gambir, Jl. Cideng Barat No. 12, Gambir, Jakarta Pusat' },
+      { id: 'pol-06', agency: 'POLSEK', agencyLabel: 'Kepolisian', nama: 'Polsek Metro Tanah Abang', wilayah: 'Polres Metro Jakarta Pusat', alamat: 'Jl. Penjernihan I No. 1, Tanah Abang, Jakarta Pusat 10210', hotline: '110', statusSiaga: 'Siaga SPKT 24 Jam', lat: -6.2050, lon: 106.8120, mapsQuery: 'Polsek Metro Tanah Abang, Jl. Penjernihan, Tanah Abang, Jakarta Pusat' },
+      { id: 'pol-07', agency: 'POLSEK', agencyLabel: 'Kepolisian', nama: 'Polsek Metro Setiabudi', wilayah: 'Polres Metro Jakarta Selatan', alamat: 'Jl. Karbela Selatan No. 1, Setiabudi, Jakarta Selatan 12940', hotline: '110', statusSiaga: 'Siaga SPKT 24 Jam', lat: -6.2160, lon: 106.8280, mapsQuery: 'Polsek Metro Setiabudi, Jl. Karbela Selatan, Setiabudi, Jakarta Selatan' },
+      { id: 'pol-08', agency: 'POLSEK', agencyLabel: 'Kepolisian', nama: 'Polsek Beji (Wilayah Utama Kampus UI Depok)', wilayah: 'Polres Metro Depok', alamat: 'Jl. H. Asmawi No. 1, Beji, Kota Depok 16425', hotline: '110', statusSiaga: 'Siaga SPKT 24 Jam', lat: -6.3680, lon: 106.8190, mapsQuery: 'Polsek Beji, Jl. H. Asmawi No. 1, Beji, Kota Depok' },
+      { id: 'pol-09', agency: 'POLSEK', agencyLabel: 'Kepolisian', nama: 'Polsek Coblong (Dekat ITB & Unpad Dipatiukur)', wilayah: 'Polrestabes Bandung', alamat: 'Jl. Sangkuriang No. 10A, Dago, Kec. Coblong, Kota Bandung 40135', hotline: '110', statusSiaga: 'Siaga SPKT 24 Jam', lat: -6.8830, lon: 107.6111, mapsQuery: 'Polsek Coblong, Jl. Sangkuriang No. 10A, Dago, Coblong, Kota Bandung' },
+      { id: 'pol-10', agency: 'POLSEK', agencyLabel: 'Kepolisian', nama: 'Polsek Sumur Bandung', wilayah: 'Polrestabes Bandung', alamat: 'Jl. Babakan Ciamis No. 8, Sumur Bandung, Kota Bandung 40117', hotline: '110', statusSiaga: 'Siaga SPKT 24 Jam', lat: -6.9140, lon: 107.6080, mapsQuery: 'Polsek Sumur Bandung, Jl. Babakan Ciamis, Sumur Bandung, Kota Bandung' },
+      { id: 'pol-11', agency: 'POLSEK', agencyLabel: 'Kepolisian', nama: 'Polsek Bogor Tengah', wilayah: 'Polresta Bogor Kota', alamat: 'Jl. Kapten Muslihat No. 10, Bogor Tengah, Kota Bogor 16122', hotline: '110', statusSiaga: 'Siaga SPKT 24 Jam', lat: -6.5950, lon: 106.7910, mapsQuery: 'Polsek Bogor Tengah, Jl. Kapten Muslihat, Bogor Tengah, Kota Bogor' },
+      { id: 'pol-12', agency: 'POLSEK', agencyLabel: 'Kepolisian', nama: 'Polsek Bulaksumur (Wilayah Kampus UGM)', wilayah: 'Polresta Sleman', alamat: 'Jl. Colombo No. 1, Bulaksumur, Caturtunggal, Depok, Sleman 55281', hotline: '110', statusSiaga: 'Siaga SPKT 24 Jam', lat: -7.7713, lon: 110.3778, mapsQuery: 'Polsek Depok, Jl. Colombo, Bulaksumur, Caturtunggal, Sleman, Yogyakarta' },
+      { id: 'pol-13', agency: 'POLSEK', agencyLabel: 'Kepolisian', nama: 'Polsek Tembalang (Wilayah Kampus Undip)', wilayah: 'Polrestabes Semarang', alamat: 'Jl. Prof. Soedarto No. 1, Tembalang, Kota Semarang 50275', hotline: '110', statusSiaga: 'Siaga SPKT 24 Jam', lat: -7.0520, lon: 110.4390, mapsQuery: 'Polsek Tembalang, Jl. Prof. Soedarto, Tembalang, Semarang' },
+      { id: 'pol-14', agency: 'POLSEK', agencyLabel: 'Kepolisian', nama: 'Polsek Genteng', wilayah: 'Polrestabes Surabaya', alamat: 'Jl. Ambengan No. 55, Genteng, Kota Surabaya 60272', hotline: '110', statusSiaga: 'Siaga SPKT 24 Jam', lat: -7.2600, lon: 112.7520, mapsQuery: 'Polsek Genteng, Jl. Ambengan No. 55, Genteng, Surabaya' },
+      { id: 'pol-15', agency: 'POLSEK', agencyLabel: 'Kepolisian', nama: 'Polsek Sukolilo (Wilayah Kampus ITS)', wilayah: 'Polrestabes Surabaya', alamat: 'Jl. Nginden Semolo No. 1, Sukolilo, Kota Surabaya 60118', hotline: '110', statusSiaga: 'Siaga SPKT 24 Jam', lat: -7.2910, lon: 112.7840, mapsQuery: 'Polsek Sukolilo, Jl. Nginden Semolo, Sukolilo, Surabaya' },
+      { id: 'pol-16', agency: 'POLSEK', agencyLabel: 'Kepolisian', nama: 'Polsek Lowokwaru (Wilayah Kampus UB & UM)', wilayah: 'Polresta Malang Kota', alamat: 'Jl. MT Haryono No. 1, Lowokwaru, Kota Malang 65145', hotline: '110', statusSiaga: 'Siaga SPKT 24 Jam', lat: -7.9480, lon: 112.6130, mapsQuery: 'Polsek Lowokwaru, Jl. MT Haryono, Lowokwaru, Kota Malang' },
+      { id: 'pol-17', agency: 'POLSEK', agencyLabel: 'Kepolisian', nama: 'Polsek Medan Baru (Dekat Kampus USU)', wilayah: 'Polrestabes Medan', alamat: 'Jl. Kol. Sugiono No. 1, Medan Baru, Kota Medan 20152', hotline: '110', statusSiaga: 'Siaga SPKT 24 Jam', lat: 3.5850, lon: 98.6650, mapsQuery: 'Polsek Medan Baru, Jl. Kol. Sugiono, Medan Baru, Kota Medan' },
+      { id: 'pol-18', agency: 'POLSEK', agencyLabel: 'Kepolisian', nama: 'Polsek Tamalanrea (Wilayah Kampus Unhas)', wilayah: 'Polrestabes Makassar', alamat: 'Jl. Perintis Kemerdekaan KM 10, Tamalanrea, Makassar 90245', hotline: '110', statusSiaga: 'Siaga SPKT 24 Jam', lat: -5.1360, lon: 119.4890, mapsQuery: 'Polsek Tamalanrea, Jl. Perintis Kemerdekaan KM 10, Tamalanrea, Makassar' },
+      { id: 'pol-19', agency: 'POLSEK', agencyLabel: 'Kepolisian', nama: 'Polsek Kedaton (Dekat Kampus Unila)', wilayah: 'Polresta Bandar Lampung', alamat: 'Jl. Teuku Umar No. 12, Kedaton, Kota Bandar Lampung 35141', hotline: '110', statusSiaga: 'Siaga SPKT 24 Jam', lat: -5.3831, lon: 105.2580, mapsQuery: 'Polsek Kedaton, Jl. Teuku Umar, Kedaton, Bandar Lampung' },
+      { id: 'pol-20', agency: 'POLSEK', agencyLabel: 'Kepolisian', nama: 'Polsek Ciputat Timur (Dekat Kampus UIN)', wilayah: 'Polres Tangerang Selatan', alamat: 'Jl. Ir. H. Juanda No. 1, Ciputat, Kota Tangerang Selatan 15412', hotline: '110', statusSiaga: 'Siaga SPKT 24 Jam', lat: -6.3110, lon: 106.7550, mapsQuery: 'Polsek Ciputat Timur, Jl. Ir. H. Juanda, Ciputat, Tangerang Selatan' }
+    ];
+
     // State Variables
     let currentPolsek = null;
+    let currentAphList = [];
     let allNearestPolsek = [];
     let selectedAgency = 'BPK_BPKP';
     let currentSchoolData = {
@@ -886,6 +960,20 @@
       lat: -6.1950,
       lon: 106.8500
     };
+
+    function calcHaversineDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = ((lat2 - lat1) * Math.PI) / 180;
+      const dLon = ((lon2 - lon1) * Math.PI) / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) *
+          Math.cos((lat2 * Math.PI) / 180) *
+          Math.sin(dLon / 2) *
+          Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return Math.round(R * c * 10) / 10;
+    }
 
     // 1. Terapkan Skema Threshold APH Berdasarkan Nominal
     function applyNominalScheme(nominal, isManualAgencyClick = false) {
@@ -942,7 +1030,7 @@
     }
 
     // 2. Prefill data from URL & Initialize
-    function initSchoolAndUrl() {
+    async function initSchoolAndUrl() {
       const urlParams = new URLSearchParams(window.location.search);
       const npsn = urlParams.get('npsn') || '001002';
       const name = urlParams.get('name') || 'UNIVERSITAS INDONESIA';
@@ -957,11 +1045,61 @@
       document.getElementById('targetSchoolName').textContent = name;
       document.getElementById('targetNpsn').textContent = npsn;
 
-      if (name.toUpperCase().includes('UNIVERSITAS INDONESIA')) {
+      // Coba fetch profil sekolah dari database untuk akurasi alamat & wilayah
+      try {
+        let res = await fetch(`http://localhost:2028/rest/v1/schools?npsn=eq.${encodeURIComponent(npsn)}`);
+        if (!res.ok) res = await fetch(`http://localhost:2021/rest/v1/schools?npsn=eq.${encodeURIComponent(npsn)}`);
+        if (res.ok) {
+          const list = await res.json();
+          if (list && list.length > 0) {
+            const sch = list[0];
+            currentSchoolData.name = sch.name;
+            currentSchoolData.location = sch.location || sch.regencies?.name || currentSchoolData.location;
+            document.getElementById('targetSchoolName').textContent = sch.name;
+            document.getElementById('targetLocation').textContent = currentSchoolData.location;
+          }
+        }
+      } catch (e) {
+        console.warn('School lookup fallback:', e);
+      }
+
+      // Deteksi koordinat instansi sasaran berdasarkan nama / lokasi
+      const nUpper = currentSchoolData.name.toUpperCase();
+      const locUpper = (currentSchoolData.location || '').toUpperCase();
+
+      if (nUpper.includes('INDONESIA') || locUpper.includes('SALEMBA')) {
         document.getElementById('targetKementerian').textContent = 'Kemendiktisaintek';
         document.getElementById('targetLocation').textContent = 'Jalan Salemba Raya 4, Jakarta Pusat';
-        currentSchoolData.lat = -6.1950;
-        currentSchoolData.lon = 106.8500;
+        currentSchoolData.lat = -6.1950; currentSchoolData.lon = 106.8500;
+      } else if (nUpper.includes('TEKNOLOGI BANDUNG') || nUpper.includes('ITB')) {
+        document.getElementById('targetKementerian').textContent = 'Kemendiktisaintek';
+        document.getElementById('targetLocation').textContent = 'Jl. Ganesha No. 10, Coblong, Kota Bandung';
+        currentSchoolData.lat = -6.8915; currentSchoolData.lon = 107.6106;
+      } else if (nUpper.includes('PERTANIAN BOGOR') || nUpper.includes('IPB')) {
+        document.getElementById('targetKementerian').textContent = 'Kemendiktisaintek';
+        document.getElementById('targetLocation').textContent = 'Kampus IPB Dramaga, Kab. Bogor';
+        currentSchoolData.lat = -6.5590; currentSchoolData.lon = 106.7260;
+      } else if (nUpper.includes('GADJAH MADA') || nUpper.includes('UGM')) {
+        document.getElementById('targetKementerian').textContent = 'Kemendiktisaintek';
+        document.getElementById('targetLocation').textContent = 'Bulaksumur, Caturtunggal, Depok, Sleman, DIY';
+        currentSchoolData.lat = -7.7713; currentSchoolData.lon = 110.3778;
+      } else if (nUpper.includes('DIPONEGORO') || nUpper.includes('UNDIP') || locUpper.includes('SEMARANG')) {
+        document.getElementById('targetLocation').textContent = 'Jl. Prof. Soedarto, Tembalang, Kota Semarang';
+        currentSchoolData.lat = -7.0500; currentSchoolData.lon = 110.4400;
+      } else if (nUpper.includes('AIRLANGGA') || nUpper.includes('UNAIR') || nUpper.includes('UNESA') || locUpper.includes('SURABAYA')) {
+        document.getElementById('targetLocation').textContent = 'Kota Surabaya, Jawa Timur';
+        currentSchoolData.lat = -7.2700; currentSchoolData.lon = 112.7500;
+      } else if (nUpper.includes('SUMATERA UTARA') || nUpper.includes('USU') || locUpper.includes('MEDAN')) {
+        document.getElementById('targetLocation').textContent = 'Jl. Dr. Mansyur No. 9, Kota Medan';
+        currentSchoolData.lat = 3.5650; currentSchoolData.lon = 98.6570;
+      } else if (nUpper.includes('HASANUDDIN') || nUpper.includes('UNHAS') || locUpper.includes('MAKASSAR')) {
+        document.getElementById('targetLocation').textContent = 'Jl. Perintis Kemerdekaan KM 10, Kota Makassar';
+        currentSchoolData.lat = -5.1350; currentSchoolData.lon = 119.4890;
+      } else if (nUpper.includes('LAMPUNG') || nUpper.includes('UNILA') || locUpper.includes('LAMPUNG')) {
+        document.getElementById('targetLocation').textContent = 'Jl. Prof. Dr. Sumantri Brojonegoro, Bandar Lampung';
+        currentSchoolData.lat = -5.3650; currentSchoolData.lon = 105.2450;
+      } else if (locUpper.includes('BANDUNG')) {
+        currentSchoolData.lat = -6.9140; currentSchoolData.lon = 107.6090;
       }
 
       // Prefill 5W1H
@@ -977,12 +1115,11 @@
       if (amount && parseFloat(amount) > 0) {
         applyNominalScheme(amount);
       } else {
-        // Default tier sedang (150 Juta -> BPK/BPKP)
         setNominalTier('MID');
       }
 
-      // Lookup nearest polsek
-      fetchNearestPolsek(currentSchoolData.lat, currentSchoolData.lon);
+      // Tampilkan kantor APH terdekat sesuai instansi aktif
+      updateNearestAphDisplay(selectedAgency);
     }
 
     // 3. Select Agency Card
@@ -1008,6 +1145,9 @@
         }
       }
 
+      // Update tampilan dinamis APH terdekat (KPK, Kejaksaan, BPK/BPKP, Polsek, atau Sinergi APH)
+      updateNearestAphDisplay(agencyKey);
+
       const btnText = document.getElementById('btnSubmitText');
       if (agencyKey === 'MULTI_AGENCY') {
         btnText.textContent = 'Simpan Pengaduan ke Sinergi Terpadu APH (Basis Data Internal)';
@@ -1022,10 +1162,166 @@
       }
     }
 
-    // 4. Toggle Anonymity
+    // 4. Update Tampilan Kantor APH Terdekat Sesuai Instansi Terpilih
+    function updateNearestAphDisplay(agencyKey) {
+      const headerLabel = document.getElementById('aphCardHeaderLabel');
+      const iconEl = document.getElementById('aphCardIcon');
+      const dropdownLabel = document.getElementById('aphDropdownLabel');
+      const dropdown = document.getElementById('polsekSelectorDropdown');
+      const altContainer = document.getElementById('polsekAlternativeContainer');
+      const card = document.getElementById('nearestPolsekCard');
+
+      // Tentukan konfigurasi visual instansi
+      let headerText = 'SATWIL KEPOLISIAN TERDEKAT DARI SASARAN:';
+      let iconName = 'local_police';
+      let iconColor = '#334155';
+      let cardBg = '#F1F5F9';
+      let cardBorder = '#CBD5E1';
+      let dropLabelText = 'PILIH KANTOR POLISI TERDEKAT LAINNYA:';
+
+      if (agencyKey === 'KPK') {
+        headerText = 'KANTOR KPK TERDEKAT DARI SASARAN:';
+        iconName = 'security';
+        iconColor = '#DC2626';
+        cardBg = '#FEF2F2';
+        cardBorder = '#FECACA';
+        dropLabelText = 'PILIH KANTOR KPK / POSKO KOORDINASI TERDEKAT LAINNYA:';
+      } else if (agencyKey === 'KEJAKSAAN') {
+        headerText = 'KANTOR KEJAKSAAN (KEJARI / KEJATI) TERDEKAT DARI SASARAN:';
+        iconName = 'gavel';
+        iconColor = '#047857';
+        cardBg = '#ECFDF5';
+        cardBorder = '#A7F3D0';
+        dropLabelText = 'PILIH KANTOR KEJAKSAAN TERDEKAT LAINNYA:';
+      } else if (agencyKey === 'BPK_BPKP') {
+        headerText = 'KANTOR BPK / BPKP RI TERDEKAT DARI SASARAN:';
+        iconName = 'fact_check';
+        iconColor = '#1D4ED8';
+        cardBg = '#EFF6FF';
+        cardBorder = '#BFDBFE';
+        dropLabelText = 'PILIH KANTOR BPK / BPKP TERDEKAT LAINNYA:';
+      } else if (agencyKey === 'MULTI_AGENCY') {
+        headerText = 'SINERGI APARAT PENEGAK HUKUM TERDEKAT DARI SASARAN:';
+        iconName = 'hub';
+        iconColor = '#2563EB';
+        cardBg = '#F8FAFC';
+        cardBorder = '#93C5FD';
+        dropLabelText = 'PILIH KANTOR TERDEKAT LAINNYA (KPK, KEJAKSAAN, BPK/BPKP, POLSEK):';
+      }
+
+      if (headerLabel) headerLabel.textContent = headerText;
+      if (iconEl) {
+        iconEl.textContent = iconName;
+        iconEl.style.color = iconColor;
+      }
+      if (dropdownLabel) dropdownLabel.textContent = dropLabelText;
+      if (card) {
+        card.style.background = cardBg;
+        card.style.borderColor = cardBorder;
+      }
+
+      // Filter daftar kantor
+      let filtered = [];
+      if (agencyKey === 'MULTI_AGENCY') {
+        filtered = [...INDONESIA_APH_OFFICES];
+      } else {
+        filtered = INDONESIA_APH_OFFICES.filter(o => o.agency === agencyKey);
+      }
+
+      // Hitung jarak spasial dari koordinat sasaran / sekolah
+      const sLat = currentSchoolData.lat || -6.1950;
+      const sLon = currentSchoolData.lon || 106.8500;
+      filtered.forEach(o => {
+        o.jarakKm = calcHaversineDistance(sLat, sLon, o.lat, o.lon);
+      });
+      filtered.sort((a, b) => a.jarakKm - b.jarakKm);
+
+      currentAphList = filtered;
+
+      if (filtered.length > 0) {
+        currentPolsek = filtered[0];
+        renderSelectedAphCard(currentPolsek);
+      }
+
+      // Render Dropdown Kantor Terdekat Lainnya
+      if (dropdown && altContainer) {
+        altContainer.style.display = 'block';
+        dropdown.innerHTML = filtered.map((o, idx) => {
+          const prefix = agencyKey === 'MULTI_AGENCY' ? `[${o.agencyLabel}] ` : '';
+          const isTop = idx === 0 ? '★ [Terdekat Utama] ' : '';
+          return `<option value="${o.id}">${isTop}${prefix}${o.nama} (${o.jarakKm} km) - ${o.wilayah || ''}</option>`;
+        }).join('');
+      }
+    }
+
+    // 5. Render Detail Kantor APH Terpilih di Card Preview
+    function renderSelectedAphCard(office) {
+      if (!office) return;
+      currentPolsek = office;
+
+      const nameEl = document.getElementById('polsekNamePreview');
+      const addrEl = document.getElementById('polsekAddressPreview');
+      const mapsLink = document.getElementById('polsekMapsLink');
+
+      const agencyTag = selectedAgency === 'MULTI_AGENCY' ? `[${office.agencyLabel}] ` : '';
+      if (nameEl) nameEl.textContent = `${agencyTag}${office.nama} (${office.jarakKm} km)`;
+      if (addrEl) addrEl.textContent = `${office.alamat} • Siaga: ${office.statusSiaga || 'Aktif Siaga'}`;
+      if (mapsLink) {
+        // Gunakan mapsQuery (nama + alamat resmi) agar Google Maps menuju lokasi yg tepat
+        // Bukan koordinat mentah (lat,lon) yang sering nyasar ke lokasi acak
+        const dest = office.mapsQuery
+          ? encodeURIComponent(office.mapsQuery)
+          : `${office.lat},${office.lon}`;
+        mapsLink.href = `https://www.google.com/maps/dir/?api=1&destination=${dest}`;
+      }
+    }
+
+    // Handler ketika memilih kantor dari dropdown
+    function onSelectAphDropdown(officeId) {
+      const found = currentAphList.find(o => o.id === officeId) || INDONESIA_APH_OFFICES.find(o => o.id === officeId);
+      if (found) {
+        renderSelectedAphCard(found);
+        if (selectedAgency === 'POLSEK') {
+          document.getElementById('btnSubmitText').textContent = `Simpan Pengaduan Skala Rendah (${found.nama}) ke Basis Data Internal`;
+        }
+      }
+    }
+
+    // Fallback dropdown handler
+    function onSelectPolsekDropdown(val) {
+      onSelectAphDropdown(val);
+    }
+
+    // 6. Detect User GPS Location
+    function detectUserLocationAph() {
+      if (!navigator.geolocation) {
+        alert('Geolocation tidak didukung pada browser Anda.');
+        return;
+      }
+      const nameEl = document.getElementById('polsekNamePreview');
+      if (nameEl) nameEl.textContent = 'Mendeteksi koordinat GPS Anda...';
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          currentSchoolData.lat = pos.coords.latitude;
+          currentSchoolData.lon = pos.coords.longitude;
+          updateNearestAphDisplay(selectedAgency);
+        },
+        (err) => {
+          console.warn('GPS denied or timeout, fallback to school address:', err.message);
+          updateNearestAphDisplay(selectedAgency);
+        },
+        { timeout: 5000 }
+      );
+    }
+
+    function detectUserLocationPolsek() {
+      detectUserLocationAph();
+    }
+
+    // Toggle Anonymity
     function toggleAnonymity(cb) {
       const repName = document.getElementById('repName');
-      const repWa = document.getElementById('repWa');
       if (cb.checked) {
         repName.value = 'Masyarakat (Anonim Dilindungi LPSK)';
         repName.disabled = true;
@@ -1037,71 +1333,6 @@
       }
     }
 
-    // 5. Fetch Nearest Polsek from API (dengan daftar alternatif)
-    async function fetchNearestPolsek(lat, lon) {
-      try {
-        const res = await fetch('http://localhost:2028/api/polsek/search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ latitude: lat, longitude: lon, radiusKm: 35, limit: 10 })
-        });
-        const data = await res.json();
-        if (data.success && data.polsekList && data.polsekList.length > 0) {
-          allNearestPolsek = data.polsekList;
-          currentPolsek = data.polsekList[0];
-
-          document.getElementById('polsekNamePreview').textContent = `${currentPolsek.nama} (${currentPolsek.jarakKm} km)`;
-          document.getElementById('polsekAddressPreview').textContent = `${currentPolsek.alamat} • Siaga: ${currentPolsek.statusSiaga || '24 Jam'}`;
-          document.getElementById('polsekMapsLink').href = currentPolsek.mapsUrl || `https://www.google.com/maps/dir/?api=1&destination=${currentPolsek.latitude},${currentPolsek.longitude}`;
-
-          // Isi pilihan kantor polisi terdekat lainnya
-          const dropdown = document.getElementById('polsekSelectorDropdown');
-          const altContainer = document.getElementById('polsekAlternativeContainer');
-          if (dropdown && altContainer) {
-            altContainer.style.display = 'block';
-            dropdown.innerHTML = data.polsekList.map((p, idx) => 
-              `<option value="${p.id}">${idx === 0 ? '★ [Terdekat Utama] ' : ''}${p.nama} (${p.jarakKm} km) - ${p.polres}</option>`
-            ).join('');
-          }
-        }
-      } catch (err) {
-        console.warn('Polsek API offline, using cached reference:', err);
-      }
-    }
-
-    // Handler ketika pengguna memilih polsek lain dari dropdown
-    function onSelectPolsekDropdown(polsekId) {
-      const found = allNearestPolsek.find(p => p.id === polsekId);
-      if (found) {
-        currentPolsek = found;
-        document.getElementById('polsekNamePreview').textContent = `${found.nama} (${found.jarakKm} km)`;
-        document.getElementById('polsekAddressPreview').textContent = `${found.alamat} • Siaga: ${found.statusSiaga || '24 Jam'}`;
-        document.getElementById('polsekMapsLink').href = found.mapsUrl || `https://www.google.com/maps/dir/?api=1&destination=${found.latitude},${found.longitude}`;
-
-        if (selectedAgency === 'POLSEK') {
-          document.getElementById('btnSubmitText').textContent = `Simpan Pengaduan Skala Rendah (${found.nama}) ke Basis Data Internal`;
-        }
-      }
-    }
-
-    // 6. Detect User GPS Location
-    function detectUserLocationPolsek() {
-      if (!navigator.geolocation) {
-        alert('Geolocation tidak didukung pada browser Anda.');
-        return;
-      }
-      document.getElementById('polsekNamePreview').textContent = 'Mendeteksi koordinat GPS Anda...';
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          fetchNearestPolsek(pos.coords.latitude, pos.coords.longitude);
-        },
-        (err) => {
-          console.warn('GPS denied or timeout, fallback to school address:', err.message);
-          fetchNearestPolsek(currentSchoolData.lat, currentSchoolData.lon);
-        },
-        { timeout: 5000 }
-      );
-    }
 
     // 7. Real Report Submit Handler (Disimpan ke database lokal, tidak dikirim ke server luar)
     async function handleRealReportSubmit(e) {

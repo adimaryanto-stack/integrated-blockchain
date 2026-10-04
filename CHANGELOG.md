@@ -4,6 +4,22 @@ Semua perubahan penting pada proyek **Integrated Blockchain - Platform Transpara
 
 Format pencatatan berpedoman pada [Keep a Changelog](https://keepachangelog.com/id-ID/1.0.0/) dan menganut prinsip [Semantic Versioning](https://semver.org/lang/id/).
 
+## [2.5.1] - 2026-10-04
+
+### ⚖️ Direktori Spasial Aparat Penegak Hukum & Navigasi Presisi (Portal Civic-Tech Port 2019)
+- **Direktori Lengkap Kantor APH Se-Indonesia (`reporting.html`)**:
+  - Penambahan basis data spasial kantor fisik **KPK RI** (*Gedung Merah Putih*, *Gedung ACLC*), **Kejaksaan RI** (*Kejaksaan Agung, Kejati DKI, Jabar, Jateng, DIY, Jatim, Sumut, Sulsel, Lampung*, serta Kejari kabupaten/kota), **BPK & BPKP RI** (*Pusat, Perwakilan Provinsi, & Deputi Investigasi Forensik*), dan **Kepolisian RI** (*Polsek metro dan polsek terdekat kampus/sekolah*).
+- **Mesin Kalkulasi Jarak Spasial Otomatis (Haversine Distance Engine)**:
+  - Perhitungan jarak kilometer otomatis antara lokasi sekolah atau koordinat GPS pelapor ke seluruh kantor APH di Indonesia.
+  - Pengurutan dinamis berdasarkan jarak terdekat (*nearest first*) dengan label penanda `★ [Terdekat Utama]`.
+- **Navigasi Presisi Google Maps Berbasis Landmark Resmi (`mapsQuery`)**:
+  - Menggantikan koordinat mentah lat/lon dengan parameter `mapsQuery` berupa nama resmi dan alamat lengkap gedung instansi (*official landmark destination*) guna menjamin rute navigasi Google Maps akurat ke gerbang kantor resmi.
+- **Mode Sinergi Multi-Agency & Kartu Interaktif**:
+  - Pilihan pelaporan terpadu `MULTI_AGENCY` (Sinergi Bersama KPK, Kejaksaan, BPK/BPKP, & Polsek) maupun per-lembaga.
+  - Tampilan visual responsif dengan pewarnaan tematik, ikon identitas (*gavel*, *account_balance*, *fact_check*, *hub*), status kesiapsiagaan 24 jam, dan hotline pengaduan resmi.
+
+---
+
 ## [2.5.0] - 2026-10-04
 
 ### 🏛️ Modul API Lembaga Penegak Hukum & Pengawas Keuangan (Dashboard Admin)
