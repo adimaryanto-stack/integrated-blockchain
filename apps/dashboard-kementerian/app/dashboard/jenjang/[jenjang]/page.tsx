@@ -11,6 +11,8 @@ import {
   fetchInstitusiByJenjang,
   alokasiProvinsiData, 
   tahunAnggaranData,
+  masterProvinsiData,
+  provinceSchoolStatsData,
   getKabkotaByProvinsi, 
   updateInstitusiPendidikan
 } from '@/lib/data';
@@ -57,25 +59,109 @@ export default function JenjangPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  // Deduplicated & Sorted Provinsi Options (A-Z)
+  const sortedProvinsiOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const list: { provinsi_id: string; nama_provinsi: string }[] = [];
+
+    // Prioritas 1: master tabel provinsi
+    if (masterProvinsiData && masterProvinsiData.length > 0) {
+      for (const p of masterProvinsiData) {
+        if (p.id && !seen.has(p.id)) {
+          seen.add(p.id);
+          list.push({ provinsi_id: p.id, nama_provinsi: p.nama_provinsi });
+        }
+      }
+    }
+
+    // Prioritas 2 / Fallback: dari alokasiProvinsiData
+    for (const item of alokasiProvinsiData) {
+      const pId = item.provinsi_id || item.provinsi?.id;
+      const pName = item.provinsi?.nama_provinsi;
+      if (pId && pName && !seen.has(pId)) {
+        seen.add(pId);
+        list.push({ provinsi_id: pId, nama_provinsi: pName });
+      }
+    }
+
+    return list.sort((a, b) => a.nama_provinsi.localeCompare(b.nama_provinsi, 'id'));
+  }, [dataVersion]);
+
   useEffect(() => {
     let isMounted = true;
 
-    // Fetch total count from DB (lightweight)
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2028';
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'anon-key-davinci-2026';
-    let countUrl = `${url}/rest/v1/institusi_pendidikan?jenjang=eq.${config.jenjang}&select=id`;
-    if (selectedStatus) countUrl += `&status_sekolah=eq.${selectedStatus}`;
-    if (debouncedSearch) countUrl += `&or=(nama_institusi.ilike.*${encodeURIComponent(debouncedSearch)}*,npsn.ilike.*${encodeURIComponent(debouncedSearch)}*)`;
 
-    fetch(countUrl, {
-      headers: { apikey: key, Authorization: `Bearer ${key}`, Prefer: 'count=exact' }
-    }).then(r => {
-      const cr = r.headers.get('content-range');
-      if (cr && isMounted) {
-        const total = parseInt(cr.split('/')[1], 10);
-        if (!isNaN(total)) setTotalCount(total);
+    const statKeyMap: Record<string, string> = {
+      UNIVERSITAS: 'univ',
+      SMA: 'sma',
+      SMP: 'smp',
+      SD: 'sd',
+      PAUD: 'paud',
+    };
+    const statKey = statKeyMap[config.jenjang] || 'univ';
+    const hasSubFilter = Boolean(selectedKabKotaName || selectedStatus || debouncedSearch);
+
+    // Fetch authoritative count from province_school_stats (matches port 2019 provinces.html)
+    const loadAuthoritativeCount = async () => {
+      let stats = provinceSchoolStatsData;
+      if (!stats || stats.length === 0) {
+        try {
+          const res = await fetch(`${url}/rest/v1/province_school_stats?select=*`, {
+            headers: { apikey: key, Authorization: `Bearer ${key}` }
+          });
+          if (res.ok) stats = await res.json();
+        } catch (_) {}
       }
-    }).catch(() => {});
+
+      if (stats && stats.length > 0 && isMounted) {
+        if (selectedProvinsiId) {
+          const prov = sortedProvinsiOptions.find(p => p.provinsi_id === selectedProvinsiId)
+            || alokasiProvinsiData.find(p => p.provinsi_id === selectedProvinsiId);
+          const provName = (prov as any)?.nama_provinsi || (prov as any)?.provinsi?.nama_provinsi;
+          const provMatch = stats.find((s: any) => 
+            s.province_id === selectedProvinsiId || 
+            (provName && s.province_name && s.province_name.toLowerCase() === provName.toLowerCase())
+          );
+          if (provMatch && provMatch[statKey] !== undefined) {
+            setTotalCount(Number(provMatch[statKey]) || 0);
+            return;
+          }
+        } else {
+          const nationalTotal = stats.reduce((sum: number, s: any) => sum + (Number(s[statKey]) || 0), 0);
+          if (nationalTotal > 0) {
+            setTotalCount(nationalTotal);
+            return;
+          }
+        }
+      }
+    };
+
+    if (!hasSubFilter) {
+      loadAuthoritativeCount();
+    } else {
+      let countUrl = `${url}/rest/v1/institusi_pendidikan?jenjang=eq.${config.jenjang}&select=id`;
+      if (selectedProvinsiId) {
+        const prov = sortedProvinsiOptions.find(p => p.provinsi_id === selectedProvinsiId)
+          || alokasiProvinsiData.find(p => p.provinsi_id === selectedProvinsiId);
+        const provName = (prov as any)?.nama_provinsi || (prov as any)?.provinsi?.nama_provinsi;
+        if (provName) countUrl += `&provinsi_nama=eq.${encodeURIComponent(provName)}`;
+      }
+      if (selectedKabKotaName) countUrl += `&kabupaten_kota_nama=eq.${encodeURIComponent(selectedKabKotaName)}`;
+      if (selectedStatus) countUrl += `&status_sekolah=eq.${selectedStatus}`;
+      if (debouncedSearch) countUrl += `&or=(nama_institusi.ilike.*${encodeURIComponent(debouncedSearch)}*,npsn.ilike.*${encodeURIComponent(debouncedSearch)}*)`;
+
+      fetch(countUrl, {
+        headers: { apikey: key, Authorization: `Bearer ${key}`, Prefer: 'count=exact' }
+      }).then(r => {
+        const cr = r.headers.get('content-range');
+        if (cr && isMounted) {
+          const total = parseInt(cr.split('/')[1], 10);
+          if (!isNaN(total)) setTotalCount(total);
+        }
+      }).catch(() => {});
+    }
 
     const fetchInstitusi = async () => {
       try {
@@ -85,9 +171,11 @@ export default function JenjangPage() {
           .eq('jenjang', config.jenjang);
 
         if (selectedProvinsiId) {
-          const prov = alokasiProvinsiData.find(p => p.provinsi_id === selectedProvinsiId);
-          if (prov) {
-            query = query.eq('provinsi_nama', prov.provinsi.nama_provinsi);
+          const prov = sortedProvinsiOptions.find(p => p.provinsi_id === selectedProvinsiId)
+            || alokasiProvinsiData.find(p => p.provinsi_id === selectedProvinsiId);
+          const provName = (prov as any)?.nama_provinsi || (prov as any)?.provinsi?.nama_provinsi;
+          if (provName) {
+            query = query.eq('provinsi_nama', provName);
           }
         }
 
@@ -133,7 +221,7 @@ export default function JenjangPage() {
 
         if (isMounted) {
           setData(mapped);
-          if (debouncedSearch || selectedProvinsiId || selectedKabKotaName || selectedStatus) {
+          if (hasSubFilter) {
             setTotalCount(mapped.length);
           }
         }
@@ -197,7 +285,7 @@ export default function JenjangPage() {
   const kabkotaOptions = useMemo(() => {
     if (!selectedProvinsiId) return [];
     return getKabkotaByProvinsi(selectedProvinsiId);
-  }, [selectedProvinsiId]);
+  }, [selectedProvinsiId, dataVersion]);
 
   const filtered = useMemo(() => {
     return data;
@@ -410,8 +498,8 @@ export default function JenjangPage() {
               className="select-dropdown"
             >
               <option value="">Semua Provinsi</option>
-              {[...alokasiProvinsiData].sort((a, b) => a.provinsi.nama_provinsi.localeCompare(b.provinsi.nama_provinsi, 'id')).map(p => (
-                <option key={p.provinsi_id} value={p.provinsi_id}>{p.provinsi.nama_provinsi}</option>
+              {sortedProvinsiOptions.map(p => (
+                <option key={p.provinsi_id} value={p.provinsi_id}>{p.nama_provinsi}</option>
               ))}
             </select>
           </div>
@@ -427,9 +515,12 @@ export default function JenjangPage() {
               disabled={!selectedProvinsiId}
             >
               <option value="">Semua Kab/Kota</option>
-              {kabkotaOptions.map(k => (
-                <option key={k.id} value={k.kabupaten_kota.nama_kabupaten_kota}>{k.kabupaten_kota.nama_kabupaten_kota}</option>
-              ))}
+              {kabkotaOptions.map(k => {
+                const kabNama = k.kabupaten_kota?.nama_kabupaten_kota || (k as any).kabupaten_kota_nama || '';
+                return (
+                  <option key={k.id || kabNama} value={kabNama}>{kabNama}</option>
+                );
+              })}
             </select>
           </div>
           <div className="flex items-center gap-2">
@@ -460,7 +551,7 @@ export default function JenjangPage() {
               className="search-input"
             />
           </div>
-          <span className="text-xs text-text-muted flex-1">{(totalCount ?? filtered.length).toLocaleString('id-ID')} institusi (menampilkan {filtered.length.toLocaleString('id-ID')} terbaru)</span>
+          <span className="text-xs text-text-muted flex-1">{(totalCount ?? filtered.length).toLocaleString('id-ID')} institusi (menampilkan {filtered.length.toLocaleString('id-ID')} data)</span>
           <input 
             type="file" 
             accept=".csv" 

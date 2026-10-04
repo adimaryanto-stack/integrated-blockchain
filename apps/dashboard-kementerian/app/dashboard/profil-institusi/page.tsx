@@ -12,6 +12,7 @@ import {
   alokasiKabupatenKotaData, 
   provinceSchoolStatsData,
   tahunAnggaranData,
+  masterProvinsiData,
   fetchKecamatanForKabkota 
 } from '@/lib/data';
 import { useAppStore } from '@/lib/store';
@@ -169,11 +170,11 @@ export default function ProfilInstitusiPage() {
     const hasFilter = Boolean(search || selectedJenjang || selectedProvinsiId || selectedKabkotaId || selectedKecamatan);
 
     const targetProvObj = selectedProvinsiId
-      ? alokasiProvinsiData.find(p => p.provinsi_id === selectedProvinsiId || p.provinsi.id === selectedProvinsiId)
+      ? (masterProvinsiData.find(p => p.id === selectedProvinsiId) || alokasiProvinsiData.find(p => p.provinsi_id === selectedProvinsiId || p.provinsi?.id === selectedProvinsiId))
       : null;
 
-    const targetProvName = targetProvObj?.provinsi?.nama_provinsi;
-    const targetProvCode = targetProvObj?.provinsi?.kode_provinsi;
+    const targetProvName = (targetProvObj as any)?.nama_provinsi || (targetProvObj as any)?.provinsi?.nama_provinsi;
+    const targetProvCode = (targetProvObj as any)?.kode_provinsi || (targetProvObj as any)?.provinsi?.kode_provinsi;
 
     const provStatsList = selectedProvinsiId
       ? (provinceSchoolStatsData || []).filter((s: any) => {
@@ -217,7 +218,9 @@ export default function ProfilInstitusiPage() {
 
       if (hasFilter) {
         if (selectedJenjang) {
-          filteredCount = selectedJenjang === cat.type ? totalItems : 0;
+          filteredCount = selectedJenjang === cat.type 
+            ? (selectedProvinsiId && provStatsList.length > 0 ? (provCounts[cat.type] || 0) : totalCount)
+            : 0;
         } else if (selectedProvinsiId && provStatsList.length > 0) {
           filteredCount = hasAllocationsForYear ? (provCounts[cat.type] || 0) : 0;
         } else {
@@ -236,14 +239,24 @@ export default function ProfilInstitusiPage() {
   // Sorted Provinsi Options (A-Z)
   const sortedProvinsiOptions = useMemo(() => {
     const seen = new Set<string>();
-    const list = [];
+    const list: any[] = [];
+
+    if (masterProvinsiData && masterProvinsiData.length > 0) {
+      for (const p of masterProvinsiData) {
+        if (p.id && !seen.has(p.id)) {
+          seen.add(p.id);
+          list.push({ provinsi_id: p.id, provinsi: { id: p.id, nama_provinsi: p.nama_provinsi } });
+        }
+      }
+    }
+
     for (const item of alokasiProvinsiData) {
       if (item.provinsi && !seen.has(item.provinsi_id)) {
         seen.add(item.provinsi_id);
         list.push(item);
       }
     }
-    return list.sort((a, b) => (a.provinsi.nama_provinsi || '').localeCompare(b.provinsi.nama_provinsi || ''));
+    return list.sort((a, b) => (a.provinsi.nama_provinsi || '').localeCompare(b.provinsi.nama_provinsi || '', 'id'));
   }, [alokasiProvinsiData, dataVersion]);
 
   // Pagination & Sorted List (Alphabetical: Provinsi A-Z -> Kab/Kota A-Z -> Nama Institusi A-Z)

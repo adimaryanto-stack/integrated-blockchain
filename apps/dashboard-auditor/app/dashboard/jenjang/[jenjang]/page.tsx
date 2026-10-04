@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import PctBadge from '@/components/ui/PctBadge';
 import { useAppStore } from '@/lib/store';
-import { getInstitusiByJenjang, alokasiProvinsiData, getKabkotaByProvinsi, tahunAnggaranData } from '@/lib/data';
+import { getInstitusiByJenjang, alokasiProvinsiData, getKabkotaByProvinsi, tahunAnggaranData, provinceSchoolStatsData } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
 import { fmtRupiah, fmtTriliun } from '@/lib/utils/formatters';
 import { Jenjang, InstitusiPendidikan } from '@/types';
@@ -47,26 +47,82 @@ export default function JenjangPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  // Deduplicated & Sorted Provinsi Options (A-Z)
+  const sortedProvinsiOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const list: { provinsi_id: string; nama_provinsi: string }[] = [];
+
+    for (const item of alokasiProvinsiData) {
+      const pId = item.provinsi_id || item.provinsi?.id;
+      const pName = item.provinsi?.nama_provinsi;
+      if (pId && pName && !seen.has(pId)) {
+        seen.add(pId);
+        list.push({ provinsi_id: pId, nama_provinsi: pName });
+      }
+    }
+
+    return list.sort((a, b) => a.nama_provinsi.localeCompare(b.nama_provinsi, 'id'));
+  }, [dbData, alokasiProvinsiData]);
+
   useEffect(() => {
     let isMounted = true;
     setIsLoadingInstitusi(true);
 
-    // Fetch total count lightweight
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2028';
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'anon-key-davinci-2026';
-    let countUrl = `${url}/rest/v1/institusi_pendidikan?jenjang=eq.${config.jenjang}&select=id`;
-    if (selectedStatus) countUrl += `&status_sekolah=eq.${selectedStatus}`;
-    if (debouncedSearch) countUrl += `&or=(nama_institusi.ilike.*${encodeURIComponent(debouncedSearch)}*,npsn.ilike.*${encodeURIComponent(debouncedSearch)}*)`;
 
-    fetch(countUrl, {
-      headers: { apikey: key, Authorization: `Bearer ${key}`, Prefer: 'count=exact' }
-    }).then(r => {
-      const cr = r.headers.get('content-range');
-      if (cr && isMounted) {
-        const total = parseInt(cr.split('/')[1], 10);
-        if (!isNaN(total)) setTotalCount(total);
+    const statKeyMap: Record<string, string> = {
+      UNIVERSITAS: 'univ', SMA: 'sma', SMP: 'smp', SD: 'sd', PAUD: 'paud',
+    };
+    const statKey = statKeyMap[config.jenjang] || 'univ';
+    const hasSubFilter = Boolean(selectedStatus || debouncedSearch);
+
+    // Fetch authoritative count from province_school_stats (same source as port 2019)
+    const loadAuthoritativeCount = async () => {
+      let stats = (provinceSchoolStatsData as any[]);
+      if (!stats || stats.length === 0) {
+        try {
+          const res = await fetch(`${url}/rest/v1/province_school_stats?select=*`, {
+            headers: { apikey: key, Authorization: `Bearer ${key}` }
+          });
+          if (res.ok) stats = await res.json();
+        } catch (_) {}
       }
-    }).catch(() => {});
+      if (stats && stats.length > 0 && isMounted) {
+        if (selectedProvinsiId) {
+          const prov = sortedProvinsiOptions.find((p: any) => p.provinsi_id === selectedProvinsiId);
+          const provName = prov?.nama_provinsi;
+          const provMatch = stats.find((s: any) =>
+            s.province_id === selectedProvinsiId ||
+            (provName && s.province_name && s.province_name.toLowerCase() === provName.toLowerCase())
+          );
+          if (provMatch && provMatch[statKey] !== undefined) {
+            setTotalCount(Number(provMatch[statKey]) || 0);
+            return;
+          }
+        } else {
+          const nationalTotal = stats.reduce((sum: number, s: any) => sum + (Number(s[statKey]) || 0), 0);
+          if (nationalTotal > 0) { setTotalCount(nationalTotal); return; }
+        }
+      }
+    };
+
+    if (!hasSubFilter) {
+      loadAuthoritativeCount();
+    } else {
+      let countUrl = `${url}/rest/v1/institusi_pendidikan?jenjang=eq.${config.jenjang}&select=id`;
+      if (selectedStatus) countUrl += `&status_sekolah=eq.${selectedStatus}`;
+      if (debouncedSearch) countUrl += `&or=(nama_institusi.ilike.*${encodeURIComponent(debouncedSearch)}*,npsn.ilike.*${encodeURIComponent(debouncedSearch)}*)`;
+      fetch(countUrl, {
+        headers: { apikey: key, Authorization: `Bearer ${key}`, Prefer: 'count=exact' }
+      }).then(r => {
+        const cr = r.headers.get('content-range');
+        if (cr && isMounted) {
+          const total = parseInt(cr.split('/')[1], 10);
+          if (!isNaN(total)) setTotalCount(total);
+        }
+      }).catch(() => {});
+    }
 
     const fetchInstitusi = async () => {
       try {
@@ -135,7 +191,7 @@ export default function JenjangPage() {
 
         if (isMounted) {
           setData(unique);
-          if (debouncedSearch || selectedProvinsiId || selectedKabKotaName || selectedStatus) {
+          if (debouncedSearch || selectedKabKotaName || selectedStatus) {
             setTotalCount(unique.length);
           }
           setIsLoadingInstitusi(false);
@@ -301,8 +357,8 @@ export default function JenjangPage() {
               className="select-dropdown"
             >
               <option value="">Semua Provinsi</option>
-              {[...alokasiProvinsiData].sort((a, b) => a.provinsi.nama_provinsi.localeCompare(b.provinsi.nama_provinsi, 'id')).map(p => (
-                <option key={p.provinsi_id} value={p.provinsi_id}>{p.provinsi.nama_provinsi}</option>
+              {sortedProvinsiOptions.map(p => (
+                <option key={p.provinsi_id} value={p.provinsi_id}>{p.nama_provinsi}</option>
               ))}
             </select>
           </div>

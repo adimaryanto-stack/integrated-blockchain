@@ -50,25 +50,65 @@ export default function JenjangPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  // Deduplicated & Sorted Provinsi Options (A-Z)
+  const sortedProvinsiOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const list: AlokasiProvinsi[] = [];
+    for (const item of provinsiList) {
+      const pId = item.provinsi_id || item.provinsi?.id;
+      if (pId && !seen.has(pId)) {
+        seen.add(pId);
+        list.push(item);
+      }
+    }
+    return list.sort((a, b) => (a.provinsi?.nama_provinsi || '').localeCompare(b.provinsi?.nama_provinsi || '', 'id'));
+  }, [provinsiList]);
+
   const fetchData = async () => {
     try {
       setLoading(true);
-      // Fetch total count lightweight
       const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:2028';
       const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'anon-key-davinci-2026';
-      let countUrl = `${url}/rest/v1/institusi_pendidikan?jenjang=eq.${config.jenjang}&select=id`;
-      if (selectedStatus) countUrl += `&status_sekolah=eq.${selectedStatus}`;
-      if (debouncedSearch) countUrl += `&or=(nama_institusi.ilike.*${encodeURIComponent(debouncedSearch)}*,npsn.ilike.*${encodeURIComponent(debouncedSearch)}*)`;
 
-      fetch(countUrl, {
-        headers: { apikey: key, Authorization: `Bearer ${key}`, Prefer: 'count=exact' }
-      }).then(r => {
-        const cr = r.headers.get('content-range');
-        if (cr) {
-          const total = parseInt(cr.split('/')[1], 10);
-          if (!isNaN(total)) setTotalCount(total);
-        }
-      }).catch(() => {});
+      const statKeyMap: Record<string, string> = {
+        UNIVERSITAS: 'univ', SMA: 'sma', SMP: 'smp', SD: 'sd', PAUD: 'paud',
+      };
+      const statKey = statKeyMap[config.jenjang] || 'univ';
+      const hasSubFilter = Boolean(selectedStatus || debouncedSearch);
+
+      // Load authoritative count from province_school_stats (same data as port 2019)
+      if (!hasSubFilter) {
+        try {
+          const statsRes = await fetch(`${url}/rest/v1/province_school_stats?select=province_id,${statKey}`, {
+            headers: { apikey: key, Authorization: `Bearer ${key}` }
+          });
+          if (statsRes.ok) {
+            const statsRows = await statsRes.json();
+            if (Array.isArray(statsRows) && statsRows.length > 0) {
+              if (selectedProvinsiId) {
+                const provMatch = statsRows.find((s: any) => s.province_id === selectedProvinsiId);
+                if (provMatch) setTotalCount(Number(provMatch[statKey]) || 0);
+              } else {
+                const nat = statsRows.reduce((s: number, r: any) => s + (Number(r[statKey]) || 0), 0);
+                if (nat > 0) setTotalCount(nat);
+              }
+            }
+          }
+        } catch (_) {}
+      } else {
+        let countUrl = `${url}/rest/v1/institusi_pendidikan?jenjang=eq.${config.jenjang}&select=id`;
+        if (selectedStatus) countUrl += `&status_sekolah=eq.${selectedStatus}`;
+        if (debouncedSearch) countUrl += `&or=(nama_institusi.ilike.*${encodeURIComponent(debouncedSearch)}*,npsn.ilike.*${encodeURIComponent(debouncedSearch)}*)`;
+        fetch(countUrl, {
+          headers: { apikey: key, Authorization: `Bearer ${key}`, Prefer: 'count=exact' }
+        }).then(r => {
+          const cr = r.headers.get('content-range');
+          if (cr) {
+            const total = parseInt(cr.split('/')[1], 10);
+            if (!isNaN(total)) setTotalCount(total);
+          }
+        }).catch(() => {});
+      }
 
       let provs = provinsiList;
       if (provs.length === 0) {
@@ -484,7 +524,7 @@ export default function JenjangPage() {
               className="select-dropdown"
             >
               <option value="">Semua Provinsi</option>
-              {[...provinsiList].sort((a, b) => a.provinsi.nama_provinsi.localeCompare(b.provinsi.nama_provinsi, 'id')).map(p => (
+              {sortedProvinsiOptions.map(p => (
                 <option key={p.provinsi_id} value={p.provinsi_id}>{p.provinsi.nama_provinsi}</option>
               ))}
             </select>

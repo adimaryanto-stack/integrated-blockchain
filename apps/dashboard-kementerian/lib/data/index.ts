@@ -910,13 +910,6 @@ export function getAllInstitusi(): InstitusiPendidikan[] {
 }
 
 export async function fetchDbSchoolCounts(): Promise<Record<Jenjang, number>> {
-  const { url, anonKey } = getSupabaseConfig();
-  const headers = {
-    'apikey': anonKey,
-    'Authorization': `Bearer ${anonKey}`,
-    'Prefer': 'count=exact',
-  };
-
   // Start with zeros — no hardcode fallback
   const counts: Record<Jenjang, number> = {
     UNIVERSITAS: 0,
@@ -927,16 +920,53 @@ export async function fetchDbSchoolCounts(): Promise<Record<Jenjang, number>> {
   };
 
   try {
+    // 1. Prioritize authoritative provinceSchoolStatsData if already in memory
+    if (provinceSchoolStatsData && provinceSchoolStatsData.length > 0) {
+      provinceSchoolStatsData.forEach((s: any) => {
+        counts.UNIVERSITAS += Number(s.univ || 0);
+        counts.SMA += Number(s.sma || 0);
+        counts.SMP += Number(s.smp || 0);
+        counts.SD += Number(s.sd || 0);
+        counts.PAUD += Number(s.paud || 0);
+      });
+      if (counts.UNIVERSITAS > 0 || counts.PAUD > 0) {
+        return counts;
+      }
+    }
+
+    // 2. Fetch directly from local database table province_school_stats (matches port 2019 provinces.html)
+    const { url, anonKey } = getSupabaseConfig();
+    const headers = {
+      'apikey': anonKey,
+      'Authorization': `Bearer ${anonKey}`,
+    };
+
+    const res = await fetch(`${url}/rest/v1/province_school_stats?select=univ,sma,smp,sd,paud`, { headers });
+    if (res.ok) {
+      const rows = await res.json();
+      if (Array.isArray(rows) && rows.length > 0) {
+        rows.forEach((s: any) => {
+          counts.UNIVERSITAS += Number(s.univ || 0);
+          counts.SMA += Number(s.sma || 0);
+          counts.SMP += Number(s.smp || 0);
+          counts.SD += Number(s.sd || 0);
+          counts.PAUD += Number(s.paud || 0);
+        });
+        return counts;
+      }
+    }
+
+    // 3. Fallback to institusi_pendidikan count only if province_school_stats is unavailable
     const jenjangs: Jenjang[] = ['UNIVERSITAS', 'SMA', 'SMP', 'SD', 'PAUD'];
     await Promise.all(
       jenjangs.map(async (j) => {
-        const res = await fetch(`${url}/rest/v1/institusi_pendidikan?jenjang=eq.${j}&select=id&limit=1`, { headers });
-        const cr = res.headers.get('content-range');
+        const r = await fetch(`${url}/rest/v1/institusi_pendidikan?jenjang=eq.${j}&select=id&limit=1`, { 
+          headers: { ...headers, Prefer: 'count=exact' } 
+        });
+        const cr = r.headers.get('content-range');
         if (cr) {
           const total = parseInt(cr.split('/')[1], 10);
-          if (!isNaN(total)) {
-            counts[j] = total;
-          }
+          if (!isNaN(total)) counts[j] = total;
         }
       })
     );
