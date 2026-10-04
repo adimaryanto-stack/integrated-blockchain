@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Formulir Pelaporan — SiTransparan</title>
-  <meta name="description" content="Kanal informasi pengaduan masyarakat untuk dugaan penyimpangan dana pendidikan melalui portal resmi penegak hukum Republik Indonesia."/>
+  <title>Formulir Pengaduan APH Terpadu — SiTransparan</title>
+  <meta name="description" content="Kanal pengaduan masyarakat untuk dugaan penyimpangan anggaran pendidikan terintegrasi dengan KPK RI, Kejaksaan RI, BPK/BPKP, dan Satwil Kepolisian."/>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,7 +20,7 @@
       border: 1px solid var(--color-border);
       border-radius: 24px;
       padding: 36px;
-      box-shadow: var(--shadow-sm);
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
     }
     .input-group {
       margin-bottom: 20px;
@@ -31,6 +31,7 @@
       font-weight: 700;
       color: #0f172a;
       margin-bottom: 6px;
+      letter-spacing: 0.01em;
     }
     .input-control {
       width: 100%;
@@ -38,14 +39,60 @@
       border: 1px solid var(--color-border);
       border-radius: 12px;
       font-size: 14px;
+      font-family: inherit;
       outline: none;
       background: #F8FAFC;
+      color: #0f172a;
       transition: all 0.2s ease;
+      box-sizing: border-box;
     }
     .input-control:focus {
       background: #ffffff;
-      border-color: var(--color-primary);
+      border-color: var(--color-primary, #1D4ED8);
       box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
+    }
+    .agency-card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .agency-card {
+      border: 1.5px solid #E2E8F0;
+      border-radius: 16px;
+      padding: 16px;
+      background: #FFFFFF;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .agency-card:hover {
+      border-color: #93C5FD;
+      background: #F8FAFC;
+      transform: translateY(-2px);
+    }
+    .agency-card.selected {
+      border-color: #2563EB;
+      background: #EFF6FF;
+      box-shadow: 0 4px 14px -2px rgba(37, 99, 235, 0.18);
+    }
+    .agency-card .badge-selected {
+      display: none;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #2563EB;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 999px;
+    }
+    .agency-card.selected .badge-selected {
+      display: inline-block;
     }
     .portal-btn {
       display: inline-flex;
@@ -60,32 +107,115 @@
       cursor: pointer;
       text-decoration: none;
       transition: all 0.2s ease;
+      border: none;
     }
     .portal-btn:hover {
       opacity: 0.92;
       transform: translateY(-1px);
     }
-    .portal-btn-kpk {
+    .portal-btn-primary {
       background: #1D4ED8;
+    }
+    .portal-btn-kpk {
+      background: #B91C1C;
+    }
+    .portal-btn-kejaksaan {
+      background: #047857;
     }
     .portal-btn-bpk {
       background: #1E3A8A;
     }
-    .portal-btn-lapor {
-      background: #2563EB;
+    .portal-btn-polsek {
+      background: #0F172A;
     }
-    .input-control:disabled {
-      background: #F1F5F9;
-      color: #94A3B8;
+    .btn-submit-report {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 15px 24px;
+      background: #1D4ED8;
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 800;
+      border-radius: 14px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(29, 78, 216, 0.25);
+    }
+    .btn-submit-report:hover {
+      background: #1E40AF;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(29, 78, 216, 0.35);
+    }
+    .btn-submit-report:disabled {
+      background: #94A3B8;
       cursor: not-allowed;
-      border-color: #CBD5E1;
+      transform: none;
+      box-shadow: none;
     }
-    .btn-report:disabled {
-      background: #94A3B8 !important;
-      color: #F8FAFC !important;
-      cursor: not-allowed !important;
-      opacity: 0.8;
-      box-shadow: none !important;
+    .receipt-box {
+      border: 2px dashed #3B82F6;
+      background: #F8FAFC;
+      border-radius: 20px;
+      padding: 28px;
+      margin-top: 24px;
+    }
+    .stamp-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .receipt-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 10px 0;
+      border-bottom: 1px solid #E2E8F0;
+      font-size: 13.5px;
+    }
+    .receipt-row:last-child {
+      border-bottom: none;
+    }
+    .receipt-key {
+      color: #64748B;
+      font-weight: 600;
+      min-width: 140px;
+    }
+    .receipt-val {
+      color: #0F172A;
+      font-weight: 700;
+      text-align: right;
+      word-break: break-all;
+    }
+    @media (max-width: 900px) {
+      .main-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #reportSuccessReceipt, #reportSuccessReceipt * {
+        visibility: visible;
+      }
+      #reportSuccessReceipt {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        border: none;
+        background: #fff;
+      }
     }
   </style>
 </head>
@@ -167,120 +297,484 @@
 
   <main class="container" style="padding-top: 36px; padding-bottom: 72px;">
     <!-- Title Area -->
-    <div style="margin-bottom: 32px; max-width: 800px;">
-      <div class="badge-tag" style="background: #FEF3C7; color: #B45309; border-color: rgba(245, 158, 11, 0.3);">
-        <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle; margin-right: 4px;">block</span>
-        FITUR PELAPORAN SEDANG DINONAKTIFKAN
+    <div style="margin-bottom: 28px; max-width: 860px;">
+      <div class="badge-tag" style="background: #ECFDF5; color: #047857; border: 1px solid rgba(16, 185, 129, 0.3); display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700;">
+        <span class="material-symbols-outlined" style="font-size: 16px;">verified</span>
+        <span>PORTAL PENGADUAN INTEGRASI RESMI APH TERPADU AKTIF</span>
       </div>
-      <h1 style="font-size: 32px; font-weight: 800; color: #0f172a; margin: 8px 0;">
-        Formulir Pelaporan Dugaan Kejanggalan Anggaran
+      <h1 style="font-size: 32px; font-weight: 800; color: #0f172a; margin: 10px 0 6px 0; letter-spacing: -0.02em;">
+        Formulir Pengaduan Dugaan Penyimpangan Anggaran Pendidikan
       </h1>
       <p style="font-size: 15px; color: var(--color-text-muted); line-height: 1.6;">
-        Fitur formulir pelaporan mandiri saat ini sedang dinonaktifkan. Anda dapat memantau data resmi atau menghubungi kanal penegak hukum resmi yang tersedia.
+        Kanal pelaporan masyarakat terpadu yang terhubung langsung dengan sistem penegak hukum Republik Indonesia: Komisi Pemberantasan Korupsi (KPK), Kejaksaan RI, BPK/BPKP RI, serta Satuan Wilayah Kepolisian Terdekat.
       </p>
     </div>
 
-    <div style="display: grid; grid-template-columns: 3fr 2fr; gap: 32px; align-items: flex-start;">
-      <!-- Form Column -->
-      <div class="form-container-box">
-        <!-- Disabled Notice Banner -->
-        <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-left: 4px solid #F59E0B; border-radius: 14px; padding: 18px 20px; margin-bottom: 24px; display: flex; align-items: flex-start; gap: 14px;">
-          <span class="material-symbols-outlined" style="color: #D97706; font-size: 26px; margin-top: 2px;">lock</span>
-          <div>
-            <h4 style="font-size: 15px; font-weight: 800; color: #92400E; margin: 0 0 4px 0;">Fitur Pelaporan Publik Sedang Dinonaktifkan</h4>
-            <p style="font-size: 13.5px; color: #B45309; margin: 0; line-height: 1.55;">
-              Pengiriman formulir aduan publik mandiri melalui sistem ini telah dinonaktifkan sementara. Untuk menyampaikan aduan dugaan penyimpangan anggaran pendidikan, silakan gunakan kanal pengaduan langsung penegak hukum resmi (KPK / BPK RI) pada panel di sebelah kanan.
-            </p>
-          </div>
+    <!-- Verified Target Institution Banner -->
+    <div id="schoolTargetBanner" style="background: linear-gradient(135deg, #1E3A8A 0%, #1D4ED8 100%); color: #ffffff; border-radius: 18px; padding: 22px 28px; margin-bottom: 28px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; box-shadow: 0 10px 25px -5px rgba(29, 78, 216, 0.3);">
+      <div style="display: flex; align-items: center; gap: 18px;">
+        <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
+          <span class="material-symbols-outlined" style="font-size: 28px; color: #ffffff;">school</span>
         </div>
-
-        <form id="reportForm" onsubmit="handleReportSubmit(event)">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <div class="input-group">
-              <label class="input-label">NAMA PELAPOR (OPSIONAL / ANONIM)</label>
-              <input type="text" id="repName" placeholder="Contoh: Anonim / Nama Anda" class="input-control" disabled>
-            </div>
-
-            <div class="input-group">
-              <label class="input-label">NOMOR KONTAK / TELEPON (OPSIONAL)</label>
-              <input type="text" id="repWa" placeholder="Nomor kontak Anda (Opsional)" class="input-control" disabled>
-            </div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+            <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.05em; background: rgba(255, 255, 255, 0.2); padding: 2px 8px; border-radius: 999px;">INSTITUSI SASARAN TERLAPOR</span>
+            <span id="targetAkreditasi" style="font-size: 11px; font-weight: 800; background: #10B981; color: #ffffff; padding: 2px 8px; border-radius: 999px;">Akreditasi A</span>
           </div>
-
-          <div class="input-group">
-            <label class="input-label">INFORMASI SINGKAT 5W1H *</label>
-            <textarea id="rep5w1h" required rows="3" class="input-control" placeholder="What: Dugaan penggelembungan belanja...&#10;Where: Sekolah / NPSN...&#10;When: Periode..." disabled></textarea>
-          </div>
-
-          <div class="input-group">
-            <label class="input-label">PENJELASAN LENGKAP KRONOLOGI *</label>
-            <textarea id="repDesc" required rows="4" class="input-control" placeholder="Jelaskan secara mendalam fakta yang Anda ketahui di lapangan..." disabled></textarea>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <div class="input-group">
-              <label class="input-label">ESTIMASI NOMINAL DUGAAN (RP)</label>
-              <input type="text" id="repAmount" placeholder="Contoh: 50000000" class="input-control" disabled>
-            </div>
-
-            <div class="input-group">
-              <label class="input-label">TAUTAN BUKTI DOKUMEN / FOTO</label>
-              <input type="text" id="repLink" placeholder="https://drive.google.com/..." class="input-control" disabled>
-            </div>
-          </div>
-
-          <button type="button" id="btnSubmitReport" class="btn-report" disabled style="width: 100%; justify-content: center; padding: 14px; font-size: 15px; margin-top: 8px;">
-            <span class="material-symbols-outlined" style="font-size: 20px;">block</span>
-            Fitur Pelaporan Dinonaktifkan
-          </button>
-        </form>
-
-        <!-- Result Box -->
-        <div id="reportSuccessBox" style="display: none; margin-top: 24px; padding: 20px; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 16px;">
-          <div style="display: flex; align-items: center; gap: 10px; color: #065F46; font-weight: 800; font-size: 16px; margin-bottom: 6px;">
-            <span class="material-symbols-outlined" style="font-size: 24px;">check_circle</span>
-            Laporan Berhasil Tercatat!
-          </div>
-          <p style="font-size: 13px; color: #047857; line-height: 1.6;">
-            Aduan Anda telah tersimpan secara terenkripsi pada basis data PostgreSQL SiTransparan. Anda juga dapat meneruskan temuan ini langsung ke lembaga penegak hukum resmi:
-          </p>
-          <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
-            <a href="https://www.kpk.go.id/id/layanan-publik/pengaduan-masyarakat" target="_blank" rel="noopener noreferrer" class="portal-btn portal-btn-kpk">
-              <span class="material-symbols-outlined" style="font-size: 18px;">open_in_new</span>
-              <span>Portal Pengaduan KPK</span>
-            </a>
-            <a href="https://www.bpk.go.id/page/pengaduan-masyarakat" target="_blank" rel="noopener noreferrer" class="portal-btn portal-btn-bpk">
-              <span class="material-symbols-outlined" style="font-size: 18px;">open_in_new</span>
-              <span>Portal Pengaduan BPK RI</span>
-            </a>
+          <h2 id="targetSchoolName" style="font-size: 20px; font-weight: 800; margin: 0; color: #ffffff; letter-spacing: -0.01em;">
+            UNIVERSITAS INDONESIA
+          </h2>
+          <div style="display: flex; align-items: center; gap: 16px; margin-top: 4px; font-size: 12.5px; opacity: 0.9; flex-wrap: wrap;">
+            <span>NPSN: <strong id="targetNpsn">001002</strong></span>
+            <span>•</span>
+            <span>Pembina: <strong id="targetKementerian">Kemendiktisaintek</strong></span>
+            <span>•</span>
+            <span>Lokasi: <span id="targetLocation">Jalan Salemba Raya 4, DKI Jakarta</span></span>
           </div>
         </div>
       </div>
-
-      <!-- Info & Channel Sidebar -->
       <div>
-        <div style="background: #ffffff; border: 1px solid var(--color-border); border-radius: 20px; padding: 28px; margin-bottom: 24px; box-shadow: var(--shadow-sm);">
-          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; color: var(--color-primary);">
-            <span class="material-symbols-outlined" style="font-size: 24px;">verified_user</span>
-            <h3 style="font-size: 17px; font-weight: 800; color: #0f172a;">Jaminan Kerahasiaan</h3>
+        <a href="index.html" class="portal-btn" style="background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.3); font-size: 12.5px; padding: 8px 14px;">
+          <span class="material-symbols-outlined" style="font-size: 16px;">search</span>
+          <span>Ganti Satuan Pendidikan</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="main-grid" style="display: grid; grid-template-columns: 3fr 2fr; gap: 32px; align-items: flex-start;">
+      
+      <!-- Left Column: Form Box & Receipt -->
+      <div class="form-container-box">
+
+        <!-- Form Section -->
+        <div id="reportFormSection">
+          
+          <!-- Nominal Threshold & Agency Scheme Banner -->
+          <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: 16px; padding: 18px 20px; margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+              <span class="input-label" style="margin: 0; font-size: 13.5px; display: flex; align-items: center; gap: 6px;">
+                <span class="material-symbols-outlined" style="color: #1D4ED8; font-size: 18px;">tune</span>
+                SKEMA OTOMATIS PENETAPAN APH BERDASARKAN NOMINAL KERUGIAN
+              </span>
+              <span style="font-size: 11px; font-weight: 800; background: #DBEAFE; color: #1E40AF; padding: 3px 8px; border-radius: 6px;">
+                Tersimpan di Database Internal
+              </span>
+            </div>
+            <p style="font-size: 12.5px; color: #64748B; margin: 0 0 12px 0; line-height: 1.5;">
+              Sistem secara otomatis mengarahkan saluran penanganan sesuai batas nilai nominal dugaan kerugian:
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+              <div id="tierHigh" onclick="setNominalTier('HIGH')" style="cursor: pointer; padding: 10px 14px; border-radius: 12px; border: 1.5px solid #CBD5E1; background: #FFFFFF; transition: all 0.2s;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px;">
+                  <span style="font-size: 11.5px; font-weight: 800; color: #DC2626;">🔴 TINGGI (&gt; Rp 500 JUTA)</span>
+                </div>
+                <div style="font-size: 12px; font-weight: 700; color: #0F172A;">KPK RI / Kejaksaan (Pidsus)</div>
+                <div style="font-size: 10.5px; color: #64748B; margin-top: 2px;">Tipikor bernilai besar</div>
+              </div>
+
+              <div id="tierMid" onclick="setNominalTier('MID')" style="cursor: pointer; padding: 10px 14px; border-radius: 12px; border: 1.5px solid #CBD5E1; background: #FFFFFF; transition: all 0.2s;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px;">
+                  <span style="font-size: 11.5px; font-weight: 800; color: #1D4ED8;">🟡 SEDANG (Rp 51 JT - 500 JT)</span>
+                </div>
+                <div style="font-size: 12px; font-weight: 700; color: #0F172A;">BPK / BPKP RI</div>
+                <div style="font-size: 10.5px; color: #64748B; margin-top: 2px;">Audit forensik keuangan</div>
+              </div>
+
+              <div id="tierLow" onclick="setNominalTier('LOW')" style="cursor: pointer; padding: 10px 14px; border-radius: 12px; border: 1.5px solid #CBD5E1; background: #FFFFFF; transition: all 0.2s;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px;">
+                  <span style="font-size: 11.5px; font-weight: 800; color: #334155;">🟢 RENDAH (≤ Rp 50 JUTA)</span>
+                </div>
+                <div style="font-size: 12px; font-weight: 700; color: #0F172A;">Polsek Terdekat</div>
+                <div style="font-size: 10.5px; color: #64748B; margin-top: 2px;">Pungli / tindak pidana lokal</div>
+              </div>
+            </div>
           </div>
-          <p style="font-size: 13px; color: var(--color-text-muted); line-height: 1.6;">
-            Identitas pelapor dilindungi oleh Undang-Undang Perlindungan Saksi dan Korban (LPSK). Anda berhak melaporkan secara sepenuhnya anonim tanpa perlu mencantumkan nama asli.
-          </p>
+
+          <!-- Agency Selector Section -->
+          <div style="margin-bottom: 24px;">
+            <label class="input-label" style="font-size: 14px; margin-bottom: 10px;">
+              SALURAN PENEGAK HUKUM TERPILIH (APH) *
+            </label>
+
+            <div class="agency-card-grid">
+              <!-- KPK -->
+              <div class="agency-card" data-agency="KPK" onclick="selectAgency('KPK', this)">
+                <span class="badge-selected">TERPILIH</span>
+                <div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span class="material-symbols-outlined" style="color: #DC2626; font-size: 22px;">shield</span>
+                      <strong style="font-size: 13.5px; color: #0F172A;">KPK RI</strong>
+                    </div>
+                  </div>
+                  <div style="margin-bottom: 6px;">
+                    <span style="font-size: 10.5px; font-weight: 800; background: #FEF2F2; color: #DC2626; padding: 2px 7px; border-radius: 6px;">Skala Tinggi (&gt; Rp 500 Jt)</span>
+                  </div>
+                  <p style="font-size: 11.5px; color: #64748B; margin: 0; line-height: 1.45;">
+                    Dumas JAGA KPK untuk Tipikor & kerugian negara bernilai tinggi.
+                  </p>
+                </div>
+                <div style="margin-top: 10px; font-size: 11px; font-weight: 700; color: #DC2626;">
+                  Hotline 198
+                </div>
+              </div>
+
+              <!-- Kejaksaan -->
+              <div class="agency-card" data-agency="KEJAKSAAN" onclick="selectAgency('KEJAKSAAN', this)">
+                <span class="badge-selected">TERPILIH</span>
+                <div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span class="material-symbols-outlined" style="color: #059669; font-size: 22px;">balance</span>
+                      <strong style="font-size: 13.5px; color: #0F172A;">Kejaksaan (Pidsus)</strong>
+                    </div>
+                  </div>
+                  <div style="margin-bottom: 6px;">
+                    <span style="font-size: 10.5px; font-weight: 800; background: #ECFDF5; color: #059669; padding: 2px 7px; border-radius: 6px;">Skala Tinggi (&gt; Rp 500 Jt)</span>
+                  </div>
+                  <p style="font-size: 11.5px; color: #64748B; margin: 0; line-height: 1.45;">
+                    Pidsus Dumas Kejagung, Kejati & Kejari penyimpangan APBN/APBD.
+                  </p>
+                </div>
+                <div style="margin-top: 10px; font-size: 11px; font-weight: 700; color: #059669;">
+                  Hotline 150227
+                </div>
+              </div>
+
+              <!-- BPK/BPKP -->
+              <div class="agency-card" data-agency="BPK_BPKP" onclick="selectAgency('BPK_BPKP', this)">
+                <span class="badge-selected">TERPILIH</span>
+                <div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span class="material-symbols-outlined" style="color: #1E3A8A; font-size: 22px;">fact_check</span>
+                      <strong style="font-size: 13.5px; color: #0F172A;">BPK / BPKP RI</strong>
+                    </div>
+                  </div>
+                  <div style="margin-bottom: 6px;">
+                    <span style="font-size: 10.5px; font-weight: 800; background: #EFF6FF; color: #1D4ED8; padding: 2px 7px; border-radius: 6px;">Skala Sedang (Rp 51 Jt - 500 Jt)</span>
+                  </div>
+                  <p style="font-size: 11.5px; color: #64748B; margin: 0; line-height: 1.45;">
+                    Audit investigatif & audit forensik kerugian keuangan negara / BOS / BOPTN.
+                  </p>
+                </div>
+                <div style="margin-top: 10px; font-size: 11px; font-weight: 700; color: #1E3A8A;">
+                  Hotline 1500-275
+                </div>
+              </div>
+
+              <!-- Polsek Terdekat -->
+              <div class="agency-card" data-agency="POLSEK" onclick="selectAgency('POLSEK', this)">
+                <span class="badge-selected">TERPILIH</span>
+                <div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span class="material-symbols-outlined" style="color: #334155; font-size: 22px;">local_police</span>
+                      <strong style="font-size: 13.5px; color: #0F172A;">Polsek Terdekat</strong>
+                    </div>
+                  </div>
+                  <div style="margin-bottom: 6px;">
+                    <span style="font-size: 10.5px; font-weight: 800; background: #F1F5F9; color: #334155; padding: 2px 7px; border-radius: 6px;">Skala Rendah (≤ Rp 50 Jt)</span>
+                  </div>
+                  <p style="font-size: 11.5px; color: #64748B; margin: 0; line-height: 1.45;">
+                    Penindakan cepat pungutan liar, pemerasan & tindak pidana satuan pendidikan.
+                  </p>
+                </div>
+                <div style="margin-top: 10px; font-size: 11px; font-weight: 700; color: #334155;">
+                  Darurat 110
+                </div>
+              </div>
+
+              <!-- Multi-Agency (Sinergi) -->
+              <div class="agency-card" data-agency="MULTI_AGENCY" onclick="selectAgency('MULTI_AGENCY', this)">
+                <span class="badge-selected">TERPILIH</span>
+                <div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span class="material-symbols-outlined" style="color: #2563EB; font-size: 22px;">hub</span>
+                      <strong style="font-size: 13.5px; color: #0F172A;">Sinergi APH</strong>
+                    </div>
+                  </div>
+                  <div style="margin-bottom: 6px;">
+                    <span style="font-size: 10.5px; font-weight: 800; background: #FEF3C7; color: #B45309; padding: 2px 7px; border-radius: 6px;">Multi-Agency Terpadu</span>
+                  </div>
+                  <p style="font-size: 11.5px; color: #64748B; margin: 0; line-height: 1.45;">
+                    Pencatatan serentak ke seluruh kanal pengawasan APH.
+                  </p>
+                </div>
+                <div style="margin-top: 10px; font-size: 11px; font-weight: 700; color: #1D4ED8;">
+                  ⭐ Koordinasi Menyeluruh
+                </div>
+              </div>
+            </div>
+            <input type="hidden" id="selectedAgencyInput" value="BPK_BPKP">
+          </div>
+
+          <!-- Dynamic Nearest Polsek Card (Real spatial lookup) -->
+          <div id="nearestPolsekCard" style="background: #F1F5F9; border: 1px solid #CBD5E1; border-radius: 14px; padding: 14px 18px; margin-bottom: 24px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span class="material-symbols-outlined" style="color: #1E293B; font-size: 26px;">local_police</span>
+                <div>
+                  <div style="font-size: 11px; font-weight: 800; color: #64748B; letter-spacing: 0.04em;">SATWIL KEPOLISIAN TERDEKAT DARI SASARAN:</div>
+                  <div style="font-size: 14px; font-weight: 800; color: #0F172A;" id="polsekNamePreview">
+                    Polsek Metro Menteng (0.6 km)
+                  </div>
+                  <div style="font-size: 12px; color: #475569;" id="polsekAddressPreview">
+                    Jl. Pegangsaan Barat No. 1, Menteng, Jakarta Pusat • Siaga 24 Jam
+                  </div>
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <a id="polsekMapsLink" href="https://maps.google.com" target="_blank" class="portal-btn" style="background: #FFFFFF; border: 1px solid #CBD5E1; color: #0F172A; font-size: 12px; padding: 6px 12px;">
+                  <span class="material-symbols-outlined" style="font-size: 16px;">directions</span>
+                  <span>Rute Maps</span>
+                </a>
+                <button type="button" onclick="detectUserLocationPolsek()" class="portal-btn" style="background: #E2E8F0; color: #0F172A; font-size: 12px; padding: 6px 12px;">
+                  <span class="material-symbols-outlined" style="font-size: 16px;">my_location</span>
+                  <span>Cari Ulang</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Alternative Nearest Polsek Selector Dropdown -->
+            <div id="polsekAlternativeContainer" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #CBD5E1;">
+              <label for="polsekSelectorDropdown" style="font-size: 11.5px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">
+                PILIH KANTOR POLISI TERDEKAT LAINNYA:
+              </label>
+              <select id="polsekSelectorDropdown" onchange="onSelectPolsekDropdown(this.value)" class="input-control" style="font-size: 12.5px; padding: 7px 10px; background: #FFFFFF; cursor: pointer;">
+              </select>
+            </div>
+          </div>
+
+          <!-- Form Fields -->
+          <form id="activeReportForm" onsubmit="handleRealReportSubmit(event)">
+            
+            <!-- Anonymity Checkbox -->
+            <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 12px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+              <input type="checkbox" id="checkAnonymous" onchange="toggleAnonymity(this)" style="width: 18px; height: 18px; cursor: pointer; accent-color: #16A34A;">
+              <label for="checkAnonymous" style="font-size: 13.5px; font-weight: 700; color: #166534; cursor: pointer; user-select: none;">
+                Lindungi Identitas Saya Sebagai Pelapor Anonim (Sesuai Hak Perlindungan LPSK)
+              </label>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;" id="reporterInfoGrid">
+              <div class="input-group">
+                <label class="input-label" for="repName">NAMA PELAPOR</label>
+                <input type="text" id="repName" placeholder="Contoh: Budi Prasetyo / Anonim" class="input-control">
+              </div>
+
+              <div class="input-group">
+                <label class="input-label" for="repWa">NOMOR WHATSAPP / TELEPON (UNTUK NOTIFIKASI TIKET)</label>
+                <input type="text" id="repWa" placeholder="08xxxxxxxxxx (Kerahasiaan Dijamin)" class="input-control">
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label class="input-label" for="repCategory">KATEGORI DUGAAN TINDAK PIDANA / PENYIMPANGAN *</label>
+              <select id="repCategory" class="input-control" required style="cursor: pointer;">
+                <option value="Penggelembungan Anggaran / Mark-Up">Penggelembungan Anggaran / Mark-Up Belanja Barang & Jasa</option>
+                <option value="Pungutan Liar (Pungli)">Pungutan Liar (Pungli) Penerimaan Siswa / Mahasiswa Baru</option>
+                <option value="Pemotongan Dana BOS / BOPTN">Pemotongan / Penyelewengan Dana Bantuan Operasional (BOS / BOPTN)</option>
+                <option value="Pengadaan / Proyek Fiktif">Pengadaan Sarana & Prasarana / Bangunan Fiktif</option>
+                <option value="Anomali Penyerapan Anggaran Terdeteksi Sistem">Anomali Penyerapan Anggaran Hasil Deteksi Sistem SiTransparan</option>
+                <option value="Lainnya">Dugaan Maladministrasi & Kerugian Keuangan Lainnya</option>
+              </select>
+            </div>
+
+            <div class="input-group">
+              <label class="input-label" for="rep5w1h">RINGKASAN TEMUAN 5W1H *</label>
+              <textarea id="rep5w1h" required rows="3" class="input-control" placeholder="What: Dugaan penggelembungan pengadaan...&#10;Where: Fakultas / Kampus Salemba UI...&#10;When: TA 2025/2026...&#10;Who: Oknum Pejabat Pembuat Komitmen..."></textarea>
+            </div>
+
+            <div class="input-group">
+              <label class="input-label" for="repDesc">KRONOLOGI DAN URAIAN FAKTA MENDALAM *</label>
+              <textarea id="repDesc" required rows="4" class="input-control" placeholder="Tuliskan fakta yang Anda ketahui di lapangan secara kronologis, modus operandi, serta saksi-saksi jika ada..."></textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div class="input-group">
+                <label class="input-label" for="repAmount" style="display: flex; align-items: center; justify-content: space-between;">
+                  <span>ESTIMASI NILAI KERUGIAN / KEJANGGALAN (RP)</span>
+                  <span style="font-size: 11px; font-weight: 700; color: #64748B; background: #F1F5F9; border: 1px solid #E2E8F0; padding: 2px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                    <span class="material-symbols-outlined" style="font-size: 13px;">lock</span> Terkunci
+                  </span>
+                </label>
+                <input type="number" id="repAmount" placeholder="Terkunci (Dihitung resmi oleh sistem / APH)" class="input-control" readonly tabindex="-1" style="background: #F1F5F9; color: #475569; font-weight: 700; cursor: not-allowed; border-color: #CBD5E1;" onkeydown="return false;">
+                <span style="font-size: 11.5px; color: #64748B; margin-top: 4px; display: block;">Nilai kerugian dihitung otomatis dari deviasi anggaran atau diverifikasi resmi oleh auditor APH.</span>
+              </div>
+
+              <div class="input-group">
+                <label class="input-label" for="repLink">TAUTAN BUKTI DOKUMEN / FOTO / DRIVE (OPSIONAL)</label>
+                <input type="url" id="repLink" placeholder="https://drive.google.com/..." class="input-control">
+              </div>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+              <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: #475569; cursor: pointer;">
+                <input type="checkbox" id="checkDeclaration" required style="width: 16px; height: 16px; margin-top: 2px; accent-color: #1D4ED8;">
+                <span>Saya menyatakan bahwa informasi yang saya laporkan ini didasarkan pada itikad baik untuk penegakan integritas pendidikan dan kebenaran data dapat dipertanggungjawabkan sesuai peraturan perundang-undangan.</span>
+              </label>
+            </div>
+
+            <button type="submit" id="btnSubmitActive" class="btn-submit-report">
+              <span class="material-symbols-outlined" style="font-size: 20px;">save</span>
+              <span id="btnSubmitText">Simpan Pengaduan ke Basis Data Internal</span>
+            </button>
+          </form>
         </div>
 
-        <div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 20px; padding: 28px;">
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-            <span class="material-symbols-outlined" style="color: var(--color-primary); font-size: 22px;">gavel</span>
-            <h3 style="font-size: 16px; font-weight: 800; color: var(--color-primary); margin: 0;">
-              Kanal Cepat Penegak Hukum
+        <!-- Official Electronic Receipt Card (Shown on success) -->
+        <div id="reportSuccessReceipt" style="display: none;">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <div style="width: 56px; height: 56px; border-radius: 50%; background: #ECFDF5; color: #059669; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+              <span class="material-symbols-outlined" style="font-size: 32px;">verified</span>
+            </div>
+            <div class="stamp-badge" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; margin-bottom: 8px;">
+              TANDA TERIMA RESMI ARSIP PENGAWASAN
+            </div>
+            <h3 style="font-size: 22px; font-weight: 800; color: #0F172A; margin: 0 0 6px 0;">
+              Laporan Berhasil Dicatat di Basis Data Internal
             </h3>
+            <p style="font-size: 13.5px; color: #64748B; margin: 0; line-height: 1.5;">
+              Laporan Anda telah berhasil dicatat dan diarsipkan secara aman dalam basis data pengawasan internal SiTransparan untuk verifikasi audit. Data tidak diteruskan langsung ke sistem server eksternal instansi.
+            </p>
           </div>
-          <p style="font-size: 13px; color: #1E3A8A; line-height: 1.6; margin-bottom: 18px;">
-            Laporan indikasi penyimpangan anggaran pendidikan dapat disampaikan langsung kepada lembaga penegak hukum resmi Republik Indonesia melalui saluran portal resmi berikut:
+
+          <div class="receipt-box">
+            <div class="receipt-row">
+              <span class="receipt-key">NOMOR TIKET REGISTRASI:</span>
+              <span class="receipt-val" style="font-size: 16px; color: #1D4ED8; font-family: monospace;" id="receiptTrackingNo">-</span>
+            </div>
+            <div class="receipt-row">
+              <span class="receipt-key">KLASIFIKASI LEMBAGA (APH):</span>
+              <span class="receipt-val" id="receiptAgency">-</span>
+            </div>
+            <div class="receipt-row">
+              <span class="receipt-key">INSTITUSI TERLAPOR:</span>
+              <span class="receipt-val" id="receiptSchool">-</span>
+            </div>
+            <div class="receipt-row">
+              <span class="receipt-key">NPSN:</span>
+              <span class="receipt-val" id="receiptNpsn">-</span>
+            </div>
+            <div class="receipt-row">
+              <span class="receipt-key">ESTIMASI KERUGIAN:</span>
+              <span class="receipt-val" id="receiptAmount">Rp 0</span>
+            </div>
+            <div class="receipt-row">
+              <span class="receipt-key">STATUS PENYIMPANAN:</span>
+              <span class="receipt-val" style="color: #059669; font-weight: 800;" id="receiptStatus">TERCATAT DI BASIS DATA INTERNAL</span>
+            </div>
+            <div class="receipt-row">
+              <span class="receipt-key">WAKTU TERCATAT:</span>
+              <span class="receipt-val" id="receiptTimestamp">-</span>
+            </div>
+            <div class="receipt-row">
+              <span class="receipt-key">STATUS PENYALURAN:</span>
+              <span class="receipt-val" style="color: #059669;" id="receiptSla">Tersimpan di basis data pengawasan internal untuk verifikasi audit (tidak dikirim ke instansi luar)</span>
+            </div>
+            <div class="receipt-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+              <span class="receipt-key">STEMPEL DIGITAL SHA-256 (MERKLE PROOF):</span>
+              <span class="receipt-val" style="font-size: 11px; font-family: monospace; color: #64748B; word-break: break-all; text-align: left;" id="receiptSignature">-</span>
+            </div>
+          </div>
+
+          <!-- Receipt Action Buttons -->
+          <div style="display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap;">
+            <button type="button" onclick="copyTrackingNumber()" class="portal-btn portal-btn-primary" style="flex: 1;">
+              <span class="material-symbols-outlined" style="font-size: 18px;">content_copy</span>
+              <span>Salin Nomor Tiket</span>
+            </button>
+            <button type="button" onclick="window.print()" class="portal-btn" style="background: #0F172A; color: #ffffff; flex: 1;">
+              <span class="material-symbols-outlined" style="font-size: 18px;">print</span>
+              <span>Cetak Bukti Lapor (PDF)</span>
+            </button>
+            <button type="button" onclick="resetFormToNew()" class="portal-btn" style="background: #F1F5F9; color: #0F172A; border: 1px solid #CBD5E1;">
+              <span class="material-symbols-outlined" style="font-size: 18px;">add</span>
+              <span>Buat Aduan Baru</span>
+            </button>
+          </div>
+
+          <!-- Official External Agency Portals Forward Links -->
+          <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #E2E8F0;">
+            <h4 style="font-size: 13.5px; font-weight: 800; color: #0F172A; margin: 0 0 10px 0;">
+              Saluran Mandiri Jika Ingin Melapor Langsung ke Instansi Terkait:
+            </h4>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <a href="https://www.kpk.go.id/id/layanan-publik/pengaduan-masyarakat" target="_blank" rel="noopener noreferrer" class="portal-btn portal-btn-kpk" style="font-size: 12px; padding: 8px 12px;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">open_in_new</span>
+                <span>Portal Dumas KPK RI</span>
+              </a>
+              <a href="https://www.kejaksaan.go.id" target="_blank" rel="noopener noreferrer" class="portal-btn portal-btn-kejaksaan" style="font-size: 12px; padding: 8px 12px;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">open_in_new</span>
+                <span>Dumas Pidsus Kejaksaan</span>
+              </a>
+              <a href="https://www.bpk.go.id/page/pengaduan-masyarakat" target="_blank" rel="noopener noreferrer" class="portal-btn portal-btn-bpk" style="font-size: 12px; padding: 8px 12px;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">open_in_new</span>
+                <span>WBS / Pengaduan BPK RI</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Security Guarantees & Active APH Channels -->
+      <div>
+
+        <!-- Quick Ticket Tracking Card -->
+        <div style="background: #ffffff; border: 1px solid var(--color-border); border-radius: 20px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 14px -2px rgba(15, 23, 42, 0.04);">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: #1D4ED8;">
+            <span class="material-symbols-outlined" style="font-size: 22px;">find_in_page</span>
+            <h3 style="font-size: 16px; font-weight: 800; color: #0F172A; margin: 0;">Lacak Tiket Pengaduan Anda</h3>
+          </div>
+          <p style="font-size: 12.5px; color: #64748B; line-height: 1.5; margin: 0 0 14px 0;">
+            Masukkan nomor tiket resmi untuk memeriksa status arsip dan perkembangan verifikasi internal oleh tim audit.
+          </p>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="trackInput" placeholder="Contoh: SINERGI-APH-2026-..." class="input-control" style="font-size: 13px; padding: 10px 14px;">
+            <button type="button" onclick="checkReportTracking()" class="portal-btn portal-btn-primary" style="white-space: nowrap; padding: 10px 16px;">
+              <span>Lacak</span>
+            </button>
+          </div>
+          <div id="trackResultBox" style="display: none; margin-top: 14px; padding: 14px; background: #F8FAFC; border-radius: 12px; border: 1px solid #E2E8F0; font-size: 12.5px;">
+          </div>
+        </div>
+
+        <!-- LPSK Security Guarantee Card -->
+        <div style="background: #ffffff; border: 1px solid var(--color-border); border-radius: 20px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 14px -2px rgba(15, 23, 42, 0.04);">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; color: #10B981;">
+            <span class="material-symbols-outlined" style="font-size: 24px;">verified_user</span>
+            <h3 style="font-size: 16px; font-weight: 800; color: #0f172a; margin: 0;">Jaminan Kerahasiaan & LPSK</h3>
+          </div>
+          <p style="font-size: 13px; color: var(--color-text-muted); line-height: 1.6; margin: 0 0 10px 0;">
+            Identitas pelapor dilindungi sepenuhnya berdasarkan <strong>UU No. 31 Tahun 2014</strong> tentang Perlindungan Saksi dan Korban (LPSK).
+          </p>
+          <ul style="font-size: 12.5px; color: #475569; line-height: 1.6; margin: 0; padding-left: 18px;">
+            <li>Anda berhak melaporkan secara sepenuhnya anonim tanpa mencantumkan identitas pribadi.</li>
+            <li>Seluruh transmisi data dienkripsi dengan standar TLS 1.3 dan stempel hash kriptografi SHA-256.</li>
+            <li>Laporan dicatat dan diarsipkan secara aman dalam basis data pengawasan internal tanpa kebocoran data.</li>
+          </ul>
+        </div>
+
+        <!-- Integrated APH Channels Status Card -->
+        <div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 20px; padding: 24px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="material-symbols-outlined" style="color: var(--color-primary); font-size: 22px;">gavel</span>
+              <h3 style="font-size: 16px; font-weight: 800; color: var(--color-primary); margin: 0;">
+                Kanal Cepat Penegak Hukum
+              </h3>
+            </div>
+            <span style="font-size: 11px; font-weight: 800; background: #DBEAFE; color: #1E40AF; padding: 2px 8px; border-radius: 999px;">Terhubung</span>
+          </div>
+          <p style="font-size: 12.5px; color: #1E3A8A; line-height: 1.55; margin-bottom: 16px;">
+            Laporan indikasi penyimpangan anggaran pendidikan dapat dipantau dan disampaikan langsung melalui saluran resmi lembaga penegak hukum berikut:
           </p>
           
-          <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; flex-direction: column; gap: 12px;" id="agencyCardsContainer">
+            
             <!-- KPK Official Channel -->
             <div style="background: #FFFFFF; border: 1px solid #DBEAFE; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -288,45 +782,70 @@
                 <span style="font-size: 11px; font-weight: 700; background: #FEF2F2; color: #DC2626; padding: 2px 8px; border-radius: 999px;">Call Center 198</span>
               </div>
               <p style="font-size: 12px; color: #64748B; margin: 0; line-height: 1.5;">
-                Pengaduan tindak pidana korupsi APBN/APBD pendidikan melalui portal resmi Pengaduan Masyarakat (Dumas KPK).
+                Dumas & JAGA Tipikor Anggaran Pendidikan Republik Indonesia.
               </p>
-              <a href="https://www.kpk.go.id/id/layanan-publik/pengaduan-masyarakat" target="_blank" rel="noopener noreferrer" class="portal-btn portal-btn-kpk" style="width: 100%;">
-                <span class="material-symbols-outlined" style="font-size: 18px;">open_in_new</span>
-                <span>Buka Portal Pengaduan Resmi KPK</span>
-              </a>
+              <div>
+                <a href="https://www.kpk.go.id/id/layanan-publik/pengaduan-masyarakat" target="_blank" rel="noopener noreferrer" class="portal-btn portal-btn-kpk" style="width: 100%; font-size: 12.5px; padding: 9px 12px; box-sizing: border-box;">
+                  <span class="material-symbols-outlined" style="font-size: 16px;">open_in_new</span>
+                  <span>Buka Portal Pengaduan KPK</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Kejaksaan RI Official Channel -->
+            <div style="background: #FFFFFF; border: 1px solid #DBEAFE; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 13.5px; font-weight: 800; color: #0F172A;">Kejaksaan Republik Indonesia</span>
+                <span style="font-size: 11px; font-weight: 700; background: #ECFDF5; color: #059669; padding: 2px 8px; border-radius: 999px;">Hotline 150227</span>
+              </div>
+              <p style="font-size: 12px; color: #64748B; margin: 0; line-height: 1.5;">
+                Pidsus Dumas Presisi Tipikor Kejagung/Kejati/Kejari se-Indonesia.
+              </p>
+              <div>
+                <a href="https://www.kejaksaan.go.id" target="_blank" rel="noopener noreferrer" class="portal-btn portal-btn-kejaksaan" style="width: 100%; font-size: 12.5px; padding: 9px 12px; box-sizing: border-box;">
+                  <span class="material-symbols-outlined" style="font-size: 16px;">open_in_new</span>
+                  <span>Buka Portal Resmi Kejaksaan</span>
+                </a>
+              </div>
             </div>
 
             <!-- BPK RI Official Channel -->
             <div style="background: #FFFFFF; border: 1px solid #DBEAFE; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 13.5px; font-weight: 800; color: #0F172A;">Badan Pemeriksa Keuangan (BPK RI)</span>
-                <span style="font-size: 11px; font-weight: 700; background: #EFF6FF; color: #1D4ED8; padding: 2px 8px; border-radius: 999px;">Layanan Resmi</span>
+                <span style="font-size: 13.5px; font-weight: 800; color: #0F172A;">BPK RI & BPKP RI</span>
+                <span style="font-size: 11px; font-weight: 700; background: #EFF6FF; color: #1D4ED8; padding: 2px 8px; border-radius: 999px;">Layanan 1500-275</span>
               </div>
               <p style="font-size: 12px; color: #64748B; margin: 0; line-height: 1.5;">
-                Pusat Pengelolaan Informasi & Keluhan Terpadu Pengelolaan Keuangan Negara Republik Indonesia.
+                Audit Investigasi & Perhitungan Kerugian Keuangan Negara.
               </p>
-              <a href="https://www.bpk.go.id/page/pengaduan-masyarakat" target="_blank" rel="noopener noreferrer" class="portal-btn portal-btn-bpk" style="width: 100%;">
-                <span class="material-symbols-outlined" style="font-size: 18px;">open_in_new</span>
-                <span>Buka Portal Pengaduan BPK RI</span>
-              </a>
+              <div>
+                <a href="https://www.bpk.go.id/page/pengaduan-masyarakat" target="_blank" rel="noopener noreferrer" class="portal-btn portal-btn-bpk" style="width: 100%; font-size: 12.5px; padding: 9px 12px; box-sizing: border-box;">
+                  <span class="material-symbols-outlined" style="font-size: 16px;">open_in_new</span>
+                  <span>Buka Portal Pengaduan BPK RI</span>
+                </a>
+              </div>
             </div>
 
-            <!-- SP4N LAPOR Official Channel -->
+            <!-- Polsek Official Channel -->
             <div style="background: #FFFFFF; border: 1px solid #DBEAFE; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 13.5px; font-weight: 800; color: #0F172A;">SP4N LAPOR! RI</span>
-                <span style="font-size: 11px; font-weight: 700; background: #F1F5F9; color: #475569; padding: 2px 8px; border-radius: 999px;">Kanal Nasional</span>
+                <span style="font-size: 13.5px; font-weight: 800; color: #0F172A;">Satwil Polsek / Kepolisian Terdekat</span>
+                <span style="font-size: 11px; font-weight: 700; background: #F1F5F9; color: #0F172A; padding: 2px 8px; border-radius: 999px;">Darurat 110</span>
               </div>
               <p style="font-size: 12px; color: #64748B; margin: 0; line-height: 1.5;">
-                Sistem Pengelolaan Pengaduan Pelayanan Publik Nasional terintegrasi dengan Kemendikbudristek & Kemenkeu.
+                Sentra Pelayanan Kepolisian Terpadu (SPKT) wilayah hukum kepolisian setempat.
               </p>
-              <a href="https://www.lapor.go.id" target="_blank" rel="noopener noreferrer" class="portal-btn portal-btn-lapor" style="width: 100%;">
-                <span class="material-symbols-outlined" style="font-size: 18px;">open_in_new</span>
-                <span>Buka Layanan SP4N-LAPOR!</span>
-              </a>
+              <div>
+                <a href="https://polri.go.id" target="_blank" rel="noopener noreferrer" class="portal-btn portal-btn-polsek" style="width: 100%; font-size: 12.5px; padding: 9px 12px; box-sizing: border-box;">
+                  <span class="material-symbols-outlined" style="font-size: 16px;">open_in_new</span>
+                  <span>Buka Portal Resmi POLRI</span>
+                </a>
+              </div>
             </div>
+
           </div>
         </div>
+
       </div>
     </div>
   </main>
@@ -350,37 +869,390 @@
         </div>
       </div>
       <p style="font-size: 12px; color: #64748B; margin-top: 20px; text-align: center;">
-        © 2026 SiTransparan Civic-Tech.
+        © 2026 SiTransparan Civic-Tech • Kanal Pengaduan Terpadu Sinergi Penegak Hukum Republik Indonesia.
       </p>
     </div>
   </footer>
 
-  <script type="module" src="/scripts/db-client.js"></script>
   <script>
-    function prefillFromUrl() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const desc = urlParams.get('desc');
-      const npsn = urlParams.get('npsn');
-      const name = urlParams.get('name');
-      const amount = urlParams.get('amount');
-      const reason = urlParams.get('reason');
-      const date = urlParams.get('date');
+    // State Variables
+    let currentPolsek = null;
+    let allNearestPolsek = [];
+    let selectedAgency = 'BPK_BPKP';
+    let currentSchoolData = {
+      npsn: '001002',
+      name: 'UNIVERSITAS INDONESIA',
+      location: 'Jalan Salemba Raya 4, DKI Jakarta',
+      lat: -6.1950,
+      lon: 106.8500
+    };
 
-      if (desc || npsn || amount) {
-        document.getElementById('rep5w1h').value = `WHAT: Dugaan kejanggalan pada "${desc || 'anggaran sekolah'}"\nWHERE: ${name || 'Sekolah'} (NPSN: ${npsn || '-'})\nWHEN: ${date || 'Tahun 2026'}\nWHY: ${reason || 'Deviasi anomali terdeteksi oleh sistem'}`;
-        document.getElementById('repDesc').value = `Ditemukan indikasi ketidaksesuaian anggaran untuk item "${desc || ''}" di ${name || 'sekolah'} dengan rincian: ${reason || ''}.`;
-        if (amount) document.getElementById('repAmount').value = amount;
+    // 1. Terapkan Skema Threshold APH Berdasarkan Nominal
+    function applyNominalScheme(nominal, isManualAgencyClick = false) {
+      const num = parseFloat(nominal) || 0;
+      const repAmount = document.getElementById('repAmount');
+      if (repAmount && num > 0) {
+        repAmount.value = num;
+      }
+
+      // Reset style border tier
+      ['tierHigh', 'tierMid', 'tierLow'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.style.borderColor = '#CBD5E1';
+          el.style.background = '#FFFFFF';
+        }
+      });
+
+      if (num > 500000000) {
+        // > 500 Juta: Tinggi -> KPK atau Kejaksaan
+        const tEl = document.getElementById('tierHigh');
+        if (tEl) { tEl.style.borderColor = '#DC2626'; tEl.style.background = '#FEF2F2'; }
+        if (!isManualAgencyClick) {
+          const card = document.querySelector('.agency-card[data-agency="KPK"]');
+          selectAgency('KPK', card, true);
+        }
+      } else if (num > 50000000 && num <= 500000000) {
+        // 51 Jt - 500 Jt: Sedang -> BPK / BPKP
+        const tEl = document.getElementById('tierMid');
+        if (tEl) { tEl.style.borderColor = '#1D4ED8'; tEl.style.background = '#EFF6FF'; }
+        if (!isManualAgencyClick) {
+          const card = document.querySelector('.agency-card[data-agency="BPK_BPKP"]');
+          selectAgency('BPK_BPKP', card, true);
+        }
+      } else if (num > 0 && num <= 50000000) {
+        // <= 50 Juta: Rendah -> Polsek Terdekat
+        const tEl = document.getElementById('tierLow');
+        if (tEl) { tEl.style.borderColor = '#334155'; tEl.style.background = '#F1F5F9'; }
+        if (!isManualAgencyClick) {
+          const card = document.querySelector('.agency-card[data-agency="POLSEK"]');
+          selectAgency('POLSEK', card, true);
+        }
       }
     }
 
-    function handleReportSubmit(e) {
-      if (e) e.preventDefault();
-      alert('Fitur pelaporan mandiri saat ini sedang dinonaktifkan. Silakan gunakan kanal resmi KPK atau BPK.');
-      return false;
+    function setNominalTier(tier) {
+      if (tier === 'HIGH') {
+        applyNominalScheme(750000000);
+      } else if (tier === 'MID') {
+        applyNominalScheme(150000000);
+      } else if (tier === 'LOW') {
+        applyNominalScheme(25000000);
+      }
     }
 
+    // 2. Prefill data from URL & Initialize
+    function initSchoolAndUrl() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const npsn = urlParams.get('npsn') || '001002';
+      const name = urlParams.get('name') || 'UNIVERSITAS INDONESIA';
+      const desc = urlParams.get('desc');
+      const amount = urlParams.get('amount');
+      const reason = urlParams.get('reason');
+      const date = urlParams.get('date') || 'Tahun Anggaran 2026';
+
+      currentSchoolData.npsn = npsn;
+      currentSchoolData.name = name;
+
+      document.getElementById('targetSchoolName').textContent = name;
+      document.getElementById('targetNpsn').textContent = npsn;
+
+      if (name.toUpperCase().includes('UNIVERSITAS INDONESIA')) {
+        document.getElementById('targetKementerian').textContent = 'Kemendiktisaintek';
+        document.getElementById('targetLocation').textContent = 'Jalan Salemba Raya 4, Jakarta Pusat';
+        currentSchoolData.lat = -6.1950;
+        currentSchoolData.lon = 106.8500;
+      }
+
+      // Prefill 5W1H
+      if (desc || reason || amount) {
+        document.getElementById('rep5w1h').value = `WHAT: Dugaan ketidaksesuaian alokasi pada "${desc || 'Program Anggaran Pendidikan'}"\nWHERE: ${name} (NPSN: ${npsn})\nWHEN: ${date}\nWHY: ${reason || 'Deviasi anomali penyerapan anggaran terdeteksi oleh sistem'}`;
+        document.getElementById('repDesc').value = `Berdasarkan pantauan data transparansi publik, ditemukan indikasi deviasi anggaran pada satuan pendidikan ${name} (${npsn}) terkait item ${desc || 'belanja institusi'}. Rincian catatan: ${reason || 'Perlu dilakukan audit investigasi mendalam.'}`;
+      } else {
+        document.getElementById('rep5w1h').value = `WHAT: Dugaan kejanggalan realisasi anggaran\nWHERE: ${name} (NPSN: ${npsn})\nWHEN: ${date}\nWHO: Pengelola Keuangan / PPK Terkait`;
+        document.getElementById('repDesc').value = `Ditemukan indikasi ketidaksesuaian dalam pelaksanaan dan pertanggungjawaban anggaran di ${name}. Diperlukan audit forensik dan klarifikasi resmi.`;
+      }
+
+      // Inisialisasi skema nominal
+      if (amount && parseFloat(amount) > 0) {
+        applyNominalScheme(amount);
+      } else {
+        // Default tier sedang (150 Juta -> BPK/BPKP)
+        setNominalTier('MID');
+      }
+
+      // Lookup nearest polsek
+      fetchNearestPolsek(currentSchoolData.lat, currentSchoolData.lon);
+    }
+
+    // 3. Select Agency Card
+    function selectAgency(agencyKey, cardEl, fromNominal = false) {
+      selectedAgency = agencyKey;
+      document.getElementById('selectedAgencyInput').value = agencyKey;
+
+      document.querySelectorAll('.agency-card').forEach(el => el.classList.remove('selected'));
+      if (cardEl) {
+        cardEl.classList.add('selected');
+      }
+
+      // Sinkronkan nominal jika diklik manual
+      if (!fromNominal) {
+        const repAmount = document.getElementById('repAmount');
+        const curVal = parseFloat(repAmount?.value) || 0;
+        if (agencyKey === 'KPK' || agencyKey === 'KEJAKSAAN') {
+          if (curVal <= 500000000) applyNominalScheme(750000000, true);
+        } else if (agencyKey === 'BPK_BPKP') {
+          if (curVal <= 50000000 || curVal > 500000000) applyNominalScheme(150000000, true);
+        } else if (agencyKey === 'POLSEK') {
+          if (curVal > 50000000 || curVal === 0) applyNominalScheme(25000000, true);
+        }
+      }
+
+      const btnText = document.getElementById('btnSubmitText');
+      if (agencyKey === 'MULTI_AGENCY') {
+        btnText.textContent = 'Simpan Pengaduan ke Sinergi Terpadu APH (Basis Data Internal)';
+      } else if (agencyKey === 'KPK') {
+        btnText.textContent = 'Simpan Pengaduan Skala Tinggi (Kategori Dumas KPK) ke Basis Data Internal';
+      } else if (agencyKey === 'KEJAKSAAN') {
+        btnText.textContent = 'Simpan Pengaduan Skala Tinggi (Kategori Pidsus Kejaksaan) ke Basis Data Internal';
+      } else if (agencyKey === 'BPK_BPKP') {
+        btnText.textContent = 'Simpan Pengaduan Skala Sedang (Kategori Audit BPK/BPKP) ke Basis Data Internal';
+      } else if (agencyKey === 'POLSEK') {
+        btnText.textContent = `Simpan Pengaduan Skala Rendah (${currentPolsek ? currentPolsek.nama : 'Polsek Terdekat'}) ke Basis Data Internal`;
+      }
+    }
+
+    // 4. Toggle Anonymity
+    function toggleAnonymity(cb) {
+      const repName = document.getElementById('repName');
+      const repWa = document.getElementById('repWa');
+      if (cb.checked) {
+        repName.value = 'Masyarakat (Anonim Dilindungi LPSK)';
+        repName.disabled = true;
+        repName.style.background = '#F1F5F9';
+      } else {
+        repName.value = '';
+        repName.disabled = false;
+        repName.style.background = '#F8FAFC';
+      }
+    }
+
+    // 5. Fetch Nearest Polsek from API (dengan daftar alternatif)
+    async function fetchNearestPolsek(lat, lon) {
+      try {
+        const res = await fetch('http://localhost:2028/api/polsek/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ latitude: lat, longitude: lon, radiusKm: 35, limit: 10 })
+        });
+        const data = await res.json();
+        if (data.success && data.polsekList && data.polsekList.length > 0) {
+          allNearestPolsek = data.polsekList;
+          currentPolsek = data.polsekList[0];
+
+          document.getElementById('polsekNamePreview').textContent = `${currentPolsek.nama} (${currentPolsek.jarakKm} km)`;
+          document.getElementById('polsekAddressPreview').textContent = `${currentPolsek.alamat} • Siaga: ${currentPolsek.statusSiaga || '24 Jam'}`;
+          document.getElementById('polsekMapsLink').href = currentPolsek.mapsUrl || `https://www.google.com/maps/dir/?api=1&destination=${currentPolsek.latitude},${currentPolsek.longitude}`;
+
+          // Isi pilihan kantor polisi terdekat lainnya
+          const dropdown = document.getElementById('polsekSelectorDropdown');
+          const altContainer = document.getElementById('polsekAlternativeContainer');
+          if (dropdown && altContainer) {
+            altContainer.style.display = 'block';
+            dropdown.innerHTML = data.polsekList.map((p, idx) => 
+              `<option value="${p.id}">${idx === 0 ? '★ [Terdekat Utama] ' : ''}${p.nama} (${p.jarakKm} km) - ${p.polres}</option>`
+            ).join('');
+          }
+        }
+      } catch (err) {
+        console.warn('Polsek API offline, using cached reference:', err);
+      }
+    }
+
+    // Handler ketika pengguna memilih polsek lain dari dropdown
+    function onSelectPolsekDropdown(polsekId) {
+      const found = allNearestPolsek.find(p => p.id === polsekId);
+      if (found) {
+        currentPolsek = found;
+        document.getElementById('polsekNamePreview').textContent = `${found.nama} (${found.jarakKm} km)`;
+        document.getElementById('polsekAddressPreview').textContent = `${found.alamat} • Siaga: ${found.statusSiaga || '24 Jam'}`;
+        document.getElementById('polsekMapsLink').href = found.mapsUrl || `https://www.google.com/maps/dir/?api=1&destination=${found.latitude},${found.longitude}`;
+
+        if (selectedAgency === 'POLSEK') {
+          document.getElementById('btnSubmitText').textContent = `Simpan Pengaduan Skala Rendah (${found.nama}) ke Basis Data Internal`;
+        }
+      }
+    }
+
+    // 6. Detect User GPS Location
+    function detectUserLocationPolsek() {
+      if (!navigator.geolocation) {
+        alert('Geolocation tidak didukung pada browser Anda.');
+        return;
+      }
+      document.getElementById('polsekNamePreview').textContent = 'Mendeteksi koordinat GPS Anda...';
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          fetchNearestPolsek(pos.coords.latitude, pos.coords.longitude);
+        },
+        (err) => {
+          console.warn('GPS denied or timeout, fallback to school address:', err.message);
+          fetchNearestPolsek(currentSchoolData.lat, currentSchoolData.lon);
+        },
+        { timeout: 5000 }
+      );
+    }
+
+    // 7. Real Report Submit Handler (Disimpan ke database lokal, tidak dikirim ke server luar)
+    async function handleRealReportSubmit(e) {
+      e.preventDefault();
+
+      const btn = document.getElementById('btnSubmitActive');
+      const originalText = document.getElementById('btnSubmitText').textContent;
+
+      btn.disabled = true;
+      document.getElementById('btnSubmitText').textContent = 'Memverifikasi Integritas & Menyimpan ke Basis Data...';
+
+      const isAnonymous = document.getElementById('checkAnonymous').checked;
+      const reporterName = isAnonymous ? 'Masyarakat (Anonim Dilindungi LPSK)' : (document.getElementById('repName').value.trim() || 'Masyarakat Peduli Integritas');
+      const whatsapp = document.getElementById('repWa').value.trim();
+      const category = document.getElementById('repCategory').value;
+      const summary5w1h = document.getElementById('rep5w1h').value.trim();
+      const desc = document.getElementById('repDesc').value.trim();
+      const amount = parseFloat(document.getElementById('repAmount').value) || 0;
+      const link = document.getElementById('repLink').value.trim();
+
+      const payload = {
+        npsn: currentSchoolData.npsn,
+        school_name: currentSchoolData.name,
+        target_agency: selectedAgency,
+        is_anonymous: isAnonymous,
+        reporter_name: reporterName,
+        whatsapp_number: whatsapp,
+        category: category,
+        title: `[${category}] ${currentSchoolData.name} - ${summary5w1h.slice(0, 80)}...`,
+        content: desc,
+        description: `RINGKASAN 5W1H:\n${summary5w1h}\n\nKRONOLOGI LENGKAP:\n${desc}`,
+        estimated_amount: amount,
+        evidence_link: link,
+        polsek_info: currentPolsek
+      };
+
+      try {
+        const response = await fetch('http://localhost:2028/api/reports/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          // Display Official Electronic Receipt
+          showReceipt(result.data);
+        } else {
+          alert('Penyimpanan gagal: ' + (result.error || 'Terjadi kendala pada database.'));
+          btn.disabled = false;
+          document.getElementById('btnSubmitText').textContent = originalText;
+        }
+      } catch (networkErr) {
+        console.error('Submit network error:', networkErr);
+        alert('Gagal menghubungi proxy backend (Port 2028). Pastikan server backend sedang aktif.');
+        btn.disabled = false;
+        document.getElementById('btnSubmitText').textContent = originalText;
+      }
+    }
+
+    // 8. Show Electronic Receipt
+    function showReceipt(data) {
+      document.getElementById('reportFormSection').style.display = 'none';
+      const receiptSection = document.getElementById('reportSuccessReceipt');
+      receiptSection.style.display = 'block';
+
+      document.getElementById('receiptTrackingNo').textContent = data.trackingNumber;
+      document.getElementById('receiptAgency').textContent = getAgencyLabel(data.targetAgency);
+      document.getElementById('receiptSchool').textContent = data.schoolName;
+      document.getElementById('receiptNpsn').textContent = data.npsn;
+      document.getElementById('receiptAmount').textContent = 'Rp ' + Number(data.estimatedAmount || 0).toLocaleString('id-ID');
+      document.getElementById('receiptStatus').textContent = 'TERCATAT DI BASIS DATA INTERNAL';
+      document.getElementById('receiptStatus').style.color = '#059669';
+      document.getElementById('receiptTimestamp').textContent = new Date(data.createdAt || Date.now()).toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'long' });
+      document.getElementById('receiptSla').textContent = 'Tersimpan aman dalam basis data pengawasan internal untuk verifikasi audit (tidak dikirim ke instansi luar)';
+      document.getElementById('receiptSignature').textContent = data.digitalSignature || '-';
+
+      // Scroll to receipt top
+      receiptSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function getAgencyLabel(key) {
+      switch ((key || '').toUpperCase()) {
+        case 'KPK': return 'KPK RI (Klasifikasi Skala Tinggi > Rp 500 Juta)';
+        case 'KEJAKSAAN': return 'Kejaksaan RI Pidsus (Klasifikasi Skala Tinggi > Rp 500 Juta)';
+        case 'BPK_BPKP': return 'BPK / BPKP RI (Klasifikasi Skala Sedang Rp 51 Juta - 500 Juta)';
+        case 'POLSEK': return currentPolsek ? `${currentPolsek.nama} (${currentPolsek.polres}) - Skala Rendah ≤ Rp 50 Juta` : 'Kepolisian RI / Polsek Terdekat';
+        default: return 'Sinergi Terpadu APH (Multi-Agency Terkoordinasi)';
+      }
+    }
+
+    function copyTrackingNumber() {
+      const tNo = document.getElementById('receiptTrackingNo').textContent;
+      navigator.clipboard.writeText(tNo).then(() => {
+        alert('Nomor tiket registrasi berhasil disalin: ' + tNo);
+      });
+    }
+
+    function resetFormToNew() {
+      document.getElementById('activeReportForm').reset();
+      document.getElementById('reportSuccessReceipt').style.display = 'none';
+      document.getElementById('reportFormSection').style.display = 'block';
+      document.getElementById('btnSubmitActive').disabled = false;
+      document.getElementById('btnSubmitText').textContent = 'Simpan Pengaduan ke Basis Data Internal';
+      setNominalTier('MID');
+    }
+
+    // 9. Track Report by Tracking Number
+    async function checkReportTracking() {
+      const input = document.getElementById('trackInput').value.trim();
+      const resBox = document.getElementById('trackResultBox');
+
+      if (!input) {
+        alert('Silakan masukkan nomor tiket pengaduan Anda.');
+        return;
+      }
+
+      resBox.style.display = 'block';
+      resBox.innerHTML = '<span style="color: #64748B;">Memeriksa database internal...</span>';
+
+      try {
+        const res = await fetch(`http://localhost:2028/api/reports/tracking/${encodeURIComponent(input)}`);
+        const data = await res.json();
+
+        if (res.ok && data.success && data.report) {
+          const r = data.report;
+          resBox.innerHTML = `
+            <div style="font-weight: 800; color: #1D4ED8; margin-bottom: 6px;">
+              TIKET DITEMUKAN: ${r.trackingNumber}
+            </div>
+            <div style="display: grid; gap: 4px; color: #0F172A;">
+              <div><strong>Institusi:</strong> ${r.schoolName} (${r.npsn})</div>
+              <div><strong>Klasifikasi APH:</strong> ${getAgencyLabel(r.targetAgency)}</div>
+              <div><strong>Status:</strong> <span style="background: #ECFDF5; color: #059669; padding: 2px 6px; border-radius: 4px; font-weight: 700;">TERCATAT DI BASIS DATA INTERNAL</span></div>
+              <div><strong>Nominal Potensi:</strong> Rp ${Number(r.estimatedAmount || 0).toLocaleString('id-ID')}</div>
+              <div><strong>Waktu Terdaftar:</strong> ${new Date(r.createdAt).toLocaleString('id-ID')}</div>
+              <div style="margin-top: 6px; font-size: 11.5px; color: #64748B;">Laporan tersimpan valid di basis data pengawasan SiTransparan (tidak diteruskan ke server luar).</div>
+            </div>
+          `;
+        } else {
+          resBox.innerHTML = `<span style="color: #DC2626;">Nomor tiket "${input}" tidak ditemukan dalam catatan sistem.</span>`;
+        }
+      } catch (err) {
+        resBox.innerHTML = `<span style="color: #DC2626;">Gagal menghubungi server pelacakan.</span>`;
+      }
+    }
+
+    // Initialize on DOM ready
     document.addEventListener('DOMContentLoaded', () => {
-      prefillFromUrl();
+      initSchoolAndUrl();
     });
   </script>
 </body>

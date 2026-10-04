@@ -1,7 +1,7 @@
 # 🏛️ Integrated Blockchain - Platform Transparansi Anggaran Pendidikan Indonesia
 
 [![HKI Registered](https://img.shields.io/badge/Hak%20Cipta%20HKI-No.%20001519028%20(DJKI)-gold.svg)](HKI.md)
-[![Version](https://img.shields.io/badge/Version-v2.4.3%20(1%20Okt%202026)-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-v2.5.0%20(4%20Okt%202026)-blue.svg)](CHANGELOG.md)
 [![Status](https://img.shields.io/badge/All%2010%20Ports-100%25%20Verified%20Online-brightgreen.svg)](#-peta-10-port--akses-dashboard)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15%2F16-black.svg?logo=next.js&logoColor=white)](https://nextjs.org/)
@@ -31,7 +31,7 @@ Sistem tata kelola dan transparansi keuangan pendidikan Indonesia terintegrasi d
 |---|:---:|---|:---:|
 | 🏛️ **Sertifikat Hak Cipta (HKI)** | `Markdown` / `PDF` | Surat Pencatatan Ciptaan resmi Kementerian Hukum RI (No. 001519028). | [**Buka `HKI.md`**](HKI.md) |
 | 🌐 **Panduan Visual & Interaktif** | `HTML` | Tampilan panduan grafis modern untuk pengguna umum / non-programmer. | [**Buka `README.html`**](README.html) |
-| 📝 **Changelog & Riwayat Rilis** | `Markdown` | Catatan lengkap versi, pembaruan terkini v2.4.3, dan log perbaikan sistem. | [**Buka `CHANGELOG.md`**](CHANGELOG.md) |
+| 📝 **Changelog & Riwayat Rilis** | `Markdown` | Catatan lengkap versi, pembaruan terkini v2.5.0, dan log perbaikan sistem. | [**Buka `CHANGELOG.md`**](CHANGELOG.md) |
 | 📜 **Pemberitahuan Pihak Ketiga (HKI)** | `Markdown` | Pengakuan hak cipta & lisensi 52 dependensi open-source untuk pendaftaran HKI. | [**Buka `THIRD_PARTY_NOTICES.md`**](THIRD_PARTY_NOTICES.md) |
 | 📋 **Product Requirements (PRD)** | `Markdown` | Spesifikasi lengkap sistem, alur bisnis dana APBN/APBD/CSR, & hak akses. | [**Buka `PRD.md`**](PRD.md) |
 | 🏆 **MVP & Laporan Verifikasi** | `Markdown` | Laporan pengujian fitur 10 port, performa latensi, dan integrasi database. | [**Buka `MVP.md`**](MVP.md) |
@@ -241,7 +241,13 @@ Berikut adalah ringkasan pembaruan arsitektur dan peningkatan fitur sistem:
 - **Komponen Cerdas `SchoolNpsnSelector`**: Pencarian instan dan autocomplete 468k+ sekolah nasional berbasis nomor NPSN atau nama sekolah pada manajemen pengguna Dashboard Admin (Port 2026).
 - **Persistensi Penuh Manajemen Pengguna di PostgreSQL**: Proxy API Gateway (Port 2028) terhubung 100% dengan operasi CRUD tabel `public.users` dengan integritas relasi foreign key sekolah dan wilayah.
 
-> 📘 **Riwayat lengkap seluruh versi terdahulu (v1.0.0 s.d. v2.4.3) dapat dibaca di: [CHANGELOG.md](CHANGELOG.md)**.
+### 🟢 11. Integrasi API Penegak Hukum & Pengawas Keuangan Negara (v2.5.0)
+- **Modul Pengaturan API KPK, Kejaksaan RI & BPK/BPKP**: Penambahan 3 konsol integrasi API baru di Dashboard Admin (Port 2026) untuk koordinasi penanganan tindak pidana korupsi anggaran pendidikan, pengawasan whistleblowing, dan audit LHP investigatif.
+- **Probe Diagnostik Jaringan Nyata (`proxy/connectionProbe.js`)**: Pengujian live koneksi eksternal yang mengekstrak resolusi IP DNS aktual, latensi milidetik, handshake TLS 1.3/RSA, cipher suite, dan sertifikat SSL server tujuan.
+- **Peningkatan Portal Publik Civic-Tech (Port 2019)**: Pembaruan visualisasi interaktif aliran dana (`aliran-dana.html`), pelaporan publik (`reporting.html`), tombol cepat *Tanya AI Aksara* & *Scroll to Top* di beranda (`index.html`), serta peningkatan keandalan client database (`scripts/db-client.js`).
+- **Perbaikan Filter Provinsi (Port 2022 & 2023)**: Eliminasi duplikasi nama provinsi dan pengurutan alfabetis A-Z bersih pada halaman *Profil Institusi* di Dashboard Bank dan Dashboard Auditor.
+
+> 📘 **Riwayat lengkap seluruh versi terdahulu (v1.0.0 s.d. v2.5.0) dapat dibaca di: [CHANGELOG.md](CHANGELOG.md)**.
 
 ---
 

@@ -30,6 +30,23 @@ export default function ProfilInstitusiPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 100;
 
+  // Deduplicated & Sorted Provinsi Options (A-Z)
+  const sortedProvinsiOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const list: { provinsi_id: string; nama_provinsi: string }[] = [];
+
+    for (const item of alokasiProvinsiData) {
+      const pId = item.provinsi_id || item.provinsi?.id;
+      const pName = item.provinsi?.nama_provinsi;
+      if (pId && pName && !seen.has(pId)) {
+        seen.add(pId);
+        list.push({ provinsi_id: pId, nama_provinsi: pName });
+      }
+    }
+
+    return list.sort((a, b) => a.nama_provinsi.localeCompare(b.nama_provinsi, 'id'));
+  }, [activeTahun, alokasiProvinsiData]);
+
   useEffect(() => {
     let isMounted = true;
     setIsLoadingInstitusi(true);
@@ -43,9 +60,11 @@ export default function ProfilInstitusiPage() {
         }
 
         if (selectedProvinsiId) {
-          const prov = alokasiProvinsiData.find(p => p.provinsi_id === selectedProvinsiId);
-          if (prov) {
-            query = query.eq('provinsi_nama', prov.provinsi.nama_provinsi);
+          const prov = sortedProvinsiOptions.find(p => p.provinsi_id === selectedProvinsiId)
+            || alokasiProvinsiData.find(p => p.provinsi_id === selectedProvinsiId);
+          const provName = (prov as any)?.nama_provinsi || (prov as any)?.provinsi?.nama_provinsi;
+          if (provName) {
+            query = query.eq('provinsi_nama', provName);
           }
         }
 
@@ -167,8 +186,8 @@ export default function ProfilInstitusiPage() {
               className="select-dropdown"
             >
               <option value="">Semua Provinsi</option>
-              {alokasiProvinsiData.map(p => (
-                <option key={p.provinsi_id} value={p.provinsi_id}>{p.provinsi.nama_provinsi}</option>
+              {sortedProvinsiOptions.map(p => (
+                <option key={p.provinsi_id} value={p.provinsi_id}>{p.nama_provinsi}</option>
               ))}
             </select>
           </div>

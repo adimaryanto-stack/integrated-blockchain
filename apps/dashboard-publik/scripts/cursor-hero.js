@@ -448,16 +448,31 @@
 
     if (!modal) return;
 
-    function openModal() {
+    function openModal(initialQuestion = '') {
       modal.classList.add('is-open');
+      modal.classList.add('open');
       modal.setAttribute('aria-hidden', 'false');
-      input?.focus();
+      
+      if (initialQuestion && input) {
+        input.value = initialQuestion;
+        askQuestion(initialQuestion);
+      } else {
+        setTimeout(() => input?.focus(), 150);
+      }
     }
 
     function closeModal() {
       modal.classList.remove('is-open');
+      modal.classList.remove('open');
       modal.setAttribute('aria-hidden', 'true');
     }
+
+    // Expose globally so any script or modal on the page can open Aksara
+    window.openAiAuditModal = openModal;
+    window.closeAiAuditModal = closeModal;
+    window.askAksara = function(query) {
+      openModal(query);
+    };
 
     btnTanyaAudit?.addEventListener('click', (e) => {
       e.preventDefault();
@@ -468,6 +483,31 @@
       e.preventDefault();
       openModal();
     });
+
+    // Support Header AI Button
+    const headerBtnAi = document.getElementById('headerBtnAi');
+    headerBtnAi?.addEventListener('click', (e) => {
+      e.preventDefault();
+      openModal();
+    });
+
+    // Floating Scroll To Top Button
+    const btnScrollTop = document.getElementById('btnScrollTop');
+    if (btnScrollTop) {
+      const toggleScrollTop = () => {
+        if (window.scrollY > 280) {
+          btnScrollTop.classList.add('visible');
+        } else {
+          btnScrollTop.classList.remove('visible');
+        }
+      };
+      window.addEventListener('scroll', toggleScrollTop, { passive: true });
+      toggleScrollTop();
+
+      btnScrollTop.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
 
     if (window.location.hash === '#ai-audit') {
       openModal();

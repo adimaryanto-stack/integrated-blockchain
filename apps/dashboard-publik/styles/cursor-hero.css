@@ -322,12 +322,15 @@ body.cursor--dark-mode .public-hero__cursor-ring--active {
   padding: 16px;
   opacity: 0;
   visibility: hidden;
+  pointer-events: none;
   transition: opacity 0.25s ease, visibility 0.25s ease;
 }
 
-.ai-audit-modal.is-open {
+.ai-audit-modal.is-open,
+.ai-audit-modal.open {
   opacity: 1;
   visibility: visible;
+  pointer-events: auto;
 }
 
 .ai-modal-backdrop {
@@ -354,7 +357,8 @@ body.cursor--dark-mode .public-hero__cursor-ring--active {
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.ai-audit-modal.is-open .ai-modal-container {
+.ai-audit-modal.is-open .ai-modal-container,
+.ai-audit-modal.open .ai-modal-container {
   transform: translateY(0) scale(1);
 }
 
@@ -534,3 +538,87 @@ body.cursor--dark-mode .public-hero__cursor-ring--active {
 #beranda {
   scroll-margin-top: 0;
 }
+
+/* Floating Scroll To Top Button */
+.btn-scroll-top {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #1d4ed8;
+  border: 1.5px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(16px);
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.25s, background-color 0.2s, color 0.2s, border-color 0.2s;
+  outline: none;
+}
+
+.btn-scroll-top.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.btn-scroll-top:hover {
+  background: #1d4ed8;
+  color: #ffffff;
+  border-color: #1d4ed8;
+  box-shadow: 0 8px 24px rgba(29, 78, 216, 0.35);
+  transform: translateY(-3px);
+}
+
+.btn-scroll-top:active {
+  transform: translateY(-1px);
+}
+
+/* Header Aksara Action Button */
+.btn-ask-ai-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(29, 78, 216, 0.08);
+  color: #1d4ed8;
+  border: 1px solid rgba(29, 78, 216, 0.2);
+  border-radius: 9999px;
+  padding: 6px 14px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-ask-ai-header:hover {
+  background: #1d4ed8;
+  color: #ffffff;
+  border-color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+/* AI Card & Links */
+.ai-school-response {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ai-chip-link {
+  color: #1d4ed8;
+  font-weight: 700;
+  text-decoration: underline;
+  transition: color 0.15s ease;
+}
+
+.ai-chip-link:hover {
+  color: #dc1f1a;
+}
+

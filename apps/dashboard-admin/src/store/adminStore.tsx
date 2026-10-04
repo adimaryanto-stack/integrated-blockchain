@@ -486,6 +486,15 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     if (!rolePerm) return false;
     const mod = rolePerm.permissions[module];
     if (!mod) {
+      if (module === "Pengaturan API KPK") {
+        if (currentUser.role === "ops_admin" || currentUser.role === "admin_kementerian") return action !== "delete";
+      }
+      if (module === "Pengaturan API Kejaksaan") {
+        if (currentUser.role === "ops_admin" || currentUser.role === "admin_kementerian") return action !== "delete";
+      }
+      if (module === "Pengaturan API BPK & BPKP") {
+        if (currentUser.role === "ops_admin" || currentUser.role === "admin_kementerian") return action !== "delete";
+      }
       if (module === "Pengaturan API Polsek") {
         if (currentUser.role === "ops_admin") return action !== "delete";
         if (currentUser.role === "admin_kementerian") return action === "view";

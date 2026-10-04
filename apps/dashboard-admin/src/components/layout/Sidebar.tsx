@@ -15,7 +15,10 @@ import {
   Siren,
   GraduationCap,
   CreditCard,
-  Key
+  Key,
+  Scale,
+  Gavel,
+  FileBadge
 } from "lucide-react";
 import { useAdminStore } from "@/store/adminStore";
 
@@ -99,6 +102,9 @@ export function Sidebar() {
       items: [
         { to: "/bank-settings", label: "API Bank Himbara (SNAP)", icon: CreditCard, module: "Pengaturan API Bank" },
         { to: "/ai-settings", label: "API AI Aksara (Gemini)", icon: Bot, module: "Pengaturan AI Aksara" },
+        { to: "/kpk-settings", label: "API KPK RI", icon: Gavel, module: "Pengaturan API KPK" },
+        { to: "/kejaksaan-settings", label: "API Kejaksaan RI", icon: FileBadge, module: "Pengaturan API Kejaksaan" },
+        { to: "/bpk-bpkp-settings", label: "API BPK & BPKP", icon: Scale, module: "Pengaturan API BPK & BPKP" },
         { to: "/polsek-settings", label: "API Polsek Terdekat", icon: Siren, module: "Pengaturan API Polsek" },
         { to: "/schools-settings", label: "API Data Sekolah Nasional", icon: GraduationCap, module: "Pengaturan API Data Sekolah" },
       ]

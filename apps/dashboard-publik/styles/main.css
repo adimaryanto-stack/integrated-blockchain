@@ -1209,3 +1209,46 @@ button, input, select, textarea {
   50% { opacity: 0.6; transform: scale(1.15); }
 }
 
+/* Floating Scroll To Top Button */
+.btn-scroll-top {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #1d4ed8;
+  border: 1.5px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(16px);
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.25s, background-color 0.2s, color 0.2s, border-color 0.2s;
+  outline: none;
+}
+
+.btn-scroll-top.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.btn-scroll-top:hover {
+  background: #1d4ed8;
+  color: #ffffff;
+  border-color: #1d4ed8;
+  box-shadow: 0 8px 24px rgba(29, 78, 216, 0.35);
+  transform: translateY(-3px);
+}
+
+.btn-scroll-top:active {
+  transform: translateY(-1px);
+}
+
+

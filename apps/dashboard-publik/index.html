@@ -55,7 +55,7 @@
           Cari Data Sekolah
         </a>
         <button type="button" class="public-hero__button public-hero__button--ghost" id="btnTanyaAudit">
-          Tanya AI audit
+          Tanya AI Aksara
         </button>
       </div>
     </div>
@@ -128,6 +128,10 @@
 
       <!-- Header Actions -->
       <div class="header-actions" style="display: flex; align-items: center; gap: 12px;">
+        <button type="button" class="btn-ask-ai-header" id="headerBtnAi" title="Tanya AI Aksara">
+          <span class="material-symbols-outlined" style="font-size: 16px;">smart_toy</span>
+          <span>Tanya AI Aksara</span>
+        </button>
         <a href="pantau-anggaran.html" class="btn-watchlist-pill" title="Lihat item yang Anda pantau">
           <span>Pantau Anggaran</span>
           <span class="watchlist-count">0</span>
@@ -757,6 +761,11 @@
     </div>
   </footer>
 
+  <!-- Floating Scroll To Top Button -->
+  <button type="button" id="btnScrollTop" class="btn-scroll-top" aria-label="Kembali ke atas" title="Kembali ke atas">
+    <span class="material-symbols-outlined" style="font-size: 22px;">arrow_upward</span>
+  </button>
+
   <!-- AI Audit Modal Dialog -->
   <div id="aiAuditModal" class="ai-audit-modal" aria-hidden="true" role="dialog" aria-labelledby="aiModalTitle">
     <div class="ai-modal-backdrop" id="aiModalBackdrop"></div>
@@ -767,7 +776,7 @@
             <span class="ai-avatar-badge">✦</span>
           </div>
           <div>
-            <h3 id="aiModalTitle" class="ai-modal-title">Tanya Aksara — AI Audit Anggaran</h3>
+            <h3 id="aiModalTitle" class="ai-modal-title">Tanya AI Aksara</h3>
             <p class="ai-modal-desc">Asisten AI interaktif pemantauan APBN Pendidikan 2026</p>
           </div>
         </div>

@@ -4,6 +4,48 @@ Semua perubahan penting pada proyek **Integrated Blockchain - Platform Transpara
 
 Format pencatatan berpedoman pada [Keep a Changelog](https://keepachangelog.com/id-ID/1.0.0/) dan menganut prinsip [Semantic Versioning](https://semver.org/lang/id/).
 
+## [2.5.0] - 2026-10-04
+
+### 🏛️ Modul API Lembaga Penegak Hukum & Pengawas Keuangan (Dashboard Admin)
+- **Modul Baru: Pengaturan API KPK RI (`/kpk-settings`)**:
+  - Konfigurasi 4 kanal API KPK: *JAGA (Monitoring Anggaran)*, *WBS (Whistleblowing System)*, *eLHKPN (Laporan Kekayaan)*, dan *Custom Gateway* berprotokol TLS 1.3 / RSA-2048.
+  - Live network diagnostics dengan pengukuran nyata: resolusi DNS, status HTTP, latensi, cipher TLS, sertifikat SSL, dan fingerprint blockchain pelaporan.
+  - Direktori 12 kanal kontak KPK nasional (*Pencegahan & Monitoring*, *Dumas*, *LHKPN*, *Koordinasi Supervisi*) dengan status koneksi live.
+- **Modul Baru: Pengaturan API Kejaksaan RI (`/kejaksaan-settings`)**:
+  - Konfigurasi 4 provider: *CMS PidSus (P3SK)*, *HaloJPN (Pengaduan Masyarakat)*, *PPS Intelijen*, dan *Custom Gateway* dengan dukungan HMAC-SHA256 & Asymmetric RSA-2048.
+  - Simulator live uji koneksi nyata ke server Kejaksaan Agung, Kejaksaan Tinggi, dan Kejaksaan Negeri se-Indonesia.
+  - Direktori kantor satwil Kejaksaan 3 tingkatan dengan status koneksi real-time.
+- **Modul Baru: Pengaturan API BPK & BPKP (`/bpk-bpkp-settings`)**:
+  - Konfigurasi 4 provider audit: *BPK e-Audit*, *BPKP SISWASKAU*, *SIMDA Keuangan*, dan *Custom Gateway* berprotokol TLS 1.3 / Asymmetric RSA-2048.
+  - Simulator audit sekaligus pemindai anomali dengan hasil block-hash proof dan laporan LHP (Laporan Hasil Pemeriksaan) otomatis.
+  - Direktori kantor BPK RI & BPKP RI per wilayah dengan status koneksi live.
+- **Integrasi RBAC & Akses Kontrol (Access Control Matrix)**:
+  - Registrasi ketiga modul baru ke `AccessControlMatrix.tsx`, `dummyData.ts`, `adminStore.tsx`, dan `DashboardLayout.tsx` dengan izin hak akses terdiferensiasi per peran (*Super Admin*, *Ops Admin*, *Admin Kementerian*, *Admin Bank*, *Admin Institusi*).
+  - Navigasi sidebar diperbarui dengan ikon *Gavel* (KPK), *FileBadge* (Kejaksaan), dan *Scale* (BPK & BPKP).
+
+### 🔌 Modul Probe Koneksi Nyata (Proxy Real-Connection Diagnostics)
+- **File Baru: `proxy/connectionProbe.js`**:
+  - Utilitas Node.js baru untuk melakukan pengujian koneksi jaringan nyata (*real-live network probe*) ke endpoint API eksternal (KPK, Kejaksaan, BPK/BPKP, atau gateway kustom).
+  - Mengekstrak: resolusi IP DNS nyata, status HTTP, latensi milidetik aktual, versi TLS (*TLS 1.2/1.3*), cipher suite, penerbit sertifikat SSL, dan masa berlaku sertifikat.
+  - Penanganan aman terhadap error DNS, timeout jaringan, dan respons non-HTTPS.
+
+### 🌐 Penyempurnaan Portal Publik Civic-Tech (Port 2019)
+- **Halaman Aliran Dana (`aliran-dana.html`)**: Pembaruan substansial visualisasi dan komponen interaktif aliran dana APBN/APBD/CSR.
+- **Halaman Pelaporan (`reporting.html`)**: Rekonstruksi tampilan laporan publik dengan komponen UI baru.
+- **Beranda (`index.html`)**:
+  - Tombol *"Tanya AI Aksara"* pada header navigasi untuk akses cepat ke asisten AI.
+  - Tombol *Scroll to Top* mengambang (floating action button) untuk navigasi halaman panjang.
+- **Skrip & Stylesheet**: Pembaruan `scripts/app.js`, animasi `scripts/cursor-hero.js`, `styles/cursor-hero.css`, `styles/main.css`, dan lapisan pengambilan data `scripts/db-client.js` dengan fallback otomatis dan pengelolaan cache lebih andal.
+
+### 🗄️ Ekspansi Proxy REST API Gateway (Port 2028)
+- **`proxy/proxy.js`** (+1.321 baris baru): Endpoint API baru untuk mendukung modul KPK, Kejaksaan, dan BPK/BPKP di Dashboard Admin; integrasi `connectionProbe.js` sebagai middleware diagnostik koneksi jaringan nyata; penguatan validasi parameter query dan security filter.
+
+### 🐛 Diperbaiki (Fixed)
+- **Filter Dropdown Provinsi Duplikat & Tidak Terurut (Port 2022 & 2023)**: Memperbaiki bug pada halaman *Profil Institusi* di `dashboard-bank` dan `dashboard-auditor` yang menampilkan duplikasi nama provinsi akibat join relasi multi-tahun. Menambahkan memo komputasi `sortedProvinsiOptions` dengan deduplication via `Set` dan pengurutan alfabet Bahasa Indonesia (`localeCompare('id')`).
+- **Polsek Settings UI Overflow di Mobile**: Memperbaiki overflow teks dan layout kartu Polsek pada layar kecil dengan `truncate`, `min-w-0`, `line-clamp-2`, dan `shrink-0` yang konsisten.
+
+---
+
 ## [2.4.3] - 2026-10-01
 
 ### 🔐 Sistem Otentikasi Sekolah & Penegakan Mode Baca (School Auth & Read-Only Enforcement)

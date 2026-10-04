@@ -10,6 +10,9 @@ import { Broadcast } from "@/pages/Broadcast";
 import { MasterDataWilayah } from "@/pages/MasterDataWilayah";
 import { AccessControlMatrix } from "@/pages/AccessControlMatrix";
 import { AiSettings } from "@/pages/AiSettings";
+import { KpkSettings } from "@/pages/KpkSettings";
+import { KejaksaanSettings } from "@/pages/KejaksaanSettings";
+import { BpkBpkpSettings } from "@/pages/BpkBpkpSettings";
 import { PolsekSettings } from "@/pages/PolsekSettings";
 import { SchoolsSettings } from "@/pages/SchoolsSettings";
 import { BankSettings } from "@/pages/BankSettings";
@@ -22,6 +25,9 @@ export const router = createBrowserRouter([
   { path: "/data-sources", element: <DataSourceMonitor /> },
   { path: "/ai-faa", element: <AiFaaConsole /> },
   { path: "/ai-settings", element: <AiSettings /> },
+  { path: "/kpk-settings", element: <KpkSettings /> },
+  { path: "/kejaksaan-settings", element: <KejaksaanSettings /> },
+  { path: "/bpk-bpkp-settings", element: <BpkBpkpSettings /> },
   { path: "/polsek-settings", element: <PolsekSettings /> },
   { path: "/schools-settings", element: <SchoolsSettings /> },
   { path: "/bank-settings", element: <BankSettings /> },

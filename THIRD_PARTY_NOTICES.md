@@ -21,8 +21,9 @@ Sistem **Integrated Blockchain - Platform Transparansi Anggaran Pendidikan Indon
    - `apps/dashboard-apbd` (Port 2025: Validasi Kepatuhan Mandatori 20% APBD Lampung)
    - `apps/dashboard-admin` (Port 2026: Super-Admin Console & Scoped RBAC)
    - `proxy/proxy.js` (Port 2028: PostgREST REST API Gateway & Security Filter Engine)
+   - `proxy/connectionProbe.js` (Port 2028: Real-Live Network Diagnostic Probe — TLS, DNS, HTTP Inspector)
 3. **Skema & Desain Basis Data Relasional**: Struktur 35+ tabel master, relasi entitas (*ERD*), view agregasi (*materialized view*), dan trigger otomatis (*cascading delete*) pada PostgreSQL.
-4. **Logika Bisnis & Algoritma Khusus**: Formula distribusi transfer dana berjenjang, validasi ambang batas 20% APBD (UUD 1945), rekonsiliasi kas bank multi-rekening, dan alur pelaporan korupsi dana pendidikan.
+4. **Logika Bisnis & Algoritma Khusus**: Formula distribusi transfer dana berjenjang, validasi ambang batas 20% APBD (UUD 1945), rekonsiliasi kas bank multi-rekening, dan alur pelaporan korupsi dana pendidikan ke KPK/Kejaksaan/BPK-BPKP.
 
 ---
 
@@ -38,7 +39,7 @@ Pencantuman dalam proyek ini dilakukan semata-mata sebagai dependensi fungsional
 
 ## 📦 Daftar Dependensi Pustaka Pihak Ketiga (Direct Dependencies)
 
-Berikut adalah daftar lengkap 52 dependensi pustaka open source yang digunakan di dalam proyek, beserta jenis lisensi, pemegang hak cipta, dan repositori sumber aslinya:
+Berikut adalah daftar lengkap 54 dependensi pustaka open source yang digunakan di dalam proyek, beserta jenis lisensi, pemegang hak cipta, dan repositori sumber aslinya:
 
 | No | Nama Paket | Tipe Dependensi | Lisensi | Pemegang Hak Cipta / Author | Tautan Repositori Sumber |
 |:---:|---|:---:|:---:|---|---|
@@ -94,6 +95,10 @@ Berikut adalah daftar lengkap 52 dependensi pustaka open source yang digunakan d
 | 50 | `vite` | Dev | **MIT** | Evan You | [`vite`](https://github.com/vitejs/vite) |
 | 51 | `xlsx` | Dev | **Apache-2.0** | sheetjs | [`xlsx`](https://github.com/SheetJS/sheetjs) |
 | 52 | `zustand` | Production | **MIT** | Paul Henschel | [`zustand`](https://github.com/pmndrs/zustand) |
+| 53 | `https` *(Node.js Built-in)* | Runtime | **MIT (Node.js)** | Node.js Contributors | [`nodejs/node`](https://github.com/nodejs/node) |
+| 54 | `dns` *(Node.js Built-in)* | Runtime | **MIT (Node.js)** | Node.js Contributors | [`nodejs/node`](https://github.com/nodejs/node) |
+
+> **Catatan (v2.5.0)**: Dependensi No. 53–54 adalah modul bawaan (*built-in*) Node.js yang dimanfaatkan secara eksplisit oleh `proxy/connectionProbe.js` untuk melakukan resolusi DNS nyata dan pengujian koneksi TLS/HTTP ke endpoint API KPK, Kejaksaan, dan BPK/BPKP. Modul bawaan ini tidak memiliki lisensi terpisah di luar lisensi Node.js itu sendiri (MIT).
 
 ---
 

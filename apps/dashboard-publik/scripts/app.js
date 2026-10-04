@@ -360,7 +360,7 @@ async function openSchoolModal(school) {
         <a href="dashboard.html?npsn=${encodeURIComponent(school.npsn)}" class="btn-search-2020" style="flex: 1; text-align: center; justify-content: center; font-size: 14px; text-decoration: none;">
           Buka Dashboard Sekolah
         </a>
-        <button type="button" class="btn-cta-ghost" style="color: var(--color-primary); border-color: #cbd5e1; background: #f8fafc; font-size: 14px;" onclick="askAksaraAboutSchool('${escapeHtml(school.name)}')">
+        <button type="button" class="btn-cta-ghost btn-school-ask-ai" style="color: var(--color-primary); border-color: #cbd5e1; background: #f8fafc; font-size: 14px;" data-name="${escapeHtml(school.name)}" data-npsn="${escapeHtml(school.npsn)}" onclick="askAksaraAboutSchool(this.getAttribute('data-name'), this.getAttribute('data-npsn'))">
           Tanya AI Aksara
         </button>
       </div>
@@ -380,16 +380,33 @@ async function openSchoolModal(school) {
   });
 }
 
-function askAksaraAboutSchool(schoolName) {
+function askAksaraAboutSchool(schoolName, schoolNpsn = '') {
   const modal = document.getElementById('schoolDetailModal');
-  if (modal) modal.classList.remove('open');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.classList.remove('is-open');
+  }
 
-  const aiModal = document.getElementById('aiAuditModal');
-  const aiInput = document.getElementById('aiInputText');
-  if (aiModal && aiInput) {
-    aiModal.classList.add('open');
-    aiInput.value = `Berapa alokasi dana dan transaksi anggaran untuk ${schoolName}?`;
-    document.getElementById('aiAuditForm')?.requestSubmit();
+  const query = schoolNpsn
+    ? `Berapa alokasi dana dan transaksi anggaran untuk ${schoolName} (NPSN: ${schoolNpsn})?`
+    : `Berapa alokasi dana dan transaksi anggaran untuk ${schoolName}?`;
+
+  if (typeof window.askAksara === 'function') {
+    window.askAksara(query);
+  } else if (typeof window.openAiAuditModal === 'function') {
+    window.openAiAuditModal(query);
+  } else {
+    const aiModal = document.getElementById('aiAuditModal');
+    const aiInput = document.getElementById('aiInputText');
+    if (aiModal) {
+      aiModal.classList.add('is-open');
+      aiModal.classList.add('open');
+      aiModal.setAttribute('aria-hidden', 'false');
+    }
+    if (aiInput) {
+      aiInput.value = query;
+      document.getElementById('aiAuditForm')?.requestSubmit();
+    }
   }
 }
 

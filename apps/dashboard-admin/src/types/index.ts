@@ -268,4 +268,164 @@ export interface SchoolSearchResult {
   lastSyncAt?: string;
 }
 
+export type BpkBpkpProvider = "bpk_eaudit" | "bpkp_siswaskau" | "simda_keuangan" | "custom_audit";
+
+export interface BpkBpkpApiConfig {
+  provider: BpkBpkpProvider;
+  apiKey: string;
+  clientId?: string;
+  clientSecret?: string;
+  endpointUrl: string;
+  instansiScope: "nasional" | "kementerian" | "daerah_provinsi" | "daerah_kabkota";
+  syncMode: "realtime_push" | "batch_scheduled" | "on_demand_investigation";
+  isActive: boolean;
+  autoReportAnomalies: boolean;
+  includeAuditTrail: boolean;
+  encryptionMode: "TLS_1_3_HMAC" | "ASYMMETRIC_RSA2048";
+  emergencyHotline?: string;
+  updatedAt?: string;
+}
+
+export interface BpkBpkpOffice {
+  id: string;
+  lembaga: "BPK RI" | "BPKP RI";
+  namaKantor: string;
+  wilayah: string;
+  provinsi: string;
+  alamat: string;
+  telepon: string;
+  email: string;
+  hotlinePengaduan: string;
+  statusKoneksi: "Terhubung" | "Siaga" | "Maintenance";
+  portalUrl: string;
+}
+
+export interface RealConnectionDiagnostics {
+  isRealLive: boolean;
+  targetUrl: string;
+  resolvedIp?: string | null;
+  httpStatus?: number | null;
+  httpStatusText?: string | null;
+  latencyMs: number;
+  tlsProtocol?: string | null;
+  tlsCipher?: string | null;
+  certIssuer?: string | null;
+  certValidTo?: string | null;
+  serverBanner?: string | null;
+  checkedAt: string;
+  networkError?: string | null;
+  rawDetails?: string | null;
+}
+
+export interface BpkBpkpAuditTestResult {
+  success: boolean;
+  latencyMs: number;
+  provider: BpkBpkpProvider;
+  referenceNo: string;
+  timestamp: string;
+  blockHashProof: string;
+  message: string;
+  auditScope: string;
+  timPemeriksa: string;
+  statusLhp: string;
+  anomaliDetected: number;
+  diagnostics?: RealConnectionDiagnostics;
+}
+
+export type KpkProvider = "kpk_jaga" | "kpk_wbs" | "kpk_elhkpn" | "custom_kpk";
+
+export interface KpkApiConfig {
+  provider: KpkProvider;
+  apiKey: string;
+  clientId?: string;
+  clientSecret?: string;
+  endpointUrl: string;
+  instansiScope: "nasional" | "kementerian" | "daerah_provinsi" | "daerah_kabkota";
+  syncMode: "realtime_push" | "batch_scheduled" | "on_demand_investigation";
+  isActive: boolean;
+  autoReportAnomalies: boolean;
+  includeAuditTrail: boolean;
+  encryptionMode: "TLS_1_3_HMAC" | "ASYMMETRIC_RSA2048";
+  emergencyHotline?: string;
+  updatedAt?: string;
+}
+
+export interface KpkChannel {
+  id: string;
+  lembaga: "KPK RI";
+  namaKanal: string;
+  bidang: "Pencegahan & Monitoring" | "Pengaduan Masyarakat (Dumas)" | "LHKPN & Gratifikasi" | "Koordinasi Supervisi";
+  wilayah: string;
+  alamat: string;
+  telepon: string;
+  email: string;
+  callCenter: string;
+  statusKoneksi: "Terhubung" | "Siaga" | "Maintenance";
+  portalUrl: string;
+}
+
+export interface KpkAuditTestResult {
+  success: boolean;
+  latencyMs: number;
+  provider: KpkProvider;
+  referenceNo: string;
+  timestamp: string;
+  blockHashProof: string;
+  message: string;
+  auditScope: string;
+  unitPenerima: string;
+  statusPenanganan: string;
+  anomaliDetected: number;
+  diagnostics?: RealConnectionDiagnostics;
+}
+
+export type KejaksaanProvider = "kejaksaan_cms_pidsus" | "kejaksaan_halojpn" | "kejaksaan_pps_intel" | "custom_kejaksaan";
+
+export interface KejaksaanApiConfig {
+  provider: KejaksaanProvider;
+  apiKey: string;
+  clientId?: string;
+  clientSecret?: string;
+  endpointUrl: string;
+  instansiScope: "nasional" | "kejati_provinsi" | "kejari_kabkota" | "kementerian";
+  syncMode: "realtime_push" | "batch_scheduled" | "on_demand_investigation";
+  isActive: boolean;
+  autoReportAnomalies: boolean;
+  includeAuditTrail: boolean;
+  encryptionMode: "TLS_1_3_HMAC" | "ASYMMETRIC_RSA2048";
+  emergencyHotline?: string;
+  updatedAt?: string;
+}
+
+export interface KejaksaanOffice {
+  id: string;
+  lembaga: "Kejaksaan RI";
+  satker: "Kejaksaan Agung" | "Kejaksaan Tinggi" | "Kejaksaan Negeri";
+  namaKantor: string;
+  wilayah: string;
+  provinsi: string;
+  alamat: string;
+  telepon: string;
+  email: string;
+  hotlinePengaduan: string;
+  statusKoneksi: "Terhubung" | "Siaga" | "Maintenance";
+  portalUrl: string;
+}
+
+export interface KejaksaanAuditTestResult {
+  success: boolean;
+  latencyMs: number;
+  provider: KejaksaanProvider;
+  referenceNo: string;
+  timestamp: string;
+  blockHashProof: string;
+  message: string;
+  auditScope: string;
+  bidangPenerima: string;
+  statusTelaah: string;
+  anomaliDetected: number;
+  diagnostics?: RealConnectionDiagnostics;
+}
+
+
 

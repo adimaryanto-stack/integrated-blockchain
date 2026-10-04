@@ -47,6 +47,20 @@ export default function ProfilInstitusiPage() {
     return () => { isMounted = false; };
   }, [activeTahun]);
 
+  // Deduplicated & Sorted Provinsi Options (A-Z)
+  const sortedProvinsiOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const list: any[] = [];
+    for (const item of provinsiList) {
+      const pId = item.provinsi_id || item.provinsi?.id;
+      if (pId && !seen.has(pId)) {
+        seen.add(pId);
+        list.push(item);
+      }
+    }
+    return list.sort((a, b) => (a.provinsi?.nama_provinsi || '').localeCompare(b.provinsi?.nama_provinsi || '', 'id'));
+  }, [provinsiList]);
+
   // ── 2. Resolve province name from selected ID ─────────────
   //    (decoupled so schools-fetch never re-runs just because provinsiList loaded)
   useEffect(() => {
@@ -54,9 +68,10 @@ export default function ProfilInstitusiPage() {
       setSelectedProvinsiNama('');
       return;
     }
-    const prov = provinsiList.find((p: any) => p.provinsi_id === selectedProvinsiId);
+    const prov = sortedProvinsiOptions.find((p: any) => p.provinsi_id === selectedProvinsiId)
+      || provinsiList.find((p: any) => p.provinsi_id === selectedProvinsiId);
     if (prov) setSelectedProvinsiNama(prov.provinsi.nama_provinsi);
-  }, [selectedProvinsiId, provinsiList]);
+  }, [selectedProvinsiId, sortedProvinsiOptions, provinsiList]);
 
   // ── 3. Fetch schools — depends only on filter primitives, NOT provinsiList ──
   useEffect(() => {
@@ -176,7 +191,7 @@ export default function ProfilInstitusiPage() {
               className="select-dropdown"
             >
               <option value="">Semua Provinsi</option>
-              {provinsiList.map(p => (
+              {sortedProvinsiOptions.map(p => (
                 <option key={p.provinsi_id} value={p.provinsi_id}>{p.provinsi.nama_provinsi}</option>
               ))}
             </select>

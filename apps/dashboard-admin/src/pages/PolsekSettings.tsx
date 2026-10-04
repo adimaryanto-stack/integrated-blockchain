@@ -504,10 +504,10 @@ export function PolsekSettings() {
         </Panel>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full max-w-full">
         {/* Left Column: Form Settings (7 cols) */}
-        <div className="lg:col-span-7 space-y-6">
-          <Panel className="p-6 bg-white border border-line rounded-xl shadow-sm">
+        <div className="lg:col-span-7 space-y-6 min-w-0">
+          <div className="p-5 sm:p-6 bg-white border border-line rounded-xl shadow-sm min-w-0">
             <div className="flex items-center justify-between pb-4 mb-5 border-b border-line">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-lg bg-navy text-white">
@@ -677,11 +677,12 @@ export function PolsekSettings() {
 
                   {/* Overpass QL Code Block */}
                   <div className="bg-slate-900 rounded-lg p-3 font-mono text-[11px] text-emerald-400 overflow-x-auto shadow-inner border border-slate-800">
-                    <div className="text-slate-400 select-none text-[10px] pb-1.5 border-b border-slate-800 mb-2 flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 text-slate-300 font-semibold">
-                        <Code size={12} className="text-blue-400" /> OVERPASS QL (around:{config.radiusKm * 1000}m, {simLat}, {simLon})
+                    <div className="text-slate-400 select-none text-[10px] pb-1.5 border-b border-slate-800 mb-2 flex items-center justify-between gap-2 min-w-0">
+                      <span className="flex items-center gap-1.5 text-slate-300 font-semibold min-w-0 truncate">
+                        <Code size={12} className="text-blue-400 shrink-0" />
+                        <span className="truncate">OVERPASS QL (around:{config.radiusKm * 1000}m, {simLat}, {simLon})</span>
                       </span>
-                      <span className="text-[10px] text-amber-400 font-bold">amenity=police (node + way)</span>
+                      <span className="text-[10px] text-amber-400 font-bold shrink-0 whitespace-nowrap">amenity=police (node + way)</span>
                     </div>
                     <pre className="whitespace-pre text-emerald-300 leading-relaxed">
 {`[out:json][timeout:25];
@@ -863,7 +864,7 @@ out center tags 10;`}
               )}
 
               {/* Actions Footer - Prominent Sticky Style (Like AI Aksara) */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-5 border-t border-line mt-6 bg-slate-50 -mx-6 -mb-6 p-6 rounded-b-xl">
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-5 border-t border-line mt-6 bg-slate-50 -mx-5 sm:-mx-6 -mb-5 sm:-mb-6 p-5 sm:p-6 rounded-b-xl">
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -889,7 +890,7 @@ out center tags 10;`}
                 </button>
               </div>
             </form>
-          </Panel>
+          </div>
 
           {/* Security & Regulatory Guidance */}
           <Panel className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-2 text-slate-700">
@@ -903,28 +904,28 @@ out center tags 10;`}
           </Panel>
         </div>
 
-        {/* Right Column: Simulator Polsek Terdekat (5 cols - Like Simulator Tanya Aksara) */}
-        <div className="lg:col-span-5 space-y-6">
-          <Panel className="p-5 bg-white border border-line rounded-xl shadow-sm flex flex-col h-[780px]">
+        {/* Right Column: Simulator Polsek Terdekat (5 cols - Precision CSS) */}
+        <div className="lg:col-span-5 space-y-6 min-w-0">
+          <div className="p-4 sm:p-5 bg-white border border-line rounded-xl shadow-sm flex flex-col h-[780px] max-h-[85vh] min-w-0 overflow-hidden">
             {/* Simulator Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-line mb-3">
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-lg bg-red-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+            <div className="flex items-center justify-between pb-3 border-b border-line mb-3 shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="h-8 w-8 rounded-lg bg-red-600 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
                   <Siren size={18} />
                 </div>
-                <div>
-                  <h4 className="font-bold text-xs text-ink">Simulator Deteksi Polsek</h4>
-                  <p className="text-[10px] text-muted">Uji pencarian kantor Polsek terdekat dari pelapor</p>
+                <div className="min-w-0 truncate">
+                  <h4 className="font-bold text-xs text-ink truncate">Simulator Deteksi Polsek</h4>
+                  <p className="text-[10px] text-muted truncate">Uji pencarian kantor Polsek terdekat dari pelapor</p>
                 </div>
               </div>
-              <span className="text-[10px] bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded font-bold flex items-center gap-1">
+              <span className="text-[10px] bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded font-bold flex items-center gap-1 shrink-0">
                 <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-ping" />
                 Live Satwil
               </span>
             </div>
 
             {/* Quick Sample Selector */}
-            <div className="mb-3">
+            <div className="mb-3 shrink-0">
               <label className="block text-[11px] font-bold text-ink mb-1">
                 Pilih Lokasi Sampel Pelapor:
               </label>
@@ -940,11 +941,12 @@ out center tags 10;`}
                       const results = findNearestPolsek(loc.lat, loc.lon, config.radiusKm, 5);
                       setDetectedPolsekList(results);
                     }}
-                    className={`text-left px-2 py-1.5 rounded border text-[10px] font-medium truncate transition-all ${
+                    className={`text-left px-2 py-1.5 rounded border text-[10px] font-medium truncate transition-all cursor-pointer ${
                       simLat === loc.lat && simLon === loc.lon
                         ? "bg-navy text-white border-navy font-semibold shadow-xs"
                         : "bg-slate-50 text-ink border-line hover:bg-slate-100"
                     }`}
+                    title={loc.label}
                   >
                     📍 {loc.label}
                   </button>
@@ -953,13 +955,13 @@ out center tags 10;`}
             </div>
 
             {/* GPS & Coordinate Inputs */}
-            <div className="bg-slate-50 p-2.5 rounded-lg border border-line mb-3 space-y-2">
+            <div className="bg-slate-50 p-2.5 rounded-lg border border-line mb-3 space-y-2 shrink-0">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-ink">Titik Koordinat Pelapor:</span>
                 <button
                   type="button"
                   onClick={handleUseMyLocation}
-                  className="inline-flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-800 font-bold hover:underline"
+                  className="inline-flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-800 font-bold hover:underline cursor-pointer"
                 >
                   <LocateFixed size={11} /> Gunakan GPS Saya
                 </button>
@@ -1000,8 +1002,8 @@ out center tags 10;`}
             </div>
 
             {/* Detected Polsek Results Cards */}
-            <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
-              <div className="flex items-center justify-between text-[11px] font-bold text-muted px-1">
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-w-0">
+              <div className="flex items-center justify-between text-[11px] font-bold text-muted px-0.5 pb-1">
                 <span>Daftar Polsek Terdekat ({detectedPolsekList.length}):</span>
                 <span>Radius: {config.radiusKm} km</span>
               </div>
@@ -1020,78 +1022,78 @@ out center tags 10;`}
                   return (
                     <div
                       key={polsek.id}
-                      className={`p-3 rounded-lg border transition-all ${
+                      className={`p-2.5 sm:p-3 rounded-lg border transition-all min-w-0 overflow-hidden ${
                         isFirst
                           ? "bg-amber-50/40 border-amber-300 ring-1 ring-amber-300 shadow-xs"
                           : "bg-white border-line hover:border-slate-300"
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className="flex items-start justify-between gap-2 min-w-0">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 min-w-0">
                             <span
-                              className={`text-[10px] font-bold px-1.5 py-0.2 rounded font-mono ${
+                              className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono shrink-0 ${
                                 isFirst
                                   ? "bg-amber-500 text-white"
                                   : "bg-slate-200 text-slate-700"
                               }`}
                             >
-                              #{index + 1} Terdekat
+                              #{index + 1}
                             </span>
-                            <h5 className="font-bold text-xs text-ink">{polsek.nama}</h5>
+                            <h5 className="font-bold text-xs text-ink truncate" title={polsek.nama}>
+                              {polsek.nama}
+                            </h5>
                           </div>
-                          <p className="text-[10px] text-muted mt-0.5">
+                          <p className="text-[10px] text-muted mt-0.5 truncate">
                             {polsek.polres} &bull; {polsek.polda}
                           </p>
                         </div>
 
-                        <div className="text-right shrink-0">
-                          <span
-                            className={`inline-block px-2 py-0.5 rounded text-xs font-bold font-mono ${
-                              polsek.jarakKm <= 3
-                                ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
-                                : polsek.jarakKm <= 10
-                                ? "bg-blue-100 text-blue-800 border border-blue-300"
-                                : "bg-slate-100 text-slate-800"
-                            }`}
-                          >
-                            {polsek.jarakKm} km
-                          </span>
-                        </div>
+                        <span
+                          className={`shrink-0 px-2 py-0.5 rounded text-[11px] font-bold font-mono ${
+                            polsek.jarakKm <= 3
+                              ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                              : polsek.jarakKm <= 10
+                              ? "bg-blue-100 text-blue-800 border border-blue-300"
+                              : "bg-slate-100 text-slate-800"
+                          }`}
+                        >
+                          {polsek.jarakKm} km
+                        </span>
                       </div>
 
-                      <p className="text-[11px] text-slate-600 mt-2 leading-tight flex items-start gap-1">
-                        <MapPin size={12} className="text-red-500 shrink-0 mt-0.5" />
-                        <span>{polsek.alamat}</span>
+                      <p className="text-[11px] text-slate-600 mt-1.5 leading-tight flex items-start gap-1 min-w-0">
+                        <MapPin size={11} className="text-red-500 shrink-0 mt-0.5" />
+                        <span className="line-clamp-2">{polsek.alamat}</span>
                       </p>
 
-                      <div className="mt-2.5 pt-2 border-t border-slate-200/80 flex items-center justify-between flex-wrap gap-2 text-[10px]">
-                        <div className="flex items-center gap-2">
-                          <span className="text-emerald-700 font-semibold flex items-center gap-1 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                      <div className="mt-2 pt-2 border-t border-slate-200/80 flex items-center justify-between gap-1.5 text-[10px]">
+                        <div className="flex items-center gap-1.5 min-w-0 truncate">
+                          <span className="text-emerald-700 font-semibold flex items-center gap-1 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 text-[9px] shrink-0">
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                             {polsek.statusSiaga}
                           </span>
-                          <span className="text-slate-600 font-mono font-medium">
-                            Telp: {polsek.telepon}
+                          <span className="text-slate-500 font-mono text-[10px] truncate hidden sm:inline">
+                            {polsek.telepon}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1 shrink-0">
                           <a
                             href={`tel:${polsek.telepon.replace(/[^0-9]/g, "") || "110"}`}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white font-bold text-[10px]"
-                            title="Hubungi SPKT Polsek / Call Center"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white font-bold text-[10px] shrink-0"
+                            title="Hubungi SPKT Polsek / Call Center 110"
                           >
-                            <PhoneCall size={10} /> Call SPKT
+                            <PhoneCall size={9} /> SPKT
                           </a>
                           <a
                             href={polsek.mapsUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-navy font-bold text-[10px] border border-line"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-navy font-bold text-[10px] border border-line shrink-0"
                             title="Buka Navigasi Google Maps"
                           >
-                            <Navigation size={10} /> Rute <ExternalLink size={9} />
+                            <Navigation size={9} /> Rute <ExternalLink size={8} />
                           </a>
                         </div>
                       </div>
@@ -1102,13 +1104,13 @@ out center tags 10;`}
             </div>
 
             {/* Simulator Footer Status */}
-            <div className="pt-2 border-t border-line mt-2 text-[10px] text-muted flex items-center justify-between">
-              <span>Siaga Hotline Nasional: <strong>110 (Bebas Pulsa)</strong></span>
+            <div className="pt-2 border-t border-line mt-2 text-[10px] text-muted flex items-center justify-between shrink-0">
+              <span>Siaga: <strong>110 (Bebas Pulsa)</strong></span>
               <span className="text-emerald-600 font-semibold flex items-center gap-1">
                 <CheckCircle2 size={11} /> 100% Siaga Se-Indonesia
               </span>
             </div>
-          </Panel>
+          </div>
         </div>
       </div>
     </DashboardLayout>

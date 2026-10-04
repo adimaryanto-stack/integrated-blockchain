@@ -4,20 +4,29 @@ async function main() {
   const c = new Client({ host: '127.0.0.1', port: 2027, database: 'postgres', user: 'postgres' });
   await c.connect();
 
-  console.log('=== KABUPATEN/KOTA IN REGENCIES TABLE FOR LAMPUNG (p-8) ===');
-  const regRes = await c.query("SELECT id, name FROM regencies WHERE province_id = 'p-8' ORDER BY id");
-  console.log(regRes.rows);
-  console.log(`Total regencies for Lampung: ${regRes.rows.length}`);
+  const tables = await c.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name");
+  console.log('Tables:', tables.rows.map(r => r.table_name));
 
-  console.log('\n=== KABUPATEN/KOTA IN KABUPATEN_KOTA TABLE FOR LAMPUNG (p-8) ===');
-  const kkRes = await c.query("SELECT id, nama_kabupaten_kota FROM kabupaten_kota WHERE provinsi_id = 'p-8' ORDER BY id");
-  console.log(kkRes.rows);
-  console.log(`Total kabupaten_kota for Lampung: ${kkRes.rows.length}`);
+  const resCsr = await c.query("SELECT * FROM csr_yearly_data");
+  console.log('csr_yearly_data:', resCsr.rows);
 
-  console.log('\n=== ALOKASI KABUPATEN KOTA FOR LAMPUNG (prov-8) ===');
-  const akkRes = await c.query("SELECT id, kabupaten_kota_id, nominal_alokasi, realisasi_total FROM alokasi_kabupaten_kota WHERE alokasi_provinsi_id = 'prov-8' ORDER BY id");
-  console.log(akkRes.rows);
-  console.log(`Total alokasi_kabupaten_kota for Lampung: ${akkRes.rows.length}`);
+  const incCsr = await c.query("SELECT * FROM incoming_funds WHERE source ILIKE '%CSR%' LIMIT 5");
+  console.log('incoming_funds CSR:', incCsr.rows);
+
+  const sdiCsr = await c.query("SELECT * FROM sumber_dana_institusi WHERE nama_sumber ILIKE '%CSR%' LIMIT 5");
+  console.log('sumber_dana_institusi CSR:', sdiCsr.rows);
+
+  const allIncoming = await c.query("SELECT source, count(*), sum(amount) FROM incoming_funds GROUP BY source");
+  console.log('incoming_funds by source:', allIncoming.rows);
+
+  const allSdi = await c.query("SELECT nama_sumber, count(*), sum(nominal) FROM sumber_dana_institusi GROUP BY nama_sumber");
+  console.log('sdi by source:', allSdi.rows);
+
+  const provCount = await c.query("SELECT p.nama_provinsi, a.nominal_alokasi, a.realisasi_total FROM alokasi_provinsi a JOIN provinsi p ON a.provinsi_id = p.id ORDER BY a.nominal_alokasi DESC LIMIT 5");
+  console.log('Top 5 Alokasi Provinsi (APBN):', provCount.rows);
+
+  const apbdProv = await c.query("SELECT p.nama_provinsi, a.total_apbd, a.alokasi_pendidikan_riil, a.realisasi_pendidikan_total FROM apbd_provinsi a JOIN provinsi p ON a.provinsi_id = p.id LIMIT 5");
+  console.log('APBD Provinsi:', apbdProv.rows);
 
   await c.end();
 }
