@@ -333,6 +333,7 @@ export async function upsertApbdProvinsi(payload: {
 
     // Sinkronisasi ke apbd_yearly_data agar Transparansi Publik melihat tahun baru
     try {
+      const selisihAlokasi = payload.alokasi_pendidikan_riil - (payload.realisasi_pendidikan_total || 0);
       const { data: existingYearly } = await supabase
         .from('apbd_yearly_data')
         .select('id')

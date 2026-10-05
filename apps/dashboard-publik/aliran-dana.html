@@ -118,25 +118,26 @@
 
     /* ── Year Pills ── */
     .tab-year-pill {
-      padding: 8px 18px;
+      padding: 7px 16px;
       border-radius: 9999px;
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 700;
-      border: 1px solid var(--color-border);
-      background: #ffffff;
-      color: var(--color-text-muted);
+      border: 1px solid #CBD5E1;
+      background: #FFFFFF;
+      color: #475569;
       cursor: pointer;
-      transition: all 0.15s ease;
+      transition: all 0.2s ease;
     }
     .tab-year-pill:hover {
-      border-color: var(--color-primary);
-      color: var(--color-primary);
+      background: #EFF6FF;
+      color: #1D4ED8;
+      border-color: #93C5FD;
     }
     .tab-year-pill.active {
-      background: var(--color-primary);
-      color: #ffffff;
-      border-color: var(--color-primary);
-      box-shadow: 0 4px 12px rgba(29, 78, 216, 0.25);
+      background: #1D4ED8;
+      color: #FFFFFF;
+      border-color: #1D4ED8;
+      box-shadow: 0 4px 14px rgba(29, 78, 216, 0.28);
     }
 
     /* ── Source Tabs ── */
@@ -159,17 +160,20 @@
       border-bottom-color: var(--color-primary);
     }
 
-    /* ── Google NotebookLM Mind Map Styles ── */
+    /* ── Google NotebookLM Mind Map Styles — Light Theme ── */
     .nlm-card {
-      background: #13171E;
-      border: 1px solid #283241;
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
       border-radius: 20px;
       padding: 24px;
       margin-bottom: 36px;
-      box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.45);
+      box-shadow: 0 4px 24px -4px rgba(15, 23, 42, 0.08);
       position: relative;
       overflow: hidden;
-      color: #F1F5F9;
+      color: #0f172a;
+    }
+    .nlm-card-header-divider {
+      border-bottom: 1px solid #E2E8F0;
     }
     .nlm-badge {
       display: inline-flex;
@@ -180,9 +184,9 @@
       letter-spacing: 0.06em;
       padding: 4px 10px;
       border-radius: 999px;
-      background: #1E293B;
-      color: #93C5FD;
-      border: 1px solid #334155;
+      background: #EFF6FF;
+      color: #1D4ED8;
+      border: 1px solid #BFDBFE;
       text-transform: uppercase;
     }
     .nlm-toggle-btn {
@@ -190,9 +194,9 @@
       border-radius: 999px;
       font-size: 12.5px;
       font-weight: 700;
-      border: 1px solid #334155;
-      background: #1E242E;
-      color: #94A3B8;
+      border: 1px solid #CBD5E1;
+      background: #F8FAFC;
+      color: #475569;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
@@ -200,23 +204,23 @@
       transition: all 0.2s ease;
     }
     .nlm-toggle-btn:hover {
-      background: #283241;
-      color: #FFFFFF;
-      border-color: #60A5FA;
+      background: #EFF6FF;
+      color: #1D4ED8;
+      border-color: #93C5FD;
     }
     .nlm-toggle-btn.active {
       background: #1D4ED8;
       color: #FFFFFF;
-      border-color: #3B82F6;
-      box-shadow: 0 4px 14px rgba(29, 78, 216, 0.4);
+      border-color: #1D4ED8;
+      box-shadow: 0 4px 14px rgba(29, 78, 216, 0.28);
     }
     .nlm-toolbar-btn {
       width: 36px;
       height: 36px;
       border-radius: 8px;
-      border: 1px solid #334155;
-      background: #1C232C;
-      color: #CBD5E1;
+      border: 1px solid #E2E8F0;
+      background: #F8FAFC;
+      color: #475569;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -224,17 +228,17 @@
       transition: all 0.15s ease;
     }
     .nlm-toolbar-btn:hover {
-      background: #2E3846;
-      color: #60A5FA;
-      border-color: #60A5FA;
+      background: #EFF6FF;
+      color: #1D4ED8;
+      border-color: #93C5FD;
       transform: scale(1.05);
     }
     .nlm-node-rect {
       transition: stroke 0.2s, filter 0.2s;
     }
     .nlm-node-group:hover .nlm-node-rect {
-      stroke: #60A5FA !important;
-      filter: drop-shadow(0 0 8px rgba(96, 165, 250, 0.5));
+      stroke: #3B82F6 !important;
+      filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.35));
     }
     .nlm-node-toggle:hover circle {
       fill: #1D4ED8 !important;
@@ -242,6 +246,25 @@
     }
     .nlm-node-toggle:hover text {
       fill: #FFFFFF !important;
+    }
+    /* ── Fullscreen styling: only the topology box is fullscreen ── */
+    #nlmMindmapCanvasWrapper:fullscreen {
+      width: 100vw !important;
+      height: 100vh !important;
+      max-height: 100vh !important;
+      border-radius: 0 !important;
+      border: none !important;
+      background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%) !important;
+      cursor: grab;
+    }
+    #nlmMindmapCanvasWrapper:-webkit-full-screen {
+      width: 100vw !important;
+      height: 100vh !important;
+      max-height: 100vh !important;
+      border-radius: 0 !important;
+      border: none !important;
+      background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%) !important;
+      cursor: grab;
     }
   </style>
 </head>
@@ -343,7 +366,7 @@
       </div>
 
       <div style="display: flex; align-items: center; gap: 10px;">
-        <span style="font-size: 12px; font-weight: 700; color: var(--color-text-muted);" id="currentYearStatus">Status: Realisasi Terverifikasi</span>
+        <span style="font-size: 13px; font-weight: 700; color: #475569;" id="currentYearStatus">Tahun Anggaran: 2026</span>
       </div>
     </div>
 
@@ -459,21 +482,20 @@
 
     <!-- Google NotebookLM Mind Map Interactive Visualization Section -->
     <div id="notebookLmMindmapSection" class="nlm-card">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 18px; border-bottom: 1px solid #232B36; padding-bottom: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 18px; border-bottom: 1px solid #E2E8F0; padding-bottom: 16px;">
         <div>
           <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
             <span class="nlm-badge">
-              <span class="material-symbols-outlined" style="font-size: 14px;">auto_awesome</span>
-              STUDIO • APP
+              <span class="material-symbols-outlined" style="font-size: 14px;">account_tree</span>
+              TOPOLOGI INTERAKTIF ALIRAN DANA
             </span>
-            <span style="font-size: 11px; color: #64748B; font-weight: 700; letter-spacing: 0.05em;">TOPOLOGI INTERAKTIF ALIRAN DANA</span>
           </div>
-          <h2 id="nlmMindmapTitle" style="font-size: 22px; font-weight: 800; color: #F8FAFC; margin: 0 0 6px 0; letter-spacing: -0.01em;">
+          <h2 id="nlmMindmapTitle" style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 6px 0; letter-spacing: -0.01em;">
             Aliran Dana: Dana Pendidikan (APBN, APBD &amp; CSR ke Sekolah)
           </h2>
           <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-            <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #34D399; padding: 4px 10px; background: rgba(16, 185, 129, 0.12); border-radius: 8px; border: 1px solid rgba(52, 211, 153, 0.3);">
-              <span class="material-symbols-outlined" style="font-size: 16px; color: #34D399;">database</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #059669; padding: 4px 10px; background: #ECFDF5; border-radius: 8px; border: 1px solid #A7F3D0;">
+              <span class="material-symbols-outlined" style="font-size: 16px; color: #059669;">database</span>
               <span id="mindmapDataSourceBadge">Data 100% dari Database</span>
             </span>
             <span style="font-size: 12px; color: #64748B;">• Klik node untuk telaah detail alokasi &amp; gunakan tombol &lt; / &gt; untuk expand/collapse cabang</span>
@@ -481,7 +503,7 @@
         </div>
 
         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-          <div style="background: #181E26; padding: 4px; border-radius: 999px; border: 1px solid #283241; display: inline-flex; gap: 4px; flex-wrap: wrap;">
+          <div style="background: #F8FAFC; padding: 4px; border-radius: 999px; border: 1px solid #E2E8F0; display: inline-flex; gap: 4px; flex-wrap: wrap;">
             <button type="button" id="btnModeKonsolidasi" class="nlm-toggle-btn active" onclick="switchMindmapMode('KONSOLIDASI')">
               <span class="material-symbols-outlined" style="font-size: 16px;">account_tree</span>
               <span>Semua Aliran (APBN, APBD &amp; CSR)</span>
@@ -499,17 +521,17 @@
               <span>CSR ke Sekolah</span>
             </button>
           </div>
-          <button type="button" onclick="toggleMindmapFullscreen()" class="nlm-toolbar-btn" title="Layar Penuh" style="width: 38px; height: 38px;">
-            <span class="material-symbols-outlined" style="font-size: 19px;">fullscreen</span>
+          <button type="button" onclick="toggleMindmapFullscreen()" class="nlm-toolbar-btn" title="Layar Penuh (Kotak Topologi)" style="width: 38px; height: 38px;">
+            <span class="material-symbols-outlined fs-icon-toggle" style="font-size: 19px;">fullscreen</span>
           </button>
         </div>
       </div>
 
       <!-- Canvas Box -->
-      <div id="nlmMindmapCanvasWrapper" style="width: 100%; height: 550px; position: relative; overflow: hidden; background: radial-gradient(circle at 40% 40%, #1a202a 0%, #10141b 100%); border-radius: 16px; border: 1px solid #262E3B; cursor: grab;">
+      <div id="nlmMindmapCanvasWrapper" style="width: 100%; height: 550px; position: relative; overflow: hidden; background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%); border-radius: 16px; border: 1px solid #E2E8F0; cursor: grab;">
         
-        <!-- Left Floating Control Toolbar (Identical to Google NotebookLM) -->
-        <div style="position: absolute; left: 16px; top: 16px; z-index: 10; display: flex; flex-direction: column; gap: 6px; background: rgba(24, 30, 38, 0.9); backdrop-filter: blur(8px); border: 1px solid #333C4A; border-radius: 10px; padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
+        <!-- Right Floating Control Toolbar -->
+        <div id="nlmMindmapToolbar" style="position: absolute; right: 16px; top: 16px; z-index: 10; display: flex; flex-direction: column; gap: 6px; background: rgba(255,255,255,0.92); backdrop-filter: blur(8px); border: 1px solid #E2E8F0; border-radius: 10px; padding: 6px; box-shadow: 0 4px 16px rgba(15,23,42,0.1); transition: right 0.28s cubic-bezier(0.16, 1, 0.3, 1);">
           <button type="button" onclick="zoomMindmap(1.2)" class="nlm-toolbar-btn" title="Perbesar (Zoom In)">
             <span class="material-symbols-outlined" style="font-size: 18px;">add</span>
           </button>
@@ -522,6 +544,9 @@
           <button type="button" onclick="toggleAllBranches()" class="nlm-toolbar-btn" id="btnToggleAll" title="Buka/Tutup Seluruh Cabang">
             <span class="material-symbols-outlined" style="font-size: 18px;">unfold_more</span>
           </button>
+          <button type="button" onclick="toggleMindmapFullscreen()" class="nlm-toolbar-btn" title="Layar Penuh (Kotak Topologi)">
+            <span class="material-symbols-outlined fs-icon-toggle" style="font-size: 18px;">fullscreen</span>
+          </button>
           <button type="button" onclick="exportMindmapSvg()" class="nlm-toolbar-btn" title="Unduh Peta Pikiran (SVG)">
             <span class="material-symbols-outlined" style="font-size: 18px;">download</span>
           </button>
@@ -531,19 +556,19 @@
         <svg id="nlmMindmapSvg" width="100%" height="100%" style="display: block; width: 100%; height: 100%; user-select: none;">
           <defs>
             <linearGradient id="nlmGradRoot" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#374151"/>
-              <stop offset="100%" stop-color="#1F2937"/>
+              <stop offset="0%" stop-color="#EFF6FF"/>
+              <stop offset="100%" stop-color="#DBEAFE"/>
             </linearGradient>
             <linearGradient id="nlmGradLevel1" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#2D3748"/>
-              <stop offset="100%" stop-color="#1A202C"/>
+              <stop offset="0%" stop-color="#FFFFFF"/>
+              <stop offset="100%" stop-color="#FFFFFF"/>
             </linearGradient>
             <linearGradient id="nlmGradLevel2" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#24303E"/>
-              <stop offset="100%" stop-color="#171F28"/>
+              <stop offset="0%" stop-color="#FFFFFF"/>
+              <stop offset="100%" stop-color="#FFFFFF"/>
             </linearGradient>
-            <filter id="nlmGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.5"/>
+            <filter id="nlmGlow" x="-10%" y="-10%" width="120%" height="120%">
+              <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0F172A" flood-opacity="0.06"/>
             </filter>
           </defs>
           <g id="nlmMindmapViewport">
@@ -552,36 +577,36 @@
           </g>
         </svg>
 
-        <!-- Right Side Note Detail Drawer -->
-        <div id="nlmNodeDrawer" style="position: absolute; right: 0; top: 0; bottom: 0; width: 360px; max-width: 90%; background: #161C24; border-left: 1px solid #2B3544; padding: 24px; z-index: 20; transform: translateX(100%); transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1); overflow-y: auto; box-shadow: -8px 0 24px rgba(0,0,0,0.5);">
+        <!-- Right Side Note Detail Drawer — Light Theme -->
+        <div id="nlmNodeDrawer" style="position: absolute; right: 0; top: 0; bottom: 0; width: 360px; max-width: 90%; background: #FFFFFF; border-left: 1px solid #E2E8F0; padding: 24px; z-index: 20; transform: translateX(100%); transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1); overflow-y: auto; box-shadow: -8px 0 24px rgba(15,23,42,0.10);">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-            <span id="drawerBadge" class="nlm-badge" style="font-size: 10px; background: #1E293B; color: #60A5FA;">
+            <span id="drawerBadge" class="nlm-badge" style="font-size: 10px;">
               DETAIL KONSEP
             </span>
-            <button type="button" onclick="closeNodeDrawer()" style="background: transparent; border: none; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; transition: background 0.15s;" onmouseover="this.style.background='#283241'; this.style.color='#FFFFFF';" onmouseout="this.style.background='transparent'; this.style.color='#94A3B8';">
+            <button type="button" onclick="closeNodeDrawer()" style="background: transparent; border: none; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; transition: background 0.15s;" onmouseover="this.style.background='#F1F5F9'; this.style.color='#0f172a';" onmouseout="this.style.background='transparent'; this.style.color='#94A3B8';">
               <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
             </button>
           </div>
-          <h3 id="drawerTitle" style="font-size: 18px; font-weight: 800; color: #F8FAFC; margin: 0 0 14px 0; line-height: 1.35;">
+          <h3 id="drawerTitle" style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 14px 0; line-height: 1.35;">
             Judul Node
           </h3>
-          <div style="background: rgba(255, 255, 255, 0.04); border-left: 3px solid #60A5FA; border-radius: 0 8px 8px 0; padding: 12px 14px; margin-bottom: 16px; font-size: 12px; font-style: italic; color: #CBD5E1; line-height: 1.55;" id="drawerQuote">
+          <div style="background: #EFF6FF; border-left: 3px solid #3B82F6; border-radius: 0 8px 8px 0; padding: 12px 14px; margin-bottom: 16px; font-size: 12px; font-style: italic; color: #1E40AF; line-height: 1.55;" id="drawerQuote">
             Kutipan Konsep
           </div>
-          <div style="font-size: 13px; color: #94A3B8; line-height: 1.65; margin-bottom: 18px;" id="drawerDesc">
+          <div style="font-size: 13px; color: #475569; line-height: 1.65; margin-bottom: 18px;" id="drawerDesc">
             Uraian mendalam
           </div>
-          <div style="background: #1C2430; border: 1px solid #2B374A; border-radius: 12px; padding: 14px; margin-bottom: 16px;">
-            <div style="font-size: 11px; font-weight: 800; color: #93C5FD; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
+          <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+            <div style="font-size: 11px; font-weight: 800; color: #1D4ED8; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
               <span class="material-symbols-outlined" style="font-size: 14px;">balance</span>
               KORELASI DENGAN AKUNTABILITAS PUBLIK:
             </div>
-            <p id="drawerCivic" style="font-size: 12px; color: #E2E8F0; margin: 0; line-height: 1.55;">
+            <p id="drawerCivic" style="font-size: 12px; color: #334155; margin: 0; line-height: 1.55;">
               Penjelasan korelasi
             </p>
           </div>
           <!-- School Funds Breakdown (visible only for school nodes) -->
-          <div id="drawerSchoolFunds" style="display: none; background: #1C2430; border: 1px solid #2B374A; border-radius: 12px; padding: 14px; margin-bottom: 16px;"></div>
+          <div id="drawerSchoolFunds" style="display: none; background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 12px; padding: 14px; margin-bottom: 16px;"></div>
           <!-- Action Buttons -->
           <div style="display: flex; flex-direction: column; gap: 8px;">
             <a id="drawerDashboardBtn" href="#" target="_blank" class="portal-btn portal-btn-primary" style="display: none; font-size: 12px; padding: 10px 14px; text-decoration: none; align-items: center; justify-content: center; gap: 6px; background: #059669;">
@@ -596,7 +621,6 @@
         </div>
 
       </div>
-    </div>
 
     <!-- Data Tabs: APBN / APBD / CSR Breakdown -->
     <div style="background: #ffffff; border: 1px solid var(--color-border); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow-sm);">
@@ -702,20 +726,23 @@
 
     async function loadYears() {
       const container = document.getElementById('yearPillsContainer');
-      const years = [2027, 2026, 2025, 2024, 2023, 2022, 2021, 2020];
+      let years = [];
       
       try {
-        let res = await fetch('http://localhost:2021/rest/v1/tahun_anggaran?select=tahun,status&order=tahun.desc');
-        if (!res.ok) res = await fetch('http://localhost:2028/rest/v1/tahun_anggaran?select=tahun,status&order=tahun.desc');
+        let res = await fetch('http://localhost:2028/rest/v1/tahun_anggaran?select=tahun,status&order=tahun.desc');
+        if (!res.ok) res = await fetch('http://localhost:2021/rest/v1/tahun_anggaran?select=tahun,status&order=tahun.desc');
         if (res.ok) {
           const list = await res.json();
           if (list && list.length > 0) {
-            years.length = 0;
-            list.forEach(i => years.push(i.tahun));
+            years = list.map(i => Number(i.tahun));
           }
         }
       } catch (e) {
         console.warn('Using default years list', e);
+      }
+
+      if (years.length === 0) {
+        years = [2027, 2026, 2025, 2024, 2023, 2022, 2021, 2020];
       }
 
       container.innerHTML = '<span style="font-size: 13px; font-weight: 700; color: var(--color-text-muted); margin-right: 4px;">Tahun:</span>';
@@ -733,11 +760,16 @@
       document.querySelectorAll('.tab-year-pill').forEach(b => {
         b.classList.toggle('active', b.textContent == year);
       });
-      document.getElementById('currentYearStatus').textContent = `Tahun Anggaran: ${year} (Live PostgreSQL)`;
+      document.getElementById('currentYearStatus').textContent = `Tahun Anggaran: ${year}`;
+
+      const titleEl = document.getElementById('nlmMindmapTitle');
+      if (titleEl && currentMindmapMode === 'APBN') {
+        titleEl.textContent = `Aliran Dana: Topologi APBN ${year}`;
+      }
 
       try {
-        let res = await fetch(`http://localhost:2021/rest/v1/tahun_anggaran?tahun=eq.${year}`);
-        if (!res.ok) res = await fetch(`http://localhost:2028/rest/v1/tahun_anggaran?tahun=eq.${year}`);
+        let res = await fetch(`http://localhost:2028/rest/v1/tahun_anggaran?tahun=eq.${year}`);
+        if (!res.ok) res = await fetch(`http://localhost:2021/rest/v1/tahun_anggaran?tahun=eq.${year}`);
         if (res.ok) {
           const data = await res.json();
           if (data && data.length > 0) {
@@ -745,6 +777,7 @@
             const totalT = (totalVal / 1e12).toFixed(1);
             document.getElementById('kpiTotalApbn').textContent = `Rp ${totalT} T`;
             document.getElementById('kpiTkdd').textContent = `Rp ${(totalVal * 0.45 / 1e12).toFixed(1)} T`;
+            document.getElementById('kpiSekolah').textContent = `Rp ${(totalVal * 0.1018 / 1e12).toFixed(1)} T`;
           }
         }
       } catch (e) {
@@ -772,7 +805,7 @@
       try {
         let path = '';
         if (activeSource === 'APBN') {
-          path = '/alokasi_provinsi?order=nominal_alokasi.desc&limit=38';
+          path = `/alokasi_provinsi?tahun=eq.${activeYear}&order=nominal_alokasi.desc&limit=38`;
         } else if (activeSource === 'APBD') {
           path = '/alokasi_kabupaten_kota?order=nominal_alokasi.desc&limit=38';
         } else {
@@ -888,14 +921,44 @@
               civicRelevance: 'Memantau serapan dan deviasi per provinsi.',
               expanded: false,
               children: [
-                { id: 'apbn-prov-jatim', title: 'Jawa Timur (Rp 80,2 T / Salur 77%)', badge: 'APBN JATIM', desc: 'Alokasi APBN Jawa Timur Rp 80,2 T, tersalur Rp 61,9 T (77,2%). Sisa: Rp 18,3 T.' },
-                { id: 'apbn-prov-jateng', title: 'Jawa Tengah (Rp 74,3 T / Salur 77%)', badge: 'APBN JATENG', desc: 'Alokasi APBN Jawa Tengah Rp 74,3 T, tersalur Rp 57,2 T (77,0%). Sisa: Rp 17,1 T.' },
-                { id: 'apbn-prov-jabar', title: 'Jawa Barat (Rp 57,8 T / Salur 77%)', badge: 'APBN JABAR', desc: 'Alokasi APBN Jawa Barat Rp 57,8 T, tersalur Rp 44,5 T (77,1%). Sisa: Rp 13,2 T.' },
-                { id: 'apbn-prov-sumut', title: 'Sumatera Utara (Rp 46,4 T / Salur 77%)', badge: 'APBN SUMUT', desc: 'Alokasi APBN Sumatera Utara Rp 46,4 T, tersalur Rp 35,5 T (76,6%). Sisa: Rp 10,8 T.' },
-                { id: 'apbn-prov-sulsel', title: 'Sulawesi Selatan (Rp 37,3 T / Salur 77%)', badge: 'APBN SULSEL', desc: 'Alokasi APBN Sulawesi Selatan Rp 37,3 T, tersalur Rp 28,6 T (76,9%). Sisa: Rp 8,6 T.' },
-                { id: 'apbn-prov-dki', title: 'DKI Jakarta (Rp 36,2 T / Salur 78%)', badge: 'APBN DKI', desc: 'Alokasi APBN DKI Jakarta Rp 36,2 T, tersalur Rp 28,4 T (78,5%). Sisa: Rp 7,8 T.' },
-                { id: 'apbn-prov-lampung', title: 'Lampung (Rp 25,7 T / Salur 78%)', badge: 'APBN LAMPUNG', desc: 'Alokasi APBN Lampung Rp 25,7 T, tersalur Rp 19,9 T (77,7%). Sisa: Rp 5,7 T.' },
-                { id: 'apbn-prov-more', title: '31 Provinsi Lainnya di Database', badge: '38 PROVINSI LENGKAP', desc: 'Seluruh 38 provinsi di Indonesia tercatat lengkap pada tabel alokasi_provinsi & provincial_allocations.' }
+                { id: 'apbn-prov-jatim', title: 'Jawa Timur (Rp 79,8 T / Salur 77,6%)', badge: 'APBN JATIM', desc: 'Alokasi APBN Jawa Timur Rp 79,8 T, tersalur Rp 61,9 T (77,6%). Sisa: Rp 17,9 T.' },
+                { id: 'apbn-prov-jateng', title: 'Jawa Tengah (Rp 73,7 T / Salur 77,6%)', badge: 'APBN JATENG', desc: 'Alokasi APBN Jawa Tengah Rp 73,7 T, tersalur Rp 57,2 T (77,6%). Sisa: Rp 16,5 T.' },
+                { id: 'apbn-prov-jabar', title: 'Jawa Barat (Rp 56,6 T / Salur 77,6%)', badge: 'APBN JABAR', desc: 'Alokasi APBN Jawa Barat Rp 56,6 T, tersalur Rp 43,9 T (77,6%). Sisa: Rp 12,7 T.' },
+                { id: 'apbn-prov-sumut', title: 'Sumatera Utara (Rp 45,8 T / Salur 77,6%)', badge: 'APBN SUMUT', desc: 'Alokasi APBN Sumatera Utara Rp 45,8 T, tersalur Rp 35,5 T (77,6%). Sisa: Rp 10,2 T.' },
+                { id: 'apbn-prov-sulsel', title: 'Sulawesi Selatan (Rp 36,9 T / Salur 77,6%)', badge: 'APBN SULSEL', desc: 'Alokasi APBN Sulawesi Selatan Rp 36,9 T, tersalur Rp 28,6 T (77,6%). Sisa: Rp 8,3 T.' },
+                { id: 'apbn-prov-dki', title: 'DKI Jakarta (Rp 36,6 T / Salur 77,6%)', badge: 'APBN DKI', desc: 'Alokasi APBN DKI Jakarta Rp 36,6 T, tersalur Rp 28,4 T (77,6%). Sisa: Rp 8,2 T.' },
+                { id: 'apbn-prov-sumsel', title: 'Sumatera Selatan (Rp 27,3 T / Salur 77,6%)', badge: 'APBN SUMSEL', desc: 'Alokasi APBN Sumatera Selatan Rp 27,3 T, tersalur Rp 21,2 T (77,6%). Sisa: Rp 6,1 T.' },
+                { id: 'apbn-prov-lampung', title: 'Lampung (Rp 25,7 T / Salur 77,6%)', badge: 'APBN LAMPUNG', desc: 'Alokasi APBN Lampung Rp 25,7 T, tersalur Rp 20,0 T (77,6%). Sisa: Rp 5,8 T.' },
+                { id: 'apbn-prov-aceh', title: 'Aceh (Rp 24,0 T / Salur 77,6%)', badge: 'APBN ACEH', desc: 'Alokasi APBN Aceh Rp 24,0 T, tersalur Rp 18,6 T (77,6%). Sisa: Rp 5,4 T.' },
+                { id: 'apbn-prov-banten', title: 'Banten (Rp 23,4 T / Salur 77,6%)', badge: 'APBN BANTEN', desc: 'Alokasi APBN Banten Rp 23,4 T, tersalur Rp 18,2 T (77,6%). Sisa: Rp 5,2 T.' },
+                { id: 'apbn-prov-papua', title: 'Papua (Rp 23,3 T / Salur 77,6%)', badge: 'APBN PAPUA', desc: 'Alokasi APBN Papua Rp 23,3 T, tersalur Rp 18,0 T (77,6%). Sisa: Rp 5,2 T.' },
+                { id: 'apbn-prov-ntt', title: 'Nusa Tenggara Timur (Rp 22,8 T / Salur 77,6%)', badge: 'APBN NTT', desc: 'Alokasi APBN Nusa Tenggara Timur Rp 22,8 T, tersalur Rp 17,7 T (77,6%). Sisa: Rp 5,1 T.' },
+                { id: 'apbn-prov-riau', title: 'Riau (Rp 21,4 T / Salur 77,6%)', badge: 'APBN RIAU', desc: 'Alokasi APBN Riau Rp 21,4 T, tersalur Rp 16,6 T (77,6%). Sisa: Rp 4,8 T.' },
+                { id: 'apbn-prov-sumbar', title: 'Sumatera Barat (Rp 21,3 T / Salur 77,6%)', badge: 'APBN SUMBAR', desc: 'Alokasi APBN Sumatera Barat Rp 21,3 T, tersalur Rp 16,5 T (77,6%). Sisa: Rp 4,8 T.' },
+                { id: 'apbn-prov-kaltim', title: 'Kalimantan Timur (Rp 17,1 T / Salur 77,6%)', badge: 'APBN KALTIM', desc: 'Alokasi APBN Kalimantan Timur Rp 17,1 T, tersalur Rp 13,3 T (77,6%). Sisa: Rp 3,8 T.' },
+                { id: 'apbn-prov-kalbar', title: 'Kalimantan Barat (Rp 15,6 T / Salur 77,6%)', badge: 'APBN KALBAR', desc: 'Alokasi APBN Kalimantan Barat Rp 15,6 T, tersalur Rp 12,1 T (77,6%). Sisa: Rp 3,5 T.' },
+                { id: 'apbn-prov-ntb', title: 'Nusa Tenggara Barat (Rp 15,2 T / Salur 77,6%)', badge: 'APBN NTB', desc: 'Alokasi APBN Nusa Tenggara Barat Rp 15,2 T, tersalur Rp 11,8 T (77,6%). Sisa: Rp 3,4 T.' },
+                { id: 'apbn-prov-sulteng', title: 'Sulawesi Tengah (Rp 15,0 T / Salur 77,6%)', badge: 'APBN SULTENG', desc: 'Alokasi APBN Sulawesi Tengah Rp 15,0 T, tersalur Rp 11,6 T (77,6%). Sisa: Rp 3,4 T.' },
+                { id: 'apbn-prov-sultra', title: 'Sulawesi Tenggara (Rp 14,5 T / Salur 77,6%)', badge: 'APBN SULTRA', desc: 'Alokasi APBN Sulawesi Tenggara Rp 14,5 T, tersalur Rp 11,3 T (77,6%). Sisa: Rp 3,3 T.' },
+                { id: 'apbn-prov-sulut', title: 'Sulawesi Utara (Rp 13,8 T / Salur 77,6%)', badge: 'APBN SULUT', desc: 'Alokasi APBN Sulawesi Utara Rp 13,8 T, tersalur Rp 10,7 T (77,6%). Sisa: Rp 3,1 T.' },
+                { id: 'apbn-prov-kalsel', title: 'Kalimantan Selatan (Rp 13,6 T / Salur 77,6%)', badge: 'APBN KALSEL', desc: 'Alokasi APBN Kalimantan Selatan Rp 13,6 T, tersalur Rp 10,6 T (77,6%). Sisa: Rp 3,0 T.' },
+                { id: 'apbn-prov-diy', title: 'D.I. Yogyakarta (Rp 13,3 T / Salur 77,6%)', badge: 'APBN DIY', desc: 'Alokasi APBN D.I. Yogyakarta Rp 13,3 T, tersalur Rp 10,3 T (77,6%). Sisa: Rp 3,0 T.' },
+                { id: 'apbn-prov-kalteng', title: 'Kalimantan Tengah (Rp 12,4 T / Salur 77,6%)', badge: 'APBN KALTENG', desc: 'Alokasi APBN Kalimantan Tengah Rp 12,4 T, tersalur Rp 9,6 T (77,6%). Sisa: Rp 2,8 T.' },
+                { id: 'apbn-prov-jambi', title: 'Jambi (Rp 11,9 T / Salur 77,6%)', badge: 'APBN JAMBI', desc: 'Alokasi APBN Jambi Rp 11,9 T, tersalur Rp 9,2 T (77,6%). Sisa: Rp 2,7 T.' },
+                { id: 'apbn-prov-pbd', title: 'Papua Barat Daya (Rp 11,9 T / Salur 77,6%)', badge: 'APBN PAPUA BARAT DAYA', desc: 'Alokasi APBN Papua Barat Daya Rp 11,9 T, tersalur Rp 9,2 T (77,6%). Sisa: Rp 2,7 T.' },
+                { id: 'apbn-prov-pabar', title: 'Papua Barat (Rp 9,8 T / Salur 77,6%)', badge: 'APBN PAPUA BARAT', desc: 'Alokasi APBN Papua Barat Rp 9,8 T, tersalur Rp 7,6 T (77,6%). Sisa: Rp 2,2 T.' },
+                { id: 'apbn-prov-pabteng', title: 'Papua Tengah (Rp 9,7 T / Salur 77,6%)', badge: 'APBN PAPUA TENGAH', desc: 'Alokasi APBN Papua Tengah Rp 9,7 T, tersalur Rp 7,5 T (77,6%). Sisa: Rp 2,2 T.' },
+                { id: 'apbn-prov-bengkulu', title: 'Bengkulu (Rp 9,4 T / Salur 77,6%)', badge: 'APBN BENGKULU', desc: 'Alokasi APBN Bengkulu Rp 9,4 T, tersalur Rp 7,3 T (77,6%). Sisa: Rp 2,1 T.' },
+                { id: 'apbn-prov-maluku', title: 'Maluku (Rp 9,3 T / Salur 77,6%)', badge: 'APBN MALUKU', desc: 'Alokasi APBN Maluku Rp 9,3 T, tersalur Rp 7,2 T (77,6%). Sisa: Rp 2,1 T.' },
+                { id: 'apbn-prov-kepri', title: 'Kepulauan Riau (Rp 8,5 T / Salur 77,6%)', badge: 'APBN KEPRI', desc: 'Alokasi APBN Kepulauan Riau Rp 8,5 T, tersalur Rp 6,6 T (77,6%). Sisa: Rp 1,9 T.' },
+                { id: 'apbn-prov-pabpeg', title: 'Papua Pegunungan (Rp 7,5 T / Salur 77,6%)', badge: 'APBN PAPUA PEGUNUNGAN', desc: 'Alokasi APBN Papua Pegunungan Rp 7,5 T, tersalur Rp 5,8 T (77,6%). Sisa: Rp 1,7 T.' },
+                { id: 'apbn-prov-malut', title: 'Maluku Utara (Rp 7,3 T / Salur 77,6%)', badge: 'APBN MALUT', desc: 'Alokasi APBN Maluku Utara Rp 7,3 T, tersalur Rp 5,7 T (77,6%). Sisa: Rp 1,6 T.' },
+                { id: 'apbn-prov-sulbar', title: 'Sulawesi Barat (Rp 6,5 T / Salur 77,6%)', badge: 'APBN SULBAR', desc: 'Alokasi APBN Sulawesi Barat Rp 6,5 T, tersalur Rp 5,1 T (77,6%). Sisa: Rp 1,5 T.' },
+                { id: 'apbn-prov-papsel', title: 'Papua Selatan (Rp 6,3 T / Salur 77,6%)', badge: 'APBN PAPUA SELATAN', desc: 'Alokasi APBN Papua Selatan Rp 6,3 T, tersalur Rp 4,9 T (77,6%). Sisa: Rp 1,4 T.' },
+                { id: 'apbn-prov-babel', title: 'Bangka Belitung (Rp 6,1 T / Salur 77,6%)', badge: 'APBN BABEL', desc: 'Alokasi APBN Bangka Belitung Rp 6,1 T, tersalur Rp 4,7 T (77,6%). Sisa: Rp 1,4 T.' },
+                { id: 'apbn-prov-kaltara', title: 'Kalimantan Utara (Rp 5,5 T / Salur 77,6%)', badge: 'APBN KALTARA', desc: 'Alokasi APBN Kalimantan Utara Rp 5,5 T, tersalur Rp 4,3 T (77,6%). Sisa: Rp 1,2 T.' },
+                { id: 'apbn-prov-bali', title: 'Bali (Rp 5,2 T / Salur 77,6%)', badge: 'APBN BALI', desc: 'Alokasi APBN Bali Rp 5,2 T, tersalur Rp 4,1 T (77,6%). Sisa: Rp 1,2 T.' },
+                { id: 'apbn-prov-gorontalo', title: 'Gorontalo (Rp 4,7 T / Salur 77,6%)', badge: 'APBN GORONTALO', desc: 'Alokasi APBN Gorontalo Rp 4,7 T, tersalur Rp 3,7 T (77,6%). Sisa: Rp 1,1 T.' }
               ]
             }
           ]
@@ -1113,14 +1176,19 @@
         };
 
         // Fetch all data concurrently
-        const [apbnRows, provAlloc, apbdRows, csrRows, akks, funds] = await Promise.all([
+        const [apbnRows, provAllocFromDb, apbdRows, csrRows, akks, funds] = await Promise.all([
           fetchApi(`/tahun_anggaran?tahun=eq.${year}`),
-          fetchApi(`/provincial_allocations?year=eq.${year}&order=alokasi.desc&limit=38`),
+          fetchApi(`/alokasi_provinsi?tahun=eq.${year}&order=nominal_alokasi.desc&limit=50`),
           fetchApi(`/apbd_yearly_data?year=eq.${year}`),
           fetchApi(`/csr_yearly_data?year=eq.${year}`),
           fetchApi(`/alokasi_kabupaten_kota?order=nominal_alokasi.desc&limit=500`),
           fetchApi(`/incoming_funds`)
         ]);
+
+        let provAlloc = provAllocFromDb;
+        if (!provAlloc || !provAlloc.length) {
+          provAlloc = await fetchApi(`/provincial_allocations?year=eq.${year}&order=alokasi.desc&limit=50`);
+        }
 
         // ── Compute top-level totals ──
         const totalApbnVal = apbnRows && apbnRows[0] ? Number(apbnRows[0].total_anggaran || 769100000000000) : 769100000000000;
@@ -1218,13 +1286,16 @@
           });
         }
 
-        // ── Inject provincial nodes with kab/kota + school children ──
+        // ── Inject provincial nodes with kab/kota + school children (Semua 38 Provinsi) ──
         if (provAlloc && provAlloc.length > 0) {
-          const provNodes = provAlloc.slice(0, 8).map((p, idx) => {
-            const alokasiT = (Number(p.alokasi) / 1e12).toFixed(1);
-            const salurT   = (Number(p.disalurkan) / 1e12).toFixed(1);
-            const pct = Number(p.alokasi) > 0 ? ((Number(p.disalurkan) / Number(p.alokasi)) * 100).toFixed(1) : '77.0';
-            const provName = p.provinsi_name;
+          const provNodes = provAlloc.map((p, idx) => {
+            const alokasiRaw = Number(p.nominal_alokasi || p.alokasi || 0);
+            const salurRaw   = Number(p.realisasi_total || p.disalurkan || 0);
+            const sisaRaw    = Number(p.selisih || p.sisa || (alokasiRaw - salurRaw));
+            const alokasiT   = (alokasiRaw / 1e12).toFixed(1);
+            const salurT     = (salurRaw / 1e12).toFixed(1);
+            const pct        = p.persentase_penyerapan ? String(p.persentase_penyerapan) : (alokasiRaw > 0 ? ((salurRaw / alokasiRaw) * 100).toFixed(1) : '77.6');
+            const provName   = p.provinsi?.nama_provinsi || p.provinsi_nama || p.provinsi_name || `Provinsi ${idx+1}`;
 
             // Build kab/kota children for this province
             const kabList = (akksByProv[provName] || []).slice(0, 5);
@@ -1251,22 +1322,13 @@
               id: `apbn-prov-${idx}`,
               title: `${provName} (Rp ${alokasiT} T / Salur ${pct}%)`,
               badge: `APBN ${provName.toUpperCase()}`,
-              desc: `Alokasi APBN ${provName}: Rp ${alokasiT} T. Realisasi: Rp ${salurT} T (${pct}%). Sisa: Rp ${(Number(p.sisa)/1e12).toFixed(1)} T.`,
-              quote: `Data live tabel PostgreSQL 'provincial_allocations'.`,
+              desc: `Alokasi APBN ${provName}: Rp ${alokasiT} T. Realisasi: Rp ${salurT} T (${pct}%). Sisa: Rp ${(sisaRaw / 1e12).toFixed(1)} T.`,
+              quote: `Data live tabel PostgreSQL 'alokasi_provinsi'.`,
               civicRelevance: `Masyarakat ${provName} dapat memantau serapan dana langsung per sekolah di SiTransparan.`,
               expanded: false
             };
             if (kabChildren.length > 0) provNode.children = kabChildren;
             return provNode;
-          });
-
-          provNodes.push({
-            id: 'apbn-prov-more-db',
-            title: `${38 - provNodes.length} Provinsi Lainnya`,
-            badge: '38 PROVINSI LENGKAP',
-            desc: 'Seluruh 38 provinsi Indonesia tercatat di tabel alokasi_provinsi & provincial_allocations.',
-            quote: 'Data tersinkronisasi 100% dengan database lokal PostgreSQL SiTransparan.',
-            civicRelevance: 'Memastikan pemerataan dan pencegahan disparitas alokasi antar wilayah.'
           });
 
           DATA_KONSOLIDASI.children[0].children[2].children = provNodes;
@@ -1307,7 +1369,7 @@
 
       // Mouse drag pan
       wrapper.addEventListener('mousedown', (e) => {
-        if (e.target.closest('#nlmNodeDrawer') || e.target.closest('.nlm-toolbar-btn')) return;
+        if (e.target.closest('#nlmNodeDrawer') || e.target.closest('#nlmMindmapToolbar') || e.target.closest('.nlm-toolbar-btn')) return;
         nlmIsDragging = true;
         wrapper.style.cursor = 'grabbing';
         nlmDragStartX = e.clientX - nlmPanX;
@@ -1464,7 +1526,7 @@
             const d = `M ${startX} ${startY} C ${startX + dx * 0.45} ${startY}, ${endX - dx * 0.45} ${endY}, ${endX} ${endY}`;
             path.setAttribute('d', d);
             path.setAttribute('fill', 'none');
-            path.setAttribute('stroke', '#8DA4EF');
+            path.setAttribute('stroke', '#94A3B8');
             path.setAttribute('stroke-width', '2.2');
             path.setAttribute('stroke-linecap', 'round');
             path.setAttribute('opacity', '0.85');
@@ -1483,11 +1545,11 @@
         g.setAttribute('class', 'nlm-node-group');
         g.style.cursor = 'pointer';
 
-        // Gradient & fill — school nodes get green tint, kab/kota get purple tint
+        // Gradient & fill — light theme: white cards with colored accents
         let fill = isRoot ? 'url(#nlmGradRoot)' : (node.level === 1 ? 'url(#nlmGradLevel1)' : 'url(#nlmGradLevel2)');
-        if (node.npsn) fill = '#0D2B1E'; // school leaf node — dark green
-        else if (node.level === 3 && !node.npsn) fill = '#1A1330'; // kab/kota — dark purple
-        let stroke = isSelected ? '#60A5FA' : (node.npsn ? '#34D399' : (isRoot ? '#64748B' : '#3F4B5C'));
+        if (node.npsn) fill = '#ECFDF5'; // school leaf node — light green
+        else if (node.level === 3 && !node.npsn) fill = '#F5F3FF'; // kab/kota — light purple
+        let stroke = isSelected ? '#1D4ED8' : (node.npsn ? '#34D399' : (isRoot ? '#93C5FD' : '#E2E8F0'));
 
         // Node Card Rect
         const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -1516,7 +1578,9 @@
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         text.setAttribute('x', node.x + 14);
         text.setAttribute('y', node.y + node.h / 2 + 4.5);
-        text.setAttribute('fill', isSelected ? '#93C5FD' : (node.npsn ? '#6EE7B7' : '#F8FAFC'));
+        // Light theme: dark text on light backgrounds (#1E3A8A on root, #0F172A on children)
+        let textColor = isSelected ? '#1D4ED8' : (isRoot ? '#1E3A8A' : (node.npsn ? '#065F46' : (node.level === 3 ? '#4C1D95' : '#0F172A')));
+        text.setAttribute('fill', textColor);
         text.setAttribute('font-family', "'Plus Jakarta Sans', system-ui, sans-serif");
         text.setAttribute('font-weight', isRoot ? '800' : '700');
         text.setAttribute('font-size', isRoot ? '13' : (node.level === 1 ? '12.5' : '11.5'));
@@ -1538,15 +1602,15 @@
 
           const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
           circle.setAttribute('r', '10.5');
-          circle.setAttribute('fill', node.expanded ? '#253040' : '#1A232E');
-          circle.setAttribute('stroke', node.expanded ? '#60A5FA' : '#4B586B');
+          circle.setAttribute('fill', node.expanded ? '#EFF6FF' : '#F8FAFC');
+          circle.setAttribute('stroke', node.expanded ? '#3B82F6' : '#CBD5E1');
           circle.setAttribute('stroke-width', '1.2');
           toggleG.appendChild(circle);
 
           const chevron = document.createElementNS('http://www.w3.org/2000/svg', 'text');
           chevron.setAttribute('text-anchor', 'middle');
           chevron.setAttribute('dominant-baseline', 'central');
-          chevron.setAttribute('fill', node.expanded ? '#93C5FD' : '#CBD5E1');
+          chevron.setAttribute('fill', node.expanded ? '#1D4ED8' : '#64748B');
           chevron.setAttribute('font-size', '11');
           chevron.setAttribute('font-weight', '900');
           chevron.setAttribute('font-family', 'monospace');
@@ -1648,26 +1712,26 @@
         if (drawerExtra) {
           drawerExtra.style.display = 'block';
           drawerExtra.innerHTML = `
-            <div style="font-size: 11px; font-weight: 800; color: #34D399; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 4px;">
+            <div style="font-size: 11px; font-weight: 800; color: #059669; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 4px;">
               <span class="material-symbols-outlined" style="font-size: 14px;">account_balance_wallet</span>
               RINCIAN DANA MASUK ${activeYear}
             </div>
             <div style="display: flex; flex-direction: column; gap: 6px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: rgba(59,130,246,0.12); border-radius: 8px; border-left: 3px solid #3B82F6;">
-                <span style="font-size: 12px; color: #93C5FD; font-weight: 700;">APBN</span>
-                <span style="font-size: 12px; color: #F8FAFC; font-weight: 800;">${fmtMoney(funds.apbn)}</span>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #EFF6FF; border-radius: 8px; border-left: 3px solid #3B82F6;">
+                <span style="font-size: 12px; color: #1D4ED8; font-weight: 700;">APBN</span>
+                <span style="font-size: 12px; color: #1E293B; font-weight: 800;">${fmtMoney(funds.apbn)}</span>
               </div>
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: rgba(168,85,247,0.12); border-radius: 8px; border-left: 3px solid #A855F7;">
-                <span style="font-size: 12px; color: #C4B5FD; font-weight: 700;">APBD</span>
-                <span style="font-size: 12px; color: #F8FAFC; font-weight: 800;">${fmtMoney(funds.apbd)}</span>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #F5F3FF; border-radius: 8px; border-left: 3px solid #A855F7;">
+                <span style="font-size: 12px; color: #7C3AED; font-weight: 700;">APBD</span>
+                <span style="font-size: 12px; color: #1E293B; font-weight: 800;">${fmtMoney(funds.apbd)}</span>
               </div>
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: rgba(52,211,153,0.12); border-radius: 8px; border-left: 3px solid #34D399;">
-                <span style="font-size: 12px; color: #6EE7B7; font-weight: 700;">CSR</span>
-                <span style="font-size: 12px; color: #F8FAFC; font-weight: 800;">${fmtMoney(funds.csr)}</span>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #ECFDF5; border-radius: 8px; border-left: 3px solid #10B981;">
+                <span style="font-size: 12px; color: #059669; font-weight: 700;">CSR</span>
+                <span style="font-size: 12px; color: #1E293B; font-weight: 800;">${fmtMoney(funds.csr)}</span>
               </div>
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: rgba(245,158,11,0.12); border-radius: 8px; border-left: 3px solid #F59E0B; margin-top: 2px;">
-                <span style="font-size: 12px; color: #FCD34D; font-weight: 800;">TOTAL</span>
-                <span style="font-size: 13px; color: #FCD34D; font-weight: 800;">${fmtMoney(funds.total)}</span>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #FFFBEB; border-radius: 8px; border-left: 3px solid #F59E0B; margin-top: 2px;">
+                <span style="font-size: 12px; color: #B45309; font-weight: 800;">TOTAL</span>
+                <span style="font-size: 13px; color: #B45309; font-weight: 800;">${fmtMoney(funds.total)}</span>
               </div>
             </div>`;
         }
@@ -1681,6 +1745,8 @@
       }
 
       drawer.style.transform = 'translateX(0)';
+      const toolbar = document.getElementById('nlmMindmapToolbar');
+      if (toolbar) toolbar.style.right = '376px';
     }
 
 
@@ -1689,6 +1755,8 @@
       if (drawer) {
         drawer.style.transform = 'translateX(100%)';
       }
+      const toolbar = document.getElementById('nlmMindmapToolbar');
+      if (toolbar) toolbar.style.right = '16px';
     }
 
     function exportMindmapSvg() {
@@ -1713,14 +1781,42 @@
     }
 
     function toggleMindmapFullscreen() {
-      const sec = document.getElementById('notebookLmMindmapSection');
-      if (!sec) return;
-      if (!document.fullscreenElement) {
-        sec.requestFullscreen?.().catch(() => {});
+      const box = document.getElementById('nlmMindmapCanvasWrapper');
+      if (!box) return;
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (box.requestFullscreen) {
+          box.requestFullscreen().catch(() => {});
+        } else if (box.webkitRequestFullscreen) {
+          box.webkitRequestFullscreen();
+        } else if (box.msRequestFullscreen) {
+          box.msRequestFullscreen();
+        }
       } else {
-        document.exitFullscreen?.().catch(() => {});
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen();
+        }
       }
     }
+
+    function handleFullscreenChange() {
+      const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      const fsIcons = document.querySelectorAll('.fs-icon-toggle');
+      fsIcons.forEach(icon => {
+        icon.textContent = isFs ? 'fullscreen_exit' : 'fullscreen';
+        const parentBtn = icon.closest('button');
+        if (parentBtn) parentBtn.title = isFs ? 'Keluar Layar Penuh (ESC)' : 'Layar Penuh (Kotak Topologi)';
+      });
+      setTimeout(() => {
+        resetMindmapView();
+      }, 120);
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
 
     document.addEventListener('DOMContentLoaded', async () => {
       loadYears();

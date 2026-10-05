@@ -110,12 +110,12 @@ export default function DashboardPage() {
   }, [allApbd]);
 
   const trendYearsTitle = useMemo(() => {
-    if (!trendData || trendData.length === 0) return 'Proporsi APBD Pendidikan Lampung';
+    if (!trendData || trendData.length === 0) return 'Tren Penyaluran Dana Pendidikan';
     const years = trendData.map((d) => Number(d.tahun)).filter((y) => !isNaN(y));
     const minYear = Math.min(...years);
     const maxYear = Math.max(...years);
-    if (minYear === maxYear) return `Proporsi APBD Pendidikan Lampung (${minYear})`;
-    return `Proporsi APBD Pendidikan Lampung (${minYear}–${maxYear})`;
+    if (minYear === maxYear) return `Tren Penyaluran Dana Pendidikan (${minYear})`;
+    return `Tren Penyaluran Dana Pendidikan (${minYear}–${maxYear})`;
   }, [trendData]);
 
   return (

@@ -47,8 +47,14 @@ function seededValues(count: number, min: number, max: number, seed: number): nu
 
 // === TAHUN ANGGARAN ===
 export let tahunAnggaranData: TahunAnggaran[] = [
-  { id: '1', tahun: 2026, total_anggaran: 769_100_000_000_000, status: 'ACTIVE', created_at: '2026-01-01' },
-  { id: '2', tahun: 2027, total_anggaran: 0, status: 'DRAFT', created_at: '2027-01-01' },
+  { id: 'ta-2020', tahun: 2020, total_anggaran: 508_000_000_000_000, status: 'CLOSED', created_at: '2020-01-01' },
+  { id: 'ta-2021', tahun: 2021, total_anggaran: 550_000_000_000_000, status: 'CLOSED', created_at: '2021-01-01' },
+  { id: 'ta-2022', tahun: 2022, total_anggaran: 574_900_000_000_000, status: 'CLOSED', created_at: '2022-01-01' },
+  { id: 'ta-2023', tahun: 2023, total_anggaran: 621_300_000_000_000, status: 'CLOSED', created_at: '2023-01-01' },
+  { id: 'ta-2024', tahun: 2024, total_anggaran: 665_000_000_000_000, status: 'CLOSED', created_at: '2024-01-01' },
+  { id: 'ta-2025', tahun: 2025, total_anggaran: 721_500_000_000_000, status: 'CLOSED', created_at: '2025-01-01' },
+  { id: '7', tahun: 2026, total_anggaran: 769_100_000_000_000, status: 'ACTIVE', created_at: '2026-01-01' },
+  { id: '8cc15d92-7bbf-4171-ad01-a6915ca616f7', tahun: 2027, total_anggaran: 820_000_000_000_000, status: 'ACTIVE', created_at: '2027-01-01' },
 ];
 
 export function updateTahunAnggaranData(newData: TahunAnggaran[]) {
@@ -481,16 +487,19 @@ const JENJANG_LABELS: Record<string, string> = {
   'PAUD': 'Pendidikan Anak Usia Dini (PAUD/TK/KB)',
 };
 
-export function getDashboardSummary(tahun: number = 2026): DashboardSummary {
-  const db = getDb();
-  if (db) {
-    const targetTahun = db.tahun_anggaran.find((t: any) => t.tahun === tahun) || db.tahun_anggaran[0];
+export function getDashboardSummary(tahun: number = 2026, customDb?: any): DashboardSummary {
+  const db = customDb || getDb();
+  if (db && db.tahun_anggaran && db.tahun_anggaran.length > 0) {
+    const targetTahun = db.tahun_anggaran.find((t: any) => Number(t.tahun) === Number(tahun)) || db.tahun_anggaran[0];
     if (!targetTahun) {
       return { total_nominal: 0, total_realisasi: 0, persentase_penyerapan: 0, per_jenjang: [], tren_tahunan: [] };
     }
 
     const totalNominal = Number(targetTahun.total_anggaran);
-    const provAlokasis = db.alokasi_provinsi.filter((ap: any) => ap.tahun_anggaran_id === targetTahun.id);
+    const provAlokasis = (db.alokasi_provinsi || []).filter((ap: any) => 
+      String(ap.tahun_anggaran_id) === String(targetTahun.id) ||
+      (ap.tahun && Number(ap.tahun) === Number(targetTahun.tahun))
+    );
     const totalRealisasi = provAlokasis.reduce((sum: number, ap: any) => sum + Number(ap.realisasi_total), 0);
 
     const defaultWeights: Record<string, number> = {
@@ -515,7 +524,10 @@ export function getDashboardSummary(tahun: number = 2026): DashboardSummary {
 
     const allYears = [...(db.tahun_anggaran || [])].sort((a: any, b: any) => Number(a.tahun) - Number(b.tahun));
     const trenTahunan = allYears.map((t: any) => {
-      const yearAlokasis = db.alokasi_provinsi.filter((ap: any) => String(ap.tahun_anggaran_id) === String(t.id));
+      const yearAlokasis = (db.alokasi_provinsi || []).filter((ap: any) => 
+        String(ap.tahun_anggaran_id) === String(t.id) ||
+        (ap.tahun && Number(ap.tahun) === Number(t.tahun))
+      );
       const yearRealisasi = yearAlokasis.reduce((sum: number, ap: any) => sum + Number(ap.realisasi_total), 0);
       const isDraftOrFuture = t.status === 'DRAFT' || Number(t.tahun) > 2026;
       return {

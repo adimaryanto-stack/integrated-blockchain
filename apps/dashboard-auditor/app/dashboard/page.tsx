@@ -39,8 +39,8 @@ const getJenjangSlug = (label: string): string => {
 };
 
 export default function DashboardPage() {
-  const { activeTahun } = useAppStore();
-  const summary = useMemo(() => getDashboardSummary(activeTahun), [activeTahun]);
+  const { activeTahun, dbData } = useAppStore();
+  const summary = useMemo(() => getDashboardSummary(activeTahun, dbData), [activeTahun, dbData]);
 
   const TRILIUN = 1_000_000_000_000;
 
@@ -61,11 +61,11 @@ export default function DashboardPage() {
   }));
 
   const trendYearsTitle = useMemo(() => {
-    if (!trendData || trendData.length === 0) return 'Tren APBN Pendidikan';
+    if (!trendData || trendData.length === 0) return 'Tren Penyaluran Dana Pendidikan';
     const years = trendData.map(t => Number(t.tahun)).filter(y => !isNaN(y)).sort((a, b) => a - b);
-    if (years.length === 0) return 'Tren APBN Pendidikan';
-    if (years.length === 1) return `Tren APBN Pendidikan Tahun ${years[0]}`;
-    return `Tren APBN Pendidikan ${years[0]}–${years[years.length - 1]}`;
+    if (years.length === 0) return 'Tren Penyaluran Dana Pendidikan';
+    if (years.length === 1) return `Tren Penyaluran Dana Pendidikan Tahun ${years[0]}`;
+    return `Tren Penyaluran Dana Pendidikan (${years[0]}–${years[years.length - 1]})`;
   }, [trendData]);
 
   return (

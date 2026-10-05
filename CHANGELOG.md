@@ -4,6 +4,32 @@ Semua perubahan penting pada proyek **Integrated Blockchain - Platform Transpara
 
 Format pencatatan berpedoman pada [Keep a Changelog](https://keepachangelog.com/id-ID/1.0.0/) dan menganut prinsip [Semantic Versioning](https://semver.org/lang/id/).
 
+## [2.5.2] - 2026-10-05
+
+### 📊 Penyelarasan Standar Grafik Tren Dana & Ekspansi Data Historis APBN
+- **Standarisasi Judul Grafik Tren Penyaluran (Port 2023 & Port 2025)**:
+  - Menyelaraskan penamaan judul grafik historis pada Dashboard APBD Provinsi Lampung (`dashboard-apbd`) dan Dashboard Auditor BPK (`dashboard-auditor`) menjadi format baku: **`Tren Penyaluran Dana Pendidikan (${minYear}–${maxYear})`**.
+  - Menghubungkan state `dbData` real-time di Dashboard Auditor ke kalkulasi ringkasan dashboard `getDashboardSummary(activeTahun, dbData)` untuk sinkronisasi instan terhadap perubahan data PostgreSQL.
+- **Ekspansi Data Historis Multi-Tahun 2020–2027 (`dashboard-auditor/lib/data/index.ts`)**:
+  - Menambahkan data master tahun anggaran historis 2020–2025 (status `CLOSED`) bersama tahun berjalan 2026 dan tahun rencana 2027 (`ACTIVE`).
+  - Mendukung pencocokan alokasi fleksibel berbasis `tahun_anggaran_id` maupun kolom `tahun` riil.
+
+### 🗺️ Redesain Mindmap Topologi Google NotebookLM Mode Terang (Port 2019)
+- **Transformasi Visual Light Theme Modern (`aliran-dana.html`)**:
+  - Mengubah tema visual mindmap topologi NotebookLM dari mode gelap menjadi mode terang (*Crisp Light Theme*) berlatar putih bersih (`#FFFFFF`), kontur lembut (`#E2E8F0`), teks berkontras tinggi (`#0F172A`), dan aksen biru institusional (`#1D4ED8`).
+  - Pembaruan kartu node SVG, pill tahun anggaran, dan lingkaran toggle chevron dengan hierarki visual yang lebih ramah pengguna.
+- **Drawer Rincian Dana Masuk Interaktif**:
+  - Redesain panel drawer samping dengan kartu alokasi dana tematik (APBN biru, APBD ungu, CSR hijau, dan Total kuning emas) berbasis data tahun aktif.
+  - Reposisi otomatis toolbar floating zoom/reset (`right: 376px` saat drawer terbuka, `right: 16px` saat drawer tertutup) sehingga tombol navigasi tidak tertutup oleh panel drawer.
+- **Peningkatan Layar Penuh (Fullscreen Engine)**:
+  - Dukungan cross-browser (`requestFullscreen`, `webkitRequestFullscreen`, `msRequestFullscreen`) langsung pada container canvas wrapper dengan auto-reset view dan transisi yang halus.
+
+### 🐛 Diperbaiki (Fixed)
+- **Sinkronisasi Saldo APBD Service (`apbd-service.ts`)**:
+  - Memperbaiki deklarasi variabel `selisihAlokasi` saat melakukan sinkronisasi data tahunan ke tabel `apbd_yearly_data` di PostgreSQL.
+
+---
+
 ## [2.5.1] - 2026-10-04
 
 ### ⚖️ Direktori Spasial Aparat Penegak Hukum & Navigasi Presisi (Portal Civic-Tech Port 2019)
