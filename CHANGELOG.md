@@ -14,9 +14,9 @@ Format pencatatan berpedoman pada [Keep a Changelog](https://keepachangelog.com/
   - Menambahkan data master tahun anggaran historis 2020–2025 (status `CLOSED`) bersama tahun berjalan 2026 dan tahun rencana 2027 (`ACTIVE`).
   - Mendukung pencocokan alokasi fleksibel berbasis `tahun_anggaran_id` maupun kolom `tahun` riil.
 
-### 🗺️ Redesain Mindmap Topologi Google NotebookLM Mode Terang (Port 2019)
+### 🗺️ Redesain Mindmap Topologi Interaktif Mode Terang (Port 2019)
 - **Transformasi Visual Light Theme Modern (`aliran-dana.html`)**:
-  - Mengubah tema visual mindmap topologi NotebookLM dari mode gelap menjadi mode terang (*Crisp Light Theme*) berlatar putih bersih (`#FFFFFF`), kontur lembut (`#E2E8F0`), teks berkontras tinggi (`#0F172A`), dan aksen biru institusional (`#1D4ED8`).
+  - Mengubah tema visual mindmap topologi interaktif dari mode gelap menjadi mode terang (*Crisp Light Theme*) berlatar putih bersih (`#FFFFFF`), kontur lembut (`#E2E8F0`), teks berkontras tinggi (`#0F172A`), dan aksen biru institusional (`#1D4ED8`).
   - Pembaruan kartu node SVG, pill tahun anggaran, dan lingkaran toggle chevron dengan hierarki visual yang lebih ramah pengguna.
 - **Drawer Rincian Dana Masuk Interaktif**:
   - Redesain panel drawer samping dengan kartu alokasi dana tematik (APBN biru, APBD ungu, CSR hijau, dan Total kuning emas) berbasis data tahun aktif.

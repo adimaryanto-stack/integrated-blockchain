@@ -253,10 +253,10 @@ Berikut adalah ringkasan pembaruan arsitektur dan peningkatan fitur sistem:
 - **Navigasi Presisi `mapsQuery`**: Rute diarahkan langsung ke nama dan alamat gedung resmi instansi untuk mencegah kesalahan navigasi titik acak.
 - **Mode Sinergi Multi-Agency**: Pilihan pelaporan sinergis bersama lintas lembaga dengan identitas visual tematik.
 
-### 🟢 13. Standarisasi Grafik Tren Dana & Redesain Mindmap NotebookLM Mode Terang (v2.5.2)
+### 🟢 13. Standarisasi Grafik Tren Dana & Redesain Mindmap Topologi Mode Terang (v2.5.2)
 - **Standarisasi Judul Grafik Tren (Port 2023 & 2025)**: Penyelarasan format judul grafik historis menjadi `Tren Penyaluran Dana Pendidikan (${minYear}–${maxYear})` di Dashboard Auditor dan APBD Lampung.
 - **Ekspansi Data Historis APBN 2020–2027**: Penambahan data master tahun anggaran 2020–2025 (`CLOSED`) dan 2026–2027 (`ACTIVE`) di Dashboard Auditor BPK dengan dukungan sinkronisasi database dinamis.
-- **Transformasi Light Theme Mindmap Topologi (Port 2019)**: Redesain visual mindmap Google NotebookLM di `aliran-dana.html` menjadi mode terang berlatar putih bersih (`#FFFFFF`), kontur lembut, dan teks kontras tinggi.
+- **Transformasi Light Theme Mindmap Topologi (Port 2019)**: Redesain visual mindmap topologi interaktif di `aliran-dana.html` menjadi mode terang berlatar putih bersih (`#FFFFFF`), kontur lembut, dan teks kontras tinggi.
 - **Drawer Breakdown Dana & Toolbar Cerdas**: Reposisi dinamis toolbar zoom saat panel samping dibuka/ditutup dan kartu rincian dana masuk berkode warna tematik (APBN, APBD, CSR).
 
 > 📘 **Riwayat lengkap seluruh versi terdahulu (v1.0.0 s.d. v2.5.2) dapat dibaca di: [CHANGELOG.md](CHANGELOG.md)**.
