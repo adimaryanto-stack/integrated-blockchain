@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useAppStore } from '@/lib/store';
 import { TahapProject, ProjectPhoto, TAHAP_LABELS } from '@/types';
+import { convertToWebP } from '@/lib/utils/imageConverter';
 import { Camera, Trash2, Calendar, FileText, Check, Plus, Image as ImageIcon, Lock } from 'lucide-react';
 
 interface PhotoDocumentationProps {
@@ -22,7 +23,7 @@ export default function PhotoDocumentation({ projectId }: PhotoDocumentationProp
     return projectPhotos.filter(p => p.project_id === projectId && p.tahap === activeTab);
   }, [projectPhotos, projectId, activeTab]);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (isReadOnly) {
       alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat). Anda tidak dapat mengunggah foto.');
       return;
@@ -30,13 +31,15 @@ export default function PhotoDocumentation({ projectId }: PhotoDocumentationProp
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
+    try {
+      // Konversi otomatis foto ke format .webp ringan untuk menghemat space penyimpanan
+      const webpDataUrl = await convertToWebP(file, { quality: 0.8, maxWidth: 1600 });
+
       const newPhoto: ProjectPhoto = {
         id: `photo-${Date.now()}`,
         project_id: projectId,
         tahap: activeTab,
-        file_url: reader.result as string,
+        file_url: webpDataUrl,
         caption: caption.trim() || 'Dokumentasi kegiatan',
         tanggal_ambil: new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
         uploaded_by: currentUser?.username || 'admin.kbalikhlas',
@@ -45,15 +48,16 @@ export default function PhotoDocumentation({ projectId }: PhotoDocumentationProp
 
       addProjectPhoto(newPhoto);
       addNotification({
-        message: `Foto dokumentasi berhasil diunggah untuk tahap ${TAHAP_LABELS[activeTab]}.`,
+        message: `Foto dokumentasi (.webp) berhasil diunggah untuk tahap ${TAHAP_LABELS[activeTab]}.`,
         type: 'success',
         link: `/dashboard/rencana-anggaran/paket-project/${projectId}`,
       });
 
       setCaption('');
-    };
-
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('[Photo Upload WebP Error]', err);
+      alert('Gagal mengonversi foto ke format WebP.');
+    }
   };
 
   const handleSaveCaption = (photoId: string) => {

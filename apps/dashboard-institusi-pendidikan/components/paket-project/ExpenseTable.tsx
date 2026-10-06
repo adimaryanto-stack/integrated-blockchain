@@ -7,6 +7,7 @@ import {
   TAHAP_LABELS, JENIS_PAJAK_LABELS, DEFAULT_TAX_RATES
 } from '@/types';
 import { fmtRupiah } from '@/lib/utils/formatters';
+import { convertToWebP } from '@/lib/utils/imageConverter';
 import { Plus, Trash2, Tag, Percent, Receipt, FileText, AlertTriangle, Pencil, Copy, Lock } from 'lucide-react';
 
 interface ExpenseTableProps {
@@ -159,9 +160,19 @@ export default function ExpenseTable({ projectId }: ExpenseTableProps) {
     handleCancelForm();
   };
 
-  const handleFileChangeSimulated = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChangeSimulated = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    if (file.type.startsWith('image/')) {
+      try {
+        const webpDataUrl = await convertToWebP(file, { quality: 0.8, maxWidth: 1600 });
+        setSimulatedFileUrl(webpDataUrl);
+      } catch (err) {
+        console.error('[WebP Conversion Error]', err);
+        setSimulatedFileUrl(URL.createObjectURL(file));
+      }
+    } else {
       setSimulatedFileUrl(URL.createObjectURL(file));
     }
   };

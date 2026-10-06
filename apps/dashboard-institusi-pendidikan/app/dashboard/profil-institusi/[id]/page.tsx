@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import Tesseract from 'tesseract.js';
 import { parseReceiptText } from '@/lib/utils/ocrParser';
+import { convertToWebP } from '@/lib/utils/imageConverter';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const bulanNames = [
@@ -639,46 +640,39 @@ export default function ProfilInstitusiDetailPage() {
 
     setIsScanning(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const dataUrl = reader.result as string;
-        try {
-          const result = await Tesseract.recognize(
-            dataUrl,
-            'eng+ind',
-            {
-              logger: m => console.log('[OCR Progress]', m)
-            }
-          );
-          
-          const text = result.data.text;
-          console.log('[OCR Extracted Text]\n', text);
-          
-          const parsed = parseReceiptText(text);
-          
-          if (parsed.category) setFormKategori(parsed.category as any);
-          if (parsed.vendor) setFormVendor(parsed.vendor);
-          if (parsed.date) setFormTanggal(parsed.date);
-          if (parsed.items && parsed.items.length > 0) setFormItems(parsed.items);
-          setFormOngkir(parsed.ongkir);
-          
-          // Calculate parsed tax as a percentage relative to items subtotal
-          const subtotal = parsed.items.reduce((sum, item) => sum + (item.qty * item.price), 0);
-          const taxPercent = subtotal > 0 ? Math.round((parsed.pajak / subtotal) * 100) : 0;
-          setFormPajak(taxPercent || 11);
-          
-          setFormKeterangan(parsed.keterangan);
-        } catch (ocrErr) {
-          console.error('[OCR Error, running fallback]', ocrErr);
-          handleScanDemo();
-        } finally {
-          setIsScanning(false);
+      // Konversi otomatis gambar (PNG, JPG, dll) ke format .webp ringan
+      const webpDataUrl = await convertToWebP(file, { quality: 0.8, maxWidth: 1600 });
+      console.log('[OCR Upload] Gambar berhasil dikonversi ke format .webp');
+
+      const result = await Tesseract.recognize(
+        webpDataUrl,
+        'eng+ind',
+        {
+          logger: m => console.log('[OCR Progress]', m)
         }
-      };
-      reader.readAsDataURL(file);
+      );
+      
+      const text = result.data.text;
+      console.log('[OCR Extracted Text]\n', text);
+      
+      const parsed = parseReceiptText(text);
+      
+      if (parsed.category) setFormKategori(parsed.category as any);
+      if (parsed.vendor) setFormVendor(parsed.vendor);
+      if (parsed.date) setFormTanggal(parsed.date);
+      if (parsed.items && parsed.items.length > 0) setFormItems(parsed.items);
+      setFormOngkir(parsed.ongkir);
+      
+      // Calculate parsed tax as a percentage relative to items subtotal
+      const subtotal = parsed.items.reduce((sum, item) => sum + (item.qty * item.price), 0);
+      const taxPercent = subtotal > 0 ? Math.round((parsed.pajak / subtotal) * 100) : 0;
+      setFormPajak(taxPercent || 11);
+      
+      setFormKeterangan(parsed.keterangan);
     } catch (err) {
-      console.error('[File Read Error]', err);
+      console.error('[WebP Conversion / OCR Error, running fallback]', err);
       handleScanDemo();
+    } finally {
       setIsScanning(false);
     }
   };

@@ -4,6 +4,30 @@ Semua perubahan penting pada proyek **Integrated Blockchain - Platform Transpara
 
 Format pencatatan berpedoman pada [Keep a Changelog](https://keepachangelog.com/id-ID/1.0.0/) dan menganut prinsip [Semantic Versioning](https://semver.org/lang/id/).
 
+## [2.5.3] - 2026-10-06
+
+### 🖼️ Modul Utilitas Kompresi Citra WebP Klien & Optimasi OCR (Port 2024)
+- **Modul Baru: `imageConverter.ts` (`lib/utils/imageConverter.ts`)**:
+  - Utilitas konversi dan kompresi gambar berbasis HTML5 Canvas murni (zero-dependency) untuk mengubah format PNG, JPG, JPEG, BMP, dan TIFF menjadi `.webp` berukuran ultra-ringan.
+  - Opsi adaptif: rasio kualitas default 80% (`quality: 0.8`), batas resolusi maksimal 1600px dengan mempertahankan *aspect ratio*, serta penanganan *background fill* putih bersih (`#FFFFFF`) untuk berkas transparan.
+- **Pre-Processing WebP pada Pemindaian Kuitansi OCR**:
+  - Integrasi pra-konversi otomatis berkas kuitansi/struk ke format WebP pada `pengeluaran/page.tsx`, `profil-institusi/[id]/page.tsx`, dan `rencana-anggaran/page.tsx` sebelum diproses engine Tesseract OCR.
+  - Mempercepat proses pemindaian OCR lokal dan menghemat penggunaan memori peramban secara signifikan.
+- **Kompresi Dokumentasi Foto & Pengeluaran Proyek**:
+  - `PhotoDocumentation.tsx`: Konversi otomatis foto dokumentasi fisik proyek tahap 1–3 ke WebP sebelum disimpan ke basis data, menghemat ruang penyimpanan berkas hingga 70–85%.
+  - `ExpenseTable.tsx`: Simulasi upload bukti transaksi dengan pra-konversi WebP terintegrasi.
+
+### ⚙️ Penyelarasan Sistem & Stabilitas Koneksi Database
+- **Dashboard Kementerian (Port 2021)**:
+  - Penyelarasan judul grafik historis pada `apps/dashboard-kementerian/app/dashboard/page.tsx` menjadi: **`Tren Penyaluran Dana Pendidikan (${minYear}–${maxYear})`**.
+  - Sinkronisasi master data tahun anggaran multi-tahun pada `apps/dashboard-kementerian/lib/data/index.ts`.
+- **Proxy REST API Gateway (Port 2028)**:
+  - Peningkatan `connectionTimeoutMillis` pada pool PostgreSQL dari 10.000 ms (10s) menjadi 30.000 ms (30s) pada `proxy/proxy.js` untuk stabilitas kueri simultan di bawah beban trafik tinggi.
+- **Dashboard Auditor (Port 2023)**:
+  - Pembersihan dan standarisasi konfigurasi `next.config.ts` untuk kompatibilitas build yang optimal.
+
+---
+
 ## [2.5.2] - 2026-10-05
 
 ### 📊 Penyelarasan Standar Grafik Tren Dana & Ekspansi Data Historis APBN
