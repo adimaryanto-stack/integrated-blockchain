@@ -2,13 +2,10 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const nextConfig: NextConfig = {
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  typescript: { ignoreBuildErrors: true },
   experimental: {
-    turbopack: {
-      root: path.resolve(__dirname),
-    },
+    optimizePackageImports: ["recharts", "lucide-react", "@supabase/supabase-js", "exceljs"],
+    turbopack: { root: path.resolve(__dirname) },
   } as any,
 };
 

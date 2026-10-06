@@ -26,7 +26,7 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL || 'postgresql://postgres@localhost:2027/postgres',
   max: 20,              // Increase from default 10 → 20 concurrent connections
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 10000,
 });
 
 // Middleware to log requests (only log slow or error responses)

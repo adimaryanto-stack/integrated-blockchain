@@ -779,7 +779,9 @@ export function getDashboardSummary(tahun: number = 2026): DashboardSummary {
     .sort((a, b) => Number(a.tahun) - Number(b.tahun))
     .map((t) => {
       const bNominal = toBigIntHelper(t.total_anggaran);
-      const yearProvData = alokasiProvinsiData.filter((p) => String(p.tahun_anggaran_id) === String(t.id));
+      const yearProvData = alokasiProvinsiData.filter(
+        (p) => String(p.tahun_anggaran_id) === String(t.id) || (p.tahun && Number(p.tahun) === Number(t.tahun))
+      );
       const bRealSum = yearProvData.reduce((s, p) => s + toBigIntHelper(p.realisasi_total), 0n);
       // For future or DRAFT years, realisasi is 0 if no disbursements recorded yet
       const isDraftOrFuture = t.status === 'DRAFT' || Number(t.tahun) > 2026;
