@@ -333,7 +333,11 @@
           </div>
         </div>
       </div>
-      <div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <a id="targetSchoolDashLink" href="dashboard.html?npsn=001002" class="portal-btn" style="background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.3); font-size: 12.5px; padding: 8px 14px;">
+          <span class="material-symbols-outlined" style="font-size: 16px;">dashboard</span>
+          <span>Buka Dashboard Sekolah</span>
+        </a>
         <a href="index.html" class="portal-btn" style="background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.3); font-size: 12.5px; padding: 8px 14px;">
           <span class="material-symbols-outlined" style="font-size: 16px;">search</span>
           <span>Ganti Satuan Pendidikan</span>
@@ -1033,87 +1037,199 @@
     async function initSchoolAndUrl() {
       const urlParams = new URLSearchParams(window.location.search);
       const npsn = urlParams.get('npsn') || '001002';
-      const name = urlParams.get('name') || 'UNIVERSITAS INDONESIA';
+      let name = urlParams.get('name') || '';
       const desc = urlParams.get('desc');
       const amount = urlParams.get('amount');
       const reason = urlParams.get('reason');
       const date = urlParams.get('date') || 'Tahun Anggaran 2026';
 
-      currentSchoolData.npsn = npsn;
-      currentSchoolData.name = name;
+      let sch = null;
+      let anomaly = null;
 
-      document.getElementById('targetSchoolName').textContent = name;
-      document.getElementById('targetNpsn').textContent = npsn;
+      // 1. Coba fetch anomali dari database jika ada desc atau reason
+      if (desc) {
+        try {
+          let aRes = await fetch(`http://localhost:2028/rest/v1/audit_anomaly?tipe_anomali=eq.${encodeURIComponent(desc)}`);
+          if (!aRes.ok) aRes = await fetch(`http://localhost:2021/rest/v1/audit_anomaly?tipe_anomali=eq.${encodeURIComponent(desc)}`);
+          if (aRes.ok) {
+            const aList = await aRes.json();
+            if (aList && aList.length > 0) {
+              anomaly = aList[0];
+            }
+          }
+        } catch (err) {
+          console.warn('Anomaly lookup error:', err);
+        }
+      }
 
-      // Coba fetch profil sekolah dari database untuk akurasi alamat & wilayah
+      // 2. Coba fetch institusi_pendidikan dari database untuk akurasi profil sekolah
       try {
-        let res = await fetch(`http://localhost:2028/rest/v1/schools?npsn=eq.${encodeURIComponent(npsn)}`);
-        if (!res.ok) res = await fetch(`http://localhost:2021/rest/v1/schools?npsn=eq.${encodeURIComponent(npsn)}`);
+        let res = await fetch(`http://localhost:2028/rest/v1/institusi_pendidikan?npsn=eq.${encodeURIComponent(npsn)}`);
+        if (!res.ok) res = await fetch(`http://localhost:2021/rest/v1/institusi_pendidikan?npsn=eq.${encodeURIComponent(npsn)}`);
         if (res.ok) {
           const list = await res.json();
           if (list && list.length > 0) {
-            const sch = list[0];
-            currentSchoolData.name = sch.name;
-            currentSchoolData.location = sch.location || sch.regencies?.name || currentSchoolData.location;
-            document.getElementById('targetSchoolName').textContent = sch.name;
-            document.getElementById('targetLocation').textContent = currentSchoolData.location;
+            sch = list[0];
           }
         }
       } catch (e) {
-        console.warn('School lookup fallback:', e);
+        console.warn('Institusi lookup fallback:', e);
+      }
+
+      // Fallback ke tabel schools jika tidak ditemukan di institusi_pendidikan
+      if (!sch) {
+        try {
+          let res = await fetch(`http://localhost:2028/rest/v1/schools?npsn=eq.${encodeURIComponent(npsn)}`);
+          if (!res.ok) res = await fetch(`http://localhost:2021/rest/v1/schools?npsn=eq.${encodeURIComponent(npsn)}`);
+          if (res.ok) {
+            const list = await res.json();
+            if (list && list.length > 0) {
+              sch = list[0];
+            }
+          }
+        } catch (e) {
+          console.warn('School lookup fallback:', e);
+        }
+      }
+
+      // Tentukan Nama Sekolah
+      if (sch) {
+        name = sch.nama_institusi || sch.name || name;
+      } else if (anomaly) {
+        name = anomaly.nama_institusi || anomaly.institusi_pendidikan?.nama_institusi || name;
+      } else if (!name) {
+        if (npsn === '21000') {
+          name = 'SMAN 1 Jakarta';
+        } else {
+          name = 'UNIVERSITAS INDONESIA';
+        }
+      }
+
+      currentSchoolData.npsn = npsn;
+      currentSchoolData.name = name;
+
+      // Tentukan Jenjang & Kementerian Pembina
+      const jenjang = (sch?.jenjang || anomaly?.jenjang || '').toUpperCase();
+      let kementerian = 'Kemendikdasmen (Kementerian Pendidikan Dasar & Menengah) / Disdik';
+      if (jenjang === 'UNIVERSITAS' || jenjang === 'PT' || name.toUpperCase().includes('UNIVERSITAS') || name.toUpperCase().includes('INSTITUT')) {
+        kementerian = 'Kemendiktisaintek';
+      }
+
+      // Tentukan Alamat / Lokasi
+      let location = sch?.alamat || (sch?.kabupaten_kota_nama ? `${sch.kabupaten_kota_nama}, ${sch.provinsi_nama || ''}` : '');
+      if (!location) {
+        if (npsn === '21000' || name.toUpperCase().includes('SMAN 1 JAKARTA')) {
+          location = 'Jl. Budi Utomo No. 7, Pasar Baru, Sawah Besar, Jakarta Pusat';
+        } else if (name.toUpperCase().includes('UNIVERSITAS INDONESIA')) {
+          location = 'Jalan Salemba Raya 4, DKI Jakarta';
+        } else {
+          location = currentSchoolData.location;
+        }
+      }
+      currentSchoolData.location = location;
+
+      // Update Tampilan Banner Target Sekolah
+      document.getElementById('targetSchoolName').textContent = name;
+      document.getElementById('targetNpsn').textContent = npsn;
+      document.getElementById('targetKementerian').textContent = kementerian;
+      document.getElementById('targetLocation').textContent = location;
+      const targetAkreditasi = document.getElementById('targetAkreditasi');
+      if (targetAkreditasi) {
+        targetAkreditasi.textContent = sch?.status_sekolah ? `${sch.status_sekolah} (Akreditasi A)` : 'Akreditasi A';
+      }
+      const dashLink = document.getElementById('targetSchoolDashLink');
+      if (dashLink) {
+        dashLink.href = `dashboard.html?npsn=${encodeURIComponent(npsn)}`;
       }
 
       // Deteksi koordinat instansi sasaran berdasarkan nama / lokasi
       const nUpper = currentSchoolData.name.toUpperCase();
       const locUpper = (currentSchoolData.location || '').toUpperCase();
 
-      if (nUpper.includes('INDONESIA') || locUpper.includes('SALEMBA')) {
-        document.getElementById('targetKementerian').textContent = 'Kemendiktisaintek';
-        document.getElementById('targetLocation').textContent = 'Jalan Salemba Raya 4, Jakarta Pusat';
-        currentSchoolData.lat = -6.1950; currentSchoolData.lon = 106.8500;
+      if (npsn === '21000' || nUpper.includes('SMAN 1 JAKARTA') || locUpper.includes('BUDI UTOMO') || locUpper.includes('SAWAH BESAR')) {
+        currentSchoolData.lat = -6.1674;
+        currentSchoolData.lon = 106.8375;
+      } else if (nUpper.includes('INDONESIA') || locUpper.includes('SALEMBA')) {
+        currentSchoolData.lat = -6.1950;
+        currentSchoolData.lon = 106.8500;
       } else if (nUpper.includes('TEKNOLOGI BANDUNG') || nUpper.includes('ITB')) {
-        document.getElementById('targetKementerian').textContent = 'Kemendiktisaintek';
-        document.getElementById('targetLocation').textContent = 'Jl. Ganesha No. 10, Coblong, Kota Bandung';
-        currentSchoolData.lat = -6.8915; currentSchoolData.lon = 107.6106;
+        currentSchoolData.lat = -6.8915;
+        currentSchoolData.lon = 107.6106;
       } else if (nUpper.includes('PERTANIAN BOGOR') || nUpper.includes('IPB')) {
-        document.getElementById('targetKementerian').textContent = 'Kemendiktisaintek';
-        document.getElementById('targetLocation').textContent = 'Kampus IPB Dramaga, Kab. Bogor';
-        currentSchoolData.lat = -6.5590; currentSchoolData.lon = 106.7260;
+        currentSchoolData.lat = -6.5590;
+        currentSchoolData.lon = 106.7260;
       } else if (nUpper.includes('GADJAH MADA') || nUpper.includes('UGM')) {
-        document.getElementById('targetKementerian').textContent = 'Kemendiktisaintek';
-        document.getElementById('targetLocation').textContent = 'Bulaksumur, Caturtunggal, Depok, Sleman, DIY';
-        currentSchoolData.lat = -7.7713; currentSchoolData.lon = 110.3778;
+        currentSchoolData.lat = -7.7713;
+        currentSchoolData.lon = 110.3778;
       } else if (nUpper.includes('DIPONEGORO') || nUpper.includes('UNDIP') || locUpper.includes('SEMARANG')) {
-        document.getElementById('targetLocation').textContent = 'Jl. Prof. Soedarto, Tembalang, Kota Semarang';
-        currentSchoolData.lat = -7.0500; currentSchoolData.lon = 110.4400;
+        currentSchoolData.lat = -7.0500;
+        currentSchoolData.lon = 110.4400;
       } else if (nUpper.includes('AIRLANGGA') || nUpper.includes('UNAIR') || nUpper.includes('UNESA') || locUpper.includes('SURABAYA')) {
-        document.getElementById('targetLocation').textContent = 'Kota Surabaya, Jawa Timur';
-        currentSchoolData.lat = -7.2700; currentSchoolData.lon = 112.7500;
+        currentSchoolData.lat = -7.2700;
+        currentSchoolData.lon = 112.7500;
       } else if (nUpper.includes('SUMATERA UTARA') || nUpper.includes('USU') || locUpper.includes('MEDAN')) {
-        document.getElementById('targetLocation').textContent = 'Jl. Dr. Mansyur No. 9, Kota Medan';
-        currentSchoolData.lat = 3.5650; currentSchoolData.lon = 98.6570;
+        currentSchoolData.lat = 3.5650;
+        currentSchoolData.lon = 98.6570;
       } else if (nUpper.includes('HASANUDDIN') || nUpper.includes('UNHAS') || locUpper.includes('MAKASSAR')) {
-        document.getElementById('targetLocation').textContent = 'Jl. Perintis Kemerdekaan KM 10, Kota Makassar';
-        currentSchoolData.lat = -5.1350; currentSchoolData.lon = 119.4890;
+        currentSchoolData.lat = -5.1350;
+        currentSchoolData.lon = 119.4890;
       } else if (nUpper.includes('LAMPUNG') || nUpper.includes('UNILA') || locUpper.includes('LAMPUNG')) {
-        document.getElementById('targetLocation').textContent = 'Jl. Prof. Dr. Sumantri Brojonegoro, Bandar Lampung';
-        currentSchoolData.lat = -5.3650; currentSchoolData.lon = 105.2450;
+        currentSchoolData.lat = -5.3650;
+        currentSchoolData.lon = 105.2450;
       } else if (locUpper.includes('BANDUNG')) {
-        currentSchoolData.lat = -6.9140; currentSchoolData.lon = 107.6090;
+        currentSchoolData.lat = -6.9140;
+        currentSchoolData.lon = 107.6090;
       }
 
-      // Prefill 5W1H
-      if (desc || reason || amount) {
-        document.getElementById('rep5w1h').value = `WHAT: Dugaan ketidaksesuaian alokasi pada "${desc || 'Program Anggaran Pendidikan'}"\nWHERE: ${name} (NPSN: ${npsn})\nWHEN: ${date}\nWHY: ${reason || 'Deviasi anomali penyerapan anggaran terdeteksi oleh sistem'}`;
-        document.getElementById('repDesc').value = `Berdasarkan pantauan data transparansi publik, ditemukan indikasi deviasi anggaran pada satuan pendidikan ${name} (${npsn}) terkait item ${desc || 'belanja institusi'}. Rincian catatan: ${reason || 'Perlu dilakukan audit investigasi mendalam.'}`;
+      // Prefill Kategori
+      const repCategory = document.getElementById('repCategory');
+      if (repCategory) {
+        const dLower = (desc || '').toLowerCase();
+        if (dLower.includes('duplikasi') || dLower.includes('mark-up') || dLower.includes('ganda')) {
+          repCategory.value = 'Penggelembungan Anggaran / Mark-Up';
+        } else if (dLower.includes('fiktif')) {
+          repCategory.value = 'Pengadaan / Proyek Fiktif';
+        } else if (dLower.includes('pungli') || dLower.includes('pungutan')) {
+          repCategory.value = 'Pungutan Liar (Pungli)';
+        } else if (dLower.includes('bos') || dLower.includes('boptn')) {
+          repCategory.value = 'Pemotongan Dana BOS / BOPTN';
+        } else if (desc) {
+          repCategory.value = 'Anomali Penyerapan Anggaran Terdeteksi Sistem';
+        }
+      }
+
+      // Prefill 5W1H & Kronologi
+      const rep5w1h = document.getElementById('rep5w1h');
+      const repDesc = document.getElementById('repDesc');
+
+      if (anomaly || desc || reason || amount) {
+        const whatText = anomaly?.audit_what || (desc ? `Pencatatan pengeluaran ganda (Duplicate billing) untuk ${desc}` : 'Dugaan ketidaksesuaian alokasi anggaran');
+        const whyText = anomaly?.audit_why || reason || 'Ditemukan dua kuitansi dengan nomor seri dan nominal yang sama diajukan pada pembukuan.';
+        const whereText = anomaly?.audit_where || `${name} (NPSN: ${npsn}), Rekening BOS Reguler Sekolah`;
+        const whenText = anomaly?.audit_when || (date ? `Periode Transaksi TA 2026, ditemukan pada ${date}` : 'Periode Transaksi TA 2026');
+        const whoText = anomaly?.audit_who || 'Bendahara Pengeluaran & Rekanan Terkait';
+        const howText = anomaly?.audit_how || 'Menarik kembali kelebihan pembayaran, menghapus kuitansi duplikat, dan penegakan sanksi administrasi.';
+
+        if (rep5w1h) {
+          rep5w1h.value = `WHAT (APA MASALAHNYA):\n${whatText}\n\nWHY (MENGAPA TERJADI):\n${whyText}\n\nWHERE (LOKASI KEJADIAN):\n${whereText}\n\nWHEN (WAKTU PERISTIWA):\n${whenText}\n\nWHO (PIHAK TERKAIT):\n${whoText}\n\nHOW (REKOMENDASI AUDITOR):\n${howText}`;
+        }
+
+        if (repDesc) {
+          repDesc.value = `Berdasarkan pantauan sistem audit SiTransparan, ditemukan indikasi deviasi anggaran pada ${name} (NPSN: ${npsn}) terkait "${desc || 'Belanja Institusi'}":\n\nUraian Temuan:\n${reason || whyText}\n\nRekomendasi Tindak Lanjut:\n${howText}`;
+        }
       } else {
-        document.getElementById('rep5w1h').value = `WHAT: Dugaan kejanggalan realisasi anggaran\nWHERE: ${name} (NPSN: ${npsn})\nWHEN: ${date}\nWHO: Pengelola Keuangan / PPK Terkait`;
-        document.getElementById('repDesc').value = `Ditemukan indikasi ketidaksesuaian dalam pelaksanaan dan pertanggungjawaban anggaran di ${name}. Diperlukan audit forensik dan klarifikasi resmi.`;
+        if (rep5w1h) {
+          rep5w1h.value = `WHAT: Dugaan kejanggalan realisasi anggaran\nWHERE: ${name} (NPSN: ${npsn})\nWHEN: ${date}\nWHO: Pengelola Keuangan / PPK Terkait`;
+        }
+        if (repDesc) {
+          repDesc.value = `Ditemukan indikasi ketidaksesuaian dalam pelaksanaan dan pertanggungjawaban anggaran di ${name}. Diperlukan audit forensik dan klarifikasi resmi.`;
+        }
       }
 
       // Inisialisasi skema nominal
-      if (amount && parseFloat(amount) > 0) {
-        applyNominalScheme(amount);
+      const finalAmount = anomaly?.nominal_selisih || amount;
+      if (finalAmount && parseFloat(finalAmount) > 0) {
+        applyNominalScheme(finalAmount);
       } else {
         setNominalTier('MID');
       }
