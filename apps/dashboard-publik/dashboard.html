@@ -215,7 +215,12 @@
     <!-- Dashboard Tabs -->
     <div style="background: #ffffff; border: 1px solid var(--color-border); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow-sm);">
       <div style="display: flex; border-bottom: 1px solid var(--color-border); padding: 0 16px; overflow-x: auto;">
-        <button class="dash-tab-btn active" data-tab="tx" onclick="switchDashTab('tx')">
+        <button class="dash-tab-btn active" data-tab="rab" onclick="switchDashTab('rab')">
+          <span class="material-symbols-outlined" style="font-size: 18px;">calculate</span>
+          <span>Rincian RAB (Rencana Anggaran Biaya)</span>
+          <span id="rabCountBadge" style="display: none; background: #2563EB; color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 999px; margin-left: 4px;">0</span>
+        </button>
+        <button class="dash-tab-btn" data-tab="tx" onclick="switchDashTab('tx')">
           <span class="material-symbols-outlined" style="font-size: 18px;">receipt_long</span>
           <span>Daftar Transaksi & Kwitansi</span>
         </button>
@@ -230,8 +235,132 @@
         </button>
       </div>
 
-      <!-- Tab 1: Transactions -->
-      <div id="tabContentTx" style="padding: 24px;">
+      <!-- Tab: Rincian RAB (Rencana Anggaran Biaya) -->
+      <div id="tabContentRab" style="padding: 24px; display: block;">
+        <!-- Header & Deskripsi RAB -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 14px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
+              <span style="font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 6px; background: #EFF6FF; color: #1D4ED8; text-transform: uppercase;">
+                TAHUN ANGGARAN 2026
+              </span>
+              <span style="font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px; background: #ECFDF5; color: #047857;">
+                ✓ TERSINKRONISASI POSTGRESQL & LKPP
+              </span>
+              <span id="rabActiveMonthBadge" style="font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px; background: #F1F5F9; color: #475569;">
+                Semua Bulan (1 Tahun Anggaran)
+              </span>
+            </div>
+            <h3 style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 4px 0;">
+              Rincian Dokumen Rencana Anggaran Biaya (RAB)
+            </h3>
+            <p style="font-size: 13px; color: var(--color-text-muted); margin: 0;">
+              Daftar resmi alokasi pos belanja, spesifikasi nama produk/jasa, kuantitas volume, pagu satuan, dan sub-total anggaran belanja institusi.
+            </p>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <button onclick="exportRabCsv()" class="btn-watchlist-pill" style="font-size: 12px; padding: 6px 12px;">
+              <span class="material-symbols-outlined" style="font-size: 16px;">download</span>
+              <span>Unduh CSV RAB</span>
+            </button>
+            <a href="#audit" onclick="switchDashTab('audit')" class="btn-watchlist-pill" style="font-size: 12px; padding: 6px 12px; border-color: #FECACA; color: #DC2626; background: #FEF2F2;">
+              <span class="material-symbols-outlined" style="font-size: 16px;">policy</span>
+              <span>Cek Anomali RAB</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Sumber Pendanaan Institusi Cards (APBN, APBD, CSR) -->
+        <div id="rabFundingSourcesContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 24px;">
+          <!-- Dynamically populated from sumber_dana_institusi -->
+        </div>
+
+        <!-- Monthly Expense Grid (12 Bulan Visualizer) -->
+        <div style="background: #F8FAFC; border: 1px solid var(--color-border); border-radius: 16px; padding: 18px; margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-primary);">calendar_month</span>
+              <strong style="font-size: 13px; color: #0f172a;">Jadwal Penyerapan Anggaran Bulanan (Klik bulan untuk filter rincian)</strong>
+            </div>
+            <button onclick="filterRabMonth(0)" id="btnFilterAllMonths" style="border: none; background: var(--color-primary); color: #fff; font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+              Tampilkan Semua Bulan (12 Bulan)
+            </button>
+          </div>
+          <div id="rabMonthlyGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 8px;">
+            <!-- 12 months buttons generated dynamically -->
+          </div>
+        </div>
+
+        <!-- Filter & Search Controls -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; background: #FFFFFF; border: 1px solid var(--color-border); border-radius: 14px; padding: 12px 16px;">
+          <div style="display: flex; gap: 10px; align-items: center; flex: 1; min-width: 240px;">
+            <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-text-muted);">search</span>
+            <input type="text" id="rabSearchInput" oninput="applyRabFilters()" placeholder="Cari nama produk, jasa, buku, konstruksi, atau pos belanja..." style="border: none; outline: none; width: 100%; font-size: 13px; background: transparent; color: #0f172a;">
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <select id="rabCategoryFilter" onchange="applyRabFilters()" style="padding: 7px 12px; border: 1px solid var(--color-border); border-radius: 8px; font-size: 12.5px; background: #fff; outline: none; color: #334155; font-weight: 600;">
+              <option value="ALL">Semua Kategori Pos Belanja</option>
+              <option value="Sarana & Prasarana">Sarana & Prasarana</option>
+              <option value="Pengadaan Buku & Bahan Ajar">Buku & Bahan Ajar</option>
+              <option value="Belanja Pegawai & Tenaga Pendidik">Belanja Pegawai / Dosen</option>
+              <option value="Utilitas & Layanan Umum">Utilitas Listrik / PDAM</option>
+              <option value="Operasional Kantor & ATK">Operasional Kantor & ATK</option>
+            </select>
+            <span id="rabFilteredCount" style="font-size: 12px; font-weight: 700; color: var(--color-text-muted);">
+              Memuat item...
+            </span>
+          </div>
+        </div>
+
+        <!-- Alert Anomali khusus jika bulan yang dipilih mengandung temuan -->
+        <div id="rabAnomalyNotice" style="display: none; background: #FEF2F2; border: 1.5px solid #FECACA; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; align-items: center; justify-content: space-between; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="material-symbols-outlined" style="color: #DC2626; font-size: 22px;">error</span>
+            <div>
+              <strong style="font-size: 13px; color: #991B1B;" id="rabAnomalyTitle">Peringatan Audit Anomali Terdeteksi</strong>
+              <div style="font-size: 12px; color: #7F1D1D;" id="rabAnomalyText">Terdapat ketidaksesuaian saldo pada bulan ini.</div>
+            </div>
+          </div>
+          <a href="#" id="rabAnomalyReportBtn" class="btn-report" style="background: #DC2626; color: #fff; text-decoration: none; font-size: 12px; padding: 7px 16px; border-radius: 8px; white-space: nowrap;">
+            Laporkan ke APH
+          </a>
+        </div>
+
+        <!-- Tabel Rincian RAB -->
+        <div style="overflow-x: auto; border: 1px solid var(--color-border); border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+          <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+            <thead>
+              <tr style="background: #F8FAFC; border-bottom: 2px solid var(--color-border); color: var(--color-text-muted); font-weight: 700;">
+                <th style="padding: 12px 14px; width: 50px; text-align: center;">NO</th>
+                <th style="padding: 12px 14px; width: 110px;">BULAN</th>
+                <th style="padding: 12px 14px;">URAIAN KEGIATAN / PRODUK / JASA</th>
+                <th style="padding: 12px 14px;">KATEGORI POS</th>
+                <th style="padding: 12px 14px; text-align: center; width: 95px;">VOLUME</th>
+                <th style="padding: 12px 14px; text-align: right; width: 150px;">HARGA SATUAN</th>
+                <th style="padding: 12px 14px; text-align: right; width: 165px;">SUB-TOTAL (RP)</th>
+                <th style="padding: 12px 14px; text-align: center; width: 175px;">TINDAKAN / LAPOR</th>
+              </tr>
+            </thead>
+            <tbody id="rabTableBody">
+              <!-- Dynamically populated from rincian_pengeluaran_item -->
+            </tbody>
+            <tfoot id="rabTableFoot" style="background: #F8FAFC; border-top: 2px solid var(--color-border); font-weight: 800;">
+              <tr>
+                <td colspan="6" style="padding: 14px 16px; text-align: right; font-size: 13px; color: #0f172a;">
+                  TOTAL NILAI RAB TERFILTER:
+                </td>
+                <td id="rabFilteredTotal" style="padding: 14px 16px; text-align: right; font-size: 14.5px; color: var(--color-primary);">
+                  Rp 0
+                </td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 2: Transactions -->
+      <div id="tabContentTx" style="padding: 24px; display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
           <h3 style="font-size: 16px; font-weight: 800; color: #0f172a;">Buku Kas Transaksi Pembelanjaan</h3>
           <span style="font-size: 12px; color: var(--color-text-muted);" id="txCountBadge">Memuat transaksi...</span>
@@ -363,6 +492,62 @@
     </div>
   </div>
 
+  <!-- Modal Detail Item Belanja RAB -->
+  <div class="receipt-modal-backdrop" id="rabItemModal" onclick="closeRabModal(event)">
+    <div class="receipt-paper" onclick="event.stopPropagation()">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; border-bottom: 2px dashed #E2E8F0; padding-bottom: 16px;">
+        <div>
+          <div style="font-size: 10px; font-weight: 800; color: #2563EB; text-transform: uppercase; letter-spacing: 0.05em;">
+            ✓ DOKUMEN ANGGARAN RESMI POSTGRESQL (LKPP)
+          </div>
+          <h3 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 2px;">
+            Rincian Item Belanja RAB
+          </h3>
+        </div>
+        <button onclick="closeRabModalDirect()" style="border: none; background: #F1F5F9; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+          <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
+        </button>
+      </div>
+
+      <div style="font-size: 13px; line-height: 1.8; color: #334155; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #F1F5F9; padding: 6px 0;">
+          <span style="color: var(--color-text-muted);">Uraian Item / Pekerjaan:</span>
+          <strong id="modalRabItemName" style="max-width: 60%; text-align: right; color: #0f172a;">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #F1F5F9; padding: 6px 0;">
+          <span style="color: var(--color-text-muted);">Periode Alokasi Bulan:</span>
+          <span id="modalRabItemMonth" style="font-weight: 700;">-</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #F1F5F9; padding: 6px 0;">
+          <span style="color: var(--color-text-muted);">Volume Kebutuhan (Qty):</span>
+          <span id="modalRabItemQty" style="font-weight: 700;">-</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #F1F5F9; padding: 6px 0;">
+          <span style="color: var(--color-text-muted);">Harga Standar Satuan:</span>
+          <span id="modalRabItemPrice" style="font-weight: 700;">-</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #F1F5F9; padding: 6px 0;">
+          <span style="color: var(--color-text-muted);">Pajak PPN Terhitung (11%):</span>
+          <span id="modalRabItemTax" style="font-weight: 700; color: #D97706;">-</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 10px 0; font-size: 15px; border-top: 2px dashed #E2E8F0; margin-top: 8px;">
+          <strong>Total Nilai Anggaran (Sub-Total):</strong>
+          <strong id="modalRabItemTotal" style="color: var(--color-primary);">-</strong>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 6px;">
+        <button onclick="closeRabModalDirect()" class="btn-watchlist-pill" style="flex: 1; justify-content: center;">
+          Tutup Rincian
+        </button>
+        <a id="modalRabReportBtn" href="#" class="btn-report" style="flex: 1; justify-content: center; background: #DC2626; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; border-radius: 10px;">
+          <span class="material-symbols-outlined" style="font-size: 16px;">flag</span>
+          Laporkan Item Belanja
+        </a>
+      </div>
+    </div>
+  </div>
+
   <!-- Site Footer -->
   <footer style="background: #0B1329; color: #94A3B8; padding: 48px 0 24px; border-top: 1px solid #1E293B;">
     <div class="container">
@@ -395,6 +580,20 @@
     let likes = 0;
     let isLiked = false;
 
+    // RAB state variables
+    let allRabItems = [];
+    let monthlyExpenses = [];
+    let sumberDanaList = [];
+    let selectedRabMonth = 0; // 0 = Semua Bulan
+    let currentlyFilteredRabItems = [];
+    let schoolAnomaliesList = [];
+
+    const MONTH_NAMES = [
+      'Semua Bulan',
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+
     const API_PRIMARY = 'http://localhost:2028/rest/v1';
     const API_SECONDARY = 'http://localhost:2021/rest/v1';
 
@@ -419,6 +618,36 @@
       return urlParams.get(param);
     }
 
+    function getRabCategory(itemName) {
+      const nLower = (itemName || '').toLowerCase();
+      if (nLower.includes('gedung') || nLower.includes('konstruksi') || nLower.includes('sarana')) {
+        return { name: 'Sarana & Prasarana', color: '#D97706', bg: '#FEF3C7', icon: 'domain' };
+      }
+      if (nLower.includes('buku') || nLower.includes('ajar') || nLower.includes('pustaka')) {
+        return { name: 'Pengadaan Buku & Bahan Ajar', color: '#2563EB', bg: '#EFF6FF', icon: 'menu_book' };
+      }
+      if (nLower.includes('gaji') || nLower.includes('honorer') || nLower.includes('dosen') || nLower.includes('security') || nLower.includes('penjaga')) {
+        return { name: 'Belanja Pegawai & Tenaga Pendidik', color: '#16A34A', bg: '#DCFCE7', icon: 'badge' };
+      }
+      if (nLower.includes('listrik') || nLower.includes('pdam') || nLower.includes('daya') || nLower.includes('air')) {
+        return { name: 'Utilitas & Layanan Umum', color: '#0891B2', bg: '#CFFAFE', icon: 'bolt' };
+      }
+      if (nLower.includes('atk') || nLower.includes('tata usaha') || nLower.includes('kantor')) {
+        return { name: 'Operasional Kantor & ATK', color: '#7C3AED', bg: '#F3E8FF', icon: 'inventory' };
+      }
+      return { name: 'Operasional Lainnya', color: '#4B5563', bg: '#F3F4F6', icon: 'category' };
+    }
+
+    function getUnitName(name, qty) {
+      const nLower = (name || '').toLowerCase();
+      if (nLower.includes('gedung') || nLower.includes('proyek') || nLower.includes('konstruksi')) return 'Paket';
+      if (nLower.includes('buku')) return 'Eks';
+      if (nLower.includes('dosen') || nLower.includes('security') || nLower.includes('penjaga') || nLower.includes('pegawai')) return 'Orang';
+      if (nLower.includes('atk')) return 'Set';
+      if (nLower.includes('listrik') || nLower.includes('pdam')) return 'Bulan';
+      return qty > 1 ? 'Unit' : 'Paket';
+    }
+
     async function loadSchoolData() {
       const npsnFromUrl = getParam('npsn');
       if (npsnFromUrl) currentNpsn = npsnFromUrl;
@@ -436,7 +665,13 @@
               name: ip.nama_institusi,
               npsn: ip.npsn,
               location: ip.alamat || `${ip.kabupaten_kota_nama || ''}, ${ip.provinsi_nama || ''}`,
-              accreditation: 'A'
+              accreditation: 'A',
+              nominal_alokasi: ip.nominal_alokasi,
+              realisasi_total: ip.realisasi_total,
+              selisih: ip.selisih,
+              persentase_penyerapan: ip.persentase_penyerapan,
+              nomor_rekening: ip.nomor_rekening,
+              jenjang: ip.jenjang
             }];
           }
         }
@@ -454,15 +689,19 @@
 
         if (currentSchool) {
           renderSchoolHeader(currentSchool);
-          loadFinancials(currentSchool.id);
-          loadTransactions(currentSchool.id);
-          loadSchoolAnomalies(currentSchool.npsn);
-          loadSchoolComments(currentSchool.npsn);
+          await loadFinancials(currentSchool.id);
+          await loadSchoolRab(currentSchool.id);
+          await loadTransactions(currentSchool.id);
+          await loadSchoolAnomalies(currentSchool.npsn);
+          await loadSchoolComments(currentSchool.npsn);
 
-          // Buka tab spesifik jika ada di param ?tab=audit atau hash #audit
+          // Buka tab spesifik jika ada di param ?tab=... atau hash #...
           const tabParam = getParam('tab') || (window.location.hash ? window.location.hash.replace('#', '') : null);
-          if (tabParam && ['tx', 'audit', 'forum'].includes(tabParam.toLowerCase())) {
+          if (tabParam && ['rab', 'tx', 'audit', 'forum'].includes(tabParam.toLowerCase())) {
             switchDashTab(tabParam.toLowerCase());
+          } else {
+            // Default: tampilkan tab RAB terlebih dahulu jika sekolah memiliki data RAB
+            switchDashTab(allRabItems.length > 0 ? 'rab' : 'tx');
           }
         }
       } catch (err) {
@@ -481,13 +720,23 @@
 
     async function loadFinancials(schoolId) {
       try {
-        const [funds, txs] = await Promise.all([
+        const [funds, txs, sources] = await Promise.all([
           fetchApi(`/incoming_funds?school_id=eq.${schoolId}`) || [],
-          fetchApi(`/transactions?school_id=eq.${schoolId}`) || []
+          fetchApi(`/transactions?school_id=eq.${schoolId}`) || [],
+          fetchApi(`/sumber_dana_institusi?institusi_id=eq.${schoolId}`) || []
         ]);
 
         let totalRec = (funds || []).reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
         let totalSpn = (txs || []).reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+
+        // Jika incoming_funds kosong, periksa sumber_dana_institusi atau profil institusi
+        if (totalRec === 0 && Array.isArray(sources) && sources.length > 0) {
+          totalRec = sources.reduce((acc, curr) => acc + Number(curr.nominal || 0), 0);
+          totalSpn = sources.reduce((acc, curr) => acc + Number(curr.realisasi || 0), 0);
+        } else if (totalRec === 0 && currentSchool?.nominal_alokasi) {
+          totalRec = Number(currentSchool.nominal_alokasi);
+          totalSpn = Number(currentSchool.realisasi_total || 0);
+        }
 
         const remaining = Math.max(0, totalRec - totalSpn);
         const pct = totalRec > 0 ? ((totalSpn / totalRec) * 100).toFixed(1) : '0';
@@ -504,10 +753,383 @@
       }
     }
 
+    async function loadSchoolRab(schoolId) {
+      const tbody = document.getElementById('rabTableBody');
+      const badge = document.getElementById('rabCountBadge');
+      if (!tbody) return;
+
+      try {
+        const [items, months, sources] = await Promise.all([
+          fetchApi(`/rincian_pengeluaran_item?institusi_id=eq.${encodeURIComponent(schoolId)}&order=nomor_bulan.asc,nomor.asc`) || [],
+          fetchApi(`/pengeluaran_bulanan_institusi?institusi_id=eq.${encodeURIComponent(schoolId)}&order=nomor.asc`) || [],
+          fetchApi(`/sumber_dana_institusi?institusi_id=eq.${encodeURIComponent(schoolId)}`) || []
+        ]);
+
+        allRabItems = Array.isArray(items) ? items : [];
+        monthlyExpenses = Array.isArray(months) ? months : [];
+        sumberDanaList = Array.isArray(sources) ? sources : [];
+
+        if (badge) {
+          badge.style.display = allRabItems.length > 0 ? 'inline-block' : 'none';
+          badge.textContent = allRabItems.length;
+        }
+
+        renderRabFundingSources(sumberDanaList);
+        renderRabMonthlyGrid(monthlyExpenses);
+        applyRabFilters();
+      } catch (err) {
+        console.error('RAB load error:', err);
+        tbody.innerHTML = '<tr><td colspan="8" style="padding: 24px; text-align: center; color: #ef4444;">Gagal memuat rincian RAB dari database.</td></tr>';
+      }
+    }
+
+    function renderRabFundingSources(sources) {
+      const container = document.getElementById('rabFundingSourcesContainer');
+      if (!container) return;
+
+      const fmt = n => window.DBClient ? window.DBClient.formatIDR(n) : 'Rp ' + Number(n).toLocaleString('id-ID');
+
+      if (!Array.isArray(sources) || sources.length === 0) {
+        container.innerHTML = `
+          <div style="background: #F8FAFC; border: 1px solid var(--color-border); border-radius: 14px; padding: 16px;">
+            <div style="font-size: 11px; font-weight: 800; color: var(--color-primary); text-transform: uppercase;">SUMBER UTAMA</div>
+            <div style="font-size: 15px; font-weight: 800; color: #0f172a; margin: 4px 0;">BOPTN / BOS Reguler Kemendikdasmen / Kemendiktisaintek</div>
+            <div style="font-size: 13px; color: var(--color-text-muted);">Pagu alokasi dana bersumber dari rekening kas perbendaharaan negara.</div>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = sources.map(s => {
+        const nom = Number(s.nominal || 0);
+        const real = Number(s.realisasi || 0);
+        const sisa = Number(s.saldo_di_bank || Math.max(0, nom - real));
+        const pct = nom > 0 ? ((real / nom) * 100).toFixed(1) : '0';
+
+        let badgeColor = '#2563EB';
+        let badgeBg = '#EFF6FF';
+        let icon = 'account_balance';
+        if (s.nama_sumber.toLowerCase().includes('apbd')) {
+          badgeColor = '#059669';
+          badgeBg = '#ECFDF5';
+          icon = 'domain';
+        } else if (s.nama_sumber.toLowerCase().includes('csr')) {
+          badgeColor = '#7C3AED';
+          badgeBg = '#F3E8FF';
+          icon = 'handshake';
+        }
+
+        return `
+          <div style="background: #ffffff; border: 1.5px solid #E2E8F0; border-top: 4px solid ${badgeColor}; border-radius: 14px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+              <span style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: ${badgeBg}; color: ${badgeColor}; display: inline-flex; align-items: center; gap: 4px;">
+                <span class="material-symbols-outlined" style="font-size: 12px;">${icon}</span>
+                ${s.tahun_anggaran ? `TA ${s.tahun_anggaran}` : 'TA 2026'}
+              </span>
+              <span style="font-size: 11px; font-weight: 800; color: #0f172a;">${pct}% Terserap</span>
+            </div>
+            <div style="font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 10px; line-height: 1.3;">
+              ${s.nama_sumber}
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+              <span style="color: var(--color-text-muted);">Pagu Alokasi:</span>
+              <strong style="color: #0f172a;">${fmt(nom)}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+              <span style="color: var(--color-text-muted);">Realisasi:</span>
+              <strong style="color: #DC2626;">${fmt(real)}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; border-top: 1px dashed #E2E8F0; padding-top: 6px; margin-top: 6px;">
+              <span style="color: var(--color-text-muted);">Sisa di Bank:</span>
+              <strong style="color: #16A34A;">${fmt(sisa)}</strong>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderRabMonthlyGrid(months) {
+      const container = document.getElementById('rabMonthlyGrid');
+      if (!container) return;
+
+      const fmtShort = n => {
+        const num = Number(n || 0);
+        if (num >= 1e12) return 'Rp ' + (num / 1e12).toFixed(1) + ' T';
+        if (num >= 1e9) return 'Rp ' + (num / 1e9).toFixed(1) + ' M';
+        if (num >= 1e6) return 'Rp ' + (num / 1e6).toFixed(1) + ' Jt';
+        return 'Rp ' + num.toLocaleString('id-ID');
+      };
+
+      const monthList = Array.isArray(months) && months.length > 0 ? months : Array.from({ length: 12 }, (_, i) => ({ nomor: i + 1, bulan: MONTH_NAMES[i + 1], sub_total: 0 }));
+
+      container.innerHTML = monthList.map(m => {
+        const num = m.nomor;
+        const shortName = (m.bulan || MONTH_NAMES[num] || '').slice(0, 3).toUpperCase();
+        const hasAnomaly = (num === 4); // April pada ITB
+
+        return `
+          <button 
+            type="button"
+            class="rab-month-btn"
+            data-month="${num}"
+            onclick="filterRabMonth(${num})"
+            style="border: 1.5px solid #E2E8F0; background: #ffffff; border-radius: 10px; padding: 8px 4px; text-align: center; cursor: pointer; transition: all 0.15s ease; position: relative;">
+            ${hasAnomaly ? '<span style="position: absolute; top: -4px; right: -4px; width: 8px; height: 8px; background: #DC2626; border-radius: 50%; box-shadow: 0 0 0 2px #fff;" title="Ada temuan anomali"></span>' : ''}
+            <div style="font-size: 11px; font-weight: 800; color: #0f172a;">${shortName}</div>
+            <div style="font-size: 10px; font-weight: 700; color: var(--color-text-muted); margin-top: 2px;">
+              ${fmtShort(m.sub_total || m.nominal_pengeluaran || 0)}
+            </div>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function filterRabMonth(monthNum) {
+      selectedRabMonth = monthNum;
+
+      const allBtn = document.getElementById('btnFilterAllMonths');
+      if (allBtn) {
+        allBtn.style.background = monthNum === 0 ? 'var(--color-primary)' : '#64748B';
+      }
+
+      document.querySelectorAll('.rab-month-btn').forEach(btn => {
+        const num = Number(btn.getAttribute('data-month'));
+        if (num === monthNum) {
+          btn.style.borderColor = 'var(--color-primary)';
+          btn.style.background = '#EFF6FF';
+          btn.style.color = 'var(--color-primary)';
+        } else {
+          btn.style.borderColor = '#E2E8F0';
+          btn.style.background = '#FFFFFF';
+          btn.style.color = '#334155';
+        }
+      });
+
+      const badge = document.getElementById('rabActiveMonthBadge');
+      if (badge) {
+        badge.textContent = monthNum === 0 ? 'Semua Bulan (1 Tahun Anggaran)' : `Bulan ${MONTH_NAMES[monthNum]} 2026`;
+      }
+
+      checkMonthAnomaly(monthNum);
+      applyRabFilters();
+    }
+
+    function checkMonthAnomaly(monthNum) {
+      const notice = document.getElementById('rabAnomalyNotice');
+      if (!notice) return;
+
+      const matchingAnomaly = schoolAnomaliesList.find(a => {
+        if (monthNum === 0) return true;
+        return a.nomor_bulan === monthNum || (a.bulan && a.bulan.toLowerCase() === (MONTH_NAMES[monthNum] || '').toLowerCase());
+      });
+
+      if (matchingAnomaly) {
+        const fmt = n => window.DBClient ? window.DBClient.formatIDR(n) : 'Rp ' + Number(n).toLocaleString('id-ID');
+        notice.style.display = 'flex';
+        document.getElementById('rabAnomalyTitle').textContent = `⚠️ Peringatan Audit Anomali Terdeteksi: ${matchingAnomaly.tipe_anomali} (${fmt(matchingAnomaly.nominal_selisih)})`;
+        document.getElementById('rabAnomalyText').textContent = matchingAnomaly.keterangan || 'Terdapat deviasi pertanggungjawaban dana yang belum terselesaikan.';
+        const reportUrl = `reporting.html?npsn=${encodeURIComponent(currentNpsn)}&name=${encodeURIComponent(currentSchool?.name || '')}&desc=${encodeURIComponent(matchingAnomaly.tipe_anomali)}&amount=${encodeURIComponent(matchingAnomaly.nominal_selisih)}&reason=${encodeURIComponent(matchingAnomaly.keterangan || '')}&date=${encodeURIComponent(matchingAnomaly.tanggal_ditemukan || '')}&agency=KPK`;
+        document.getElementById('rabAnomalyReportBtn').href = reportUrl;
+      } else {
+        notice.style.display = 'none';
+      }
+    }
+
+    function applyRabFilters() {
+      const tbody = document.getElementById('rabTableBody');
+      const countEl = document.getElementById('rabFilteredCount');
+      const totalEl = document.getElementById('rabFilteredTotal');
+      if (!tbody) return;
+
+      const searchInput = (document.getElementById('rabSearchInput')?.value || '').toLowerCase().trim();
+      const catFilter = document.getElementById('rabCategoryFilter')?.value || 'ALL';
+
+      const fmt = n => window.DBClient ? window.DBClient.formatIDR(n) : 'Rp ' + Number(n).toLocaleString('id-ID');
+
+      let filtered = allRabItems.filter(item => {
+        // Filter Bulan
+        if (selectedRabMonth > 0 && item.nomor_bulan !== selectedRabMonth) {
+          return false;
+        }
+        // Filter Kategori
+        if (catFilter !== 'ALL') {
+          const itemCat = getRabCategory(item.nama_produk_jasa).name;
+          if (itemCat !== catFilter) return false;
+        }
+        // Filter Text Search
+        if (searchInput) {
+          const nameMatch = (item.nama_produk_jasa || '').toLowerCase().includes(searchInput);
+          const monthMatch = (MONTH_NAMES[item.nomor_bulan] || '').toLowerCase().includes(searchInput);
+          if (!nameMatch && !monthMatch) return false;
+        }
+        return true;
+      });
+
+      currentlyFilteredRabItems = filtered;
+
+      const totalVal = filtered.reduce((acc, curr) => {
+        const h = Number(curr.harga_satuan || 0);
+        const q = curr.qty || 1;
+        return acc + Number(curr.jumlah || (h * q));
+      }, 0);
+
+      if (countEl) countEl.textContent = `Menampilkan ${filtered.length} dari ${allRabItems.length} item RAB`;
+      if (totalEl) totalEl.textContent = fmt(totalVal);
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="padding: 40px; text-align: center; color: var(--color-text-muted);">
+              <span class="material-symbols-outlined" style="font-size: 36px; color: #94A3B8; margin-bottom: 6px;">search_off</span>
+              <p style="font-size: 14px; font-weight: 700; color: #0f172a; margin: 0;">Tidak ada item RAB yang cocok</p>
+              <p style="font-size: 12px; margin-top: 4px;">Coba ubah kata kunci pencarian, filter bulan, atau pilih 'Semua Kategori Pos Belanja'.</p>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map((item, idx) => {
+        const mNum = item.nomor_bulan || 1;
+        const monthLabel = MONTH_NAMES[mNum] || `Bulan ${mNum}`;
+        const catInfo = getRabCategory(item.nama_produk_jasa);
+        const qtyStr = `${item.qty || 1} ${getUnitName(item.nama_produk_jasa, item.qty)}`;
+        const hargaVal = Number(item.harga_satuan || 0);
+        const subTotalVal = Number(item.jumlah || (hargaVal * (item.qty || 1)));
+
+        const reportItemUrl = `reporting.html?npsn=${encodeURIComponent(currentNpsn)}&name=${encodeURIComponent(currentSchool?.name || '')}&desc=${encodeURIComponent('RAB: ' + item.nama_produk_jasa)}&amount=${encodeURIComponent(subTotalVal)}&reason=${encodeURIComponent('Indikasi ketidakwajaran harga satuan atau kuantitas pada pos belanja RAB: ' + item.nama_produk_jasa + ' (' + monthLabel + ' 2026, Qty: ' + qtyStr + ', Total: ' + fmt(subTotalVal) + ')')}&agency=${subTotalVal > 500000000 ? 'KPK' : 'BPK_BPKP'}`;
+
+        return `
+          <tr style="border-bottom: 1px solid var(--color-border); transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+            <td style="padding: 12px 14px; font-weight: 700; color: var(--color-text-muted); text-align: center;">${idx + 1}</td>
+            <td style="padding: 12px 14px;">
+              <span style="font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: #F1F5F9; color: #475569; display: inline-block;">
+                ${monthLabel}
+              </span>
+            </td>
+            <td style="padding: 12px 14px;">
+              <div style="font-weight: 700; color: #0f172a; margin-bottom: 2px;">
+                ${item.nama_produk_jasa}
+              </div>
+              <div style="font-size: 11px; color: var(--color-text-muted);">
+                Kode Pos: RAB-2026-${String(mNum).padStart(2,'0')}-${String(item.nomor || idx + 1).padStart(3,'0')}
+              </div>
+            </td>
+            <td style="padding: 12px 14px;">
+              <span style="font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: ${catInfo.bg}; color: ${catInfo.color}; display: inline-flex; align-items: center; gap: 4px;">
+                <span class="material-symbols-outlined" style="font-size: 13px;">${catInfo.icon}</span>
+                ${catInfo.name}
+              </span>
+            </td>
+            <td style="padding: 12px 14px; text-align: center; font-weight: 600; color: #334155;">
+              ${qtyStr}
+            </td>
+            <td style="padding: 12px 14px; text-align: right; font-weight: 600; color: #334155;">
+              ${fmt(hargaVal)}
+            </td>
+            <td style="padding: 12px 14px; text-align: right; font-weight: 800; color: #0f172a;">
+              ${fmt(subTotalVal)}
+            </td>
+            <td style="padding: 12px 14px; text-align: center;">
+              <div style="display: flex; justify-content: center; align-items: center; gap: 6px;">
+                <button onclick="openRabModal(${idx})" class="btn-watchlist-pill" style="font-size: 11px; padding: 4px 10px;" title="Lihat rincian spesifikasi pos belanja">
+                  <span class="material-symbols-outlined" style="font-size: 14px;">visibility</span>
+                  Detail
+                </button>
+                <a href="${reportItemUrl}" class="btn-report" style="font-size: 11px; padding: 4px 10px; background: #DC2626; color: #fff; text-decoration: none; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(220,38,38,0.25);" title="Laporkan dugaan mark-up / deviasi ke APH">
+                  <span class="material-symbols-outlined" style="font-size: 13px;">flag</span>
+                  Lapor
+                </a>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openRabModal(idx) {
+      const it = currentlyFilteredRabItems[idx];
+      if (!it) return;
+
+      const fmt = n => window.DBClient ? window.DBClient.formatIDR(n) : 'Rp ' + Number(n).toLocaleString('id-ID');
+      const mNum = it.nomor_bulan || 1;
+      const monthLabel = MONTH_NAMES[mNum] || `Bulan ${mNum}`;
+      const qtyStr = `${it.qty || 1} ${getUnitName(it.nama_produk_jasa, it.qty)}`;
+      const hargaVal = Number(it.harga_satuan || 0);
+      const totalVal = Number(it.jumlah || (hargaVal * (it.qty || 1)));
+      const taxVal = Math.round(totalVal * 0.11);
+
+      document.getElementById('modalRabItemName').textContent = it.nama_produk_jasa;
+      document.getElementById('modalRabItemMonth').textContent = `${monthLabel} 2026`;
+      document.getElementById('modalRabItemQty').textContent = qtyStr;
+      document.getElementById('modalRabItemPrice').textContent = fmt(hargaVal);
+      document.getElementById('modalRabItemTax').textContent = fmt(taxVal);
+      document.getElementById('modalRabItemTotal').textContent = fmt(totalVal);
+
+      const reportBtn = document.getElementById('modalRabReportBtn');
+      if (reportBtn) {
+        reportBtn.href = `reporting.html?npsn=${encodeURIComponent(currentNpsn)}&name=${encodeURIComponent(currentSchool?.name || '')}&desc=${encodeURIComponent('RAB: ' + it.nama_produk_jasa)}&amount=${encodeURIComponent(totalVal)}&reason=${encodeURIComponent('Pemeriksaan pos belanja anggaran RAB: ' + it.nama_produk_jasa + ' senilai ' + fmt(totalVal))}&agency=${totalVal > 500000000 ? 'KPK' : 'BPK_BPKP'}`;
+      }
+
+      document.getElementById('rabItemModal').style.display = 'flex';
+    }
+
+    function closeRabModal(e) {
+      if (e.target.id === 'rabItemModal') {
+        document.getElementById('rabItemModal').style.display = 'none';
+      }
+    }
+
+    function closeRabModalDirect() {
+      document.getElementById('rabItemModal').style.display = 'none';
+    }
+
+    function exportRabCsv() {
+      if (!allRabItems || allRabItems.length === 0) {
+        alert('Tidak ada data RAB untuk diunduh.');
+        return;
+      }
+      let csv = 'No,Bulan,Uraian Kegiatan / Produk / Jasa,Kategori Pos,Volume,Harga Satuan,Sub Total\n';
+      allRabItems.forEach((it, i) => {
+        const m = MONTH_NAMES[it.nomor_bulan] || it.nomor_bulan;
+        const cat = getRabCategory(it.nama_produk_jasa).name;
+        const qty = it.qty || 1;
+        const harga = Number(it.harga_satuan || 0);
+        const sub = Number(it.jumlah || (harga * qty));
+        csv += `"${i+1}","${m}","${(it.nama_produk_jasa||'').replace(/"/g, '""')}","${cat}","${qty}","${harga}","${sub}"\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `RAB-${(currentSchool?.name || currentNpsn).replace(/[^a-zA-Z0-9]/g, '_')}-2026.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
     async function loadTransactions(schoolId) {
       const tbody = document.getElementById('txTableBody');
       try {
-        const txs = await fetchApi(`/transactions?school_id=eq.${schoolId}&order=date.desc&limit=25`);
+        let txs = await fetchApi(`/transactions?school_id=eq.${schoolId}&order=date.desc&limit=25`);
+        if (!Array.isArray(txs) || txs.length === 0) {
+          // Fallback ke rincian_pengeluaran_item jika transaksi kas belum diinput terpisah
+          if (allRabItems && allRabItems.length > 0) {
+            txs = allRabItems.slice(0, 30).map((r, idx) => {
+              const mNum = r.nomor_bulan || 1;
+              const dateStr = `2026-${String(mNum).padStart(2, '0')}-15`;
+              const cat = getRabCategory(r.nama_produk_jasa).name;
+              return {
+                id: r.id || `tx-${idx}`,
+                date: dateStr,
+                category: cat,
+                description: r.nama_produk_jasa,
+                amount: Number(r.jumlah || r.harga_satuan || 0),
+                tax_amount: Math.round(Number(r.jumlah || 0) * 0.11),
+                fund_source: 'APBN / BOPTN'
+              };
+            });
+          }
+        }
         currentTxs = Array.isArray(txs) ? txs : [];
 
         document.getElementById('txCountBadge').textContent = `${currentTxs.length} Transaksi terverifikasi`;
@@ -573,6 +1195,9 @@
             (currentSchool?.id && (a.institusi_id === currentSchool.id))
           );
         });
+
+        schoolAnomaliesList = anomalies;
+        checkMonthAnomaly(selectedRabMonth);
 
         if (badge) {
           badge.style.display = anomalies.length > 0 ? 'inline-block' : 'none';
@@ -734,9 +1359,15 @@
       const targetBtn = clickedBtn || (window.event && window.event.currentTarget) || document.querySelector(`.dash-tab-btn[data-tab="${tab}"]`);
       if (targetBtn) targetBtn.classList.add('active');
 
-      document.getElementById('tabContentTx').style.display = tab === 'tx' ? 'block' : 'none';
-      document.getElementById('tabContentAudit').style.display = tab === 'audit' ? 'block' : 'none';
-      document.getElementById('tabContentForum').style.display = tab === 'forum' ? 'block' : 'none';
+      const tabRab = document.getElementById('tabContentRab');
+      const tabTx = document.getElementById('tabContentTx');
+      const tabAudit = document.getElementById('tabContentAudit');
+      const tabForum = document.getElementById('tabContentForum');
+
+      if (tabRab) tabRab.style.display = tab === 'rab' ? 'block' : 'none';
+      if (tabTx) tabTx.style.display = tab === 'tx' ? 'block' : 'none';
+      if (tabAudit) tabAudit.style.display = tab === 'audit' ? 'block' : 'none';
+      if (tabForum) tabForum.style.display = tab === 'forum' ? 'block' : 'none';
     }
 
     function openReceiptModal(idx) {
