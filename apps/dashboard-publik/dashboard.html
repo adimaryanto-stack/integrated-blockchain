@@ -215,14 +215,14 @@
     <!-- Dashboard Tabs -->
     <div style="background: #ffffff; border: 1px solid var(--color-border); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow-sm);">
       <div style="display: flex; border-bottom: 1px solid var(--color-border); padding: 0 16px; overflow-x: auto;">
-        <button class="dash-tab-btn active" data-tab="rab" onclick="switchDashTab('rab')">
+        <button class="dash-tab-btn active" data-tab="tx" onclick="switchDashTab('tx')">
+          <span class="material-symbols-outlined" style="font-size: 18px;">receipt_long</span>
+          <span>Daftar Transaksi & Kwitansi</span>
+        </button>
+        <button class="dash-tab-btn" data-tab="rab" onclick="switchDashTab('rab')">
           <span class="material-symbols-outlined" style="font-size: 18px;">calculate</span>
           <span>Rincian RAB (Rencana Anggaran Biaya)</span>
           <span id="rabCountBadge" style="display: none; background: #2563EB; color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 999px; margin-left: 4px;">0</span>
-        </button>
-        <button class="dash-tab-btn" data-tab="tx" onclick="switchDashTab('tx')">
-          <span class="material-symbols-outlined" style="font-size: 18px;">receipt_long</span>
-          <span>Daftar Transaksi & Kwitansi</span>
         </button>
         <button class="dash-tab-btn" data-tab="audit" onclick="switchDashTab('audit')">
           <span class="material-symbols-outlined" style="font-size: 18px;">security</span>
@@ -235,8 +235,34 @@
         </button>
       </div>
 
-      <!-- Tab: Rincian RAB (Rencana Anggaran Biaya) -->
-      <div id="tabContentRab" style="padding: 24px; display: block;">
+      <!-- Tab 1: Transactions -->
+      <div id="tabContentTx" style="padding: 24px; display: block;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+          <h3 style="font-size: 16px; font-weight: 800; color: #0f172a;">Buku Kas Transaksi Pembelanjaan</h3>
+          <span style="font-size: 12px; color: var(--color-text-muted);" id="txCountBadge">Memuat transaksi...</span>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+            <thead>
+              <tr style="border-bottom: 2px solid var(--color-border); color: var(--color-text-muted); font-weight: 700;">
+                <th style="padding: 12px 14px;">TANGGAL</th>
+                <th style="padding: 12px 14px;">URAIAN KEGIATAN</th>
+                <th style="padding: 12px 14px;">KATEGORI</th>
+                <th style="padding: 12px 14px;">SUMBER</th>
+                <th style="padding: 12px 14px; text-align: right;">NOMINAL</th>
+                <th style="padding: 12px 14px; text-align: center;">TINDAKAN / BUKTI</th>
+              </tr>
+            </thead>
+            <tbody id="txTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 2: Rincian RAB (Rencana Anggaran Biaya) -->
+      <div id="tabContentRab" style="padding: 24px; display: none;">
         <!-- Header & Deskripsi RAB -->
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 14px;">
           <div>
@@ -260,10 +286,6 @@
               <span class="material-symbols-outlined" style="font-size: 16px;">download</span>
               <span>Unduh CSV RAB</span>
             </button>
-            <a href="#audit" onclick="switchDashTab('audit')" class="btn-watchlist-pill" style="font-size: 12px; padding: 6px 12px; border-color: #FECACA; color: #DC2626; background: #FEF2F2;">
-              <span class="material-symbols-outlined" style="font-size: 16px;">policy</span>
-              <span>Cek Anomali RAB</span>
-            </a>
           </div>
         </div>
 
@@ -370,7 +392,7 @@
                   <th style="padding: 12px 14px; min-width: 260px;">KATEGORI &amp; RINCIAN BELANJA</th>
                   <th style="padding: 12px 14px; width: 100px; text-align: center;">ITEM</th>
                   <th style="padding: 12px 14px; width: 160px; text-align: right;">NOMINAL</th>
-                  <th style="padding: 12px 14px; width: 150px; text-align: center;">AKSI</th>
+                  <th style="padding: 12px 14px; width: 130px; text-align: center;">AKSI</th>
                 </tr>
               </thead>
               <tbody id="rabTableBody">
@@ -378,32 +400,6 @@
               </tbody>
             </table>
           </div>
-        </div>
-      </div>
-
-      <!-- Tab 2: Transactions -->
-      <div id="tabContentTx" style="padding: 24px; display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
-          <h3 style="font-size: 16px; font-weight: 800; color: #0f172a;">Buku Kas Transaksi Pembelanjaan</h3>
-          <span style="font-size: 12px; color: var(--color-text-muted);" id="txCountBadge">Memuat transaksi...</span>
-        </div>
-
-        <div style="overflow-x: auto;">
-          <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
-            <thead>
-              <tr style="border-bottom: 2px solid var(--color-border); color: var(--color-text-muted); font-weight: 700;">
-                <th style="padding: 12px 14px;">TANGGAL</th>
-                <th style="padding: 12px 14px;">URAIAN KEGIATAN</th>
-                <th style="padding: 12px 14px;">KATEGORI</th>
-                <th style="padding: 12px 14px;">SUMBER</th>
-                <th style="padding: 12px 14px; text-align: right;">NOMINAL</th>
-                <th style="padding: 12px 14px; text-align: center;">TINDAKAN / BUKTI</th>
-              </tr>
-            </thead>
-            <tbody id="txTableBody">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
         </div>
       </div>
 
@@ -633,13 +629,9 @@
 
       <!-- Action Buttons -->
       <div style="display: flex; gap: 10px; margin-top: 14px;">
-        <button type="button" onclick="closeRabDetailModalDirect()" class="btn-watchlist-pill" style="flex: 1; justify-content: center; font-size: 12px; padding: 8px 14px; cursor: pointer;">
+        <button type="button" onclick="closeRabDetailModalDirect()" class="btn-watchlist-pill" style="flex: 1; justify-content: center; font-size: 13px; font-weight: 700; padding: 10px 16px; cursor: pointer;">
           Tutup Detail
         </button>
-        <a id="detailModalReportBtn" href="#" class="btn-report" style="flex: 1; justify-content: center; background: #DC2626; color: #ffffff; text-decoration: none; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; border-radius: 10px; padding: 8px 14px;">
-          <span class="material-symbols-outlined" style="font-size: 16px;">flag</span>
-          Laporkan ke APH
-        </a>
       </div>
     </div>
   </div>
@@ -871,8 +863,8 @@
           if (tabParam && ['rab', 'tx', 'audit', 'forum'].includes(tabParam.toLowerCase())) {
             switchDashTab(tabParam.toLowerCase());
           } else {
-            // Default: tampilkan tab RAB
-            switchDashTab('rab');
+            // Default: tampilkan tab Transaksi & Kwitansi
+            switchDashTab('tx');
           }
         }
       } catch (err) {
@@ -1171,9 +1163,6 @@
       const fmt = n => window.DBClient ? window.DBClient.formatIDR(n) : 'Rp ' + Number(n).toLocaleString('id-ID');
 
       tbody.innerHTML = filtered.map((row, idx) => {
-        const ymd = dateToYmd(row.tanggal);
-        const reportItemUrl = `reporting.html?npsn=${encodeURIComponent(currentNpsn)}&name=${encodeURIComponent(row.namaInstitusi)}&desc=${encodeURIComponent(row.item)}&amount=${encodeURIComponent(row.nominal)}&reason=${encodeURIComponent('Laporan audit pos rencana anggaran: ' + row.item + ' senilai ' + fmt(row.nominal) + ' (' + row.invoiceNo + ' • ' + row.vendorName + ')')}&date=${encodeURIComponent(ymd)}&agency=BPK_BPKP`;
-
         return `
           <tr style="border-bottom: 1px solid #F1F5F9; transition: background 0.15s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='transparent'">
             <td style="padding: 12px 14px; text-align: center; color: #64748B; font-size: 12px; font-family: monospace;">${idx + 1}</td>
@@ -1199,36 +1188,27 @@
               ${fmt(row.nominal)}
             </td>
             <td style="padding: 12px 14px; text-align: center;">
-              <div style="display: flex; justify-content: center; align-items: center; gap: 5px;">
+              <div style="display: flex; justify-content: center; align-items: center; gap: 6px;">
                 <button 
                   type="button" 
                   onclick="openRabStrukModal(${idx})" 
                   class="btn-watchlist-pill" 
-                  style="font-size: 10.5px; padding: 3px 8px; font-weight: 700; cursor: pointer;"
+                  style="font-size: 11px; padding: 4px 10px; font-weight: 700; cursor: pointer;"
                   title="Lihat Pratinjau Struk Kuitansi"
                 >
-                  <span class="material-symbols-outlined" style="font-size: 13px;">visibility</span>
+                  <span class="material-symbols-outlined" style="font-size: 14px;">visibility</span>
                   Struk
                 </button>
                 <button 
                   type="button" 
                   onclick="openRabDetailModal(${idx})" 
                   class="btn-watchlist-pill" 
-                  style="font-size: 10.5px; padding: 3px 8px; font-weight: 700; color: #4F46E5; border-color: #C7D2FE; background: #EEF2FF; cursor: pointer;"
+                  style="font-size: 11px; padding: 4px 10px; font-weight: 700; color: #4F46E5; border-color: #C7D2FE; background: #EEF2FF; cursor: pointer;"
                   title="Lihat Detail Transaksi &amp; Verifikasi AI"
                 >
-                  <span class="material-symbols-outlined" style="font-size: 13px;">info</span>
+                  <span class="material-symbols-outlined" style="font-size: 14px;">info</span>
                   Detail
                 </button>
-                <a 
-                  href="${reportItemUrl}" 
-                  class="btn-report" 
-                  style="font-size: 10.5px; padding: 3px 8px; background: #DC2626; color: #fff; text-decoration: none; border-radius: 6px; display: inline-flex; align-items: center; gap: 3px; font-weight: 700;"
-                  title="Laporkan ke Aparat Penegak Hukum"
-                >
-                  <span class="material-symbols-outlined" style="font-size: 13px;">flag</span>
-                  Lapor
-                </a>
               </div>
             </td>
           </tr>
@@ -1299,7 +1279,6 @@
       if (!row) return;
 
       const fmt = n => window.DBClient ? window.DBClient.formatIDR(n) : 'Rp ' + Number(n).toLocaleString('id-ID');
-      const ymd = dateToYmd(row.tanggal);
 
       document.getElementById('detailModalInvoiceSubtitle').textContent = `No Invoice: ${row.invoiceNo}`;
       document.getElementById('detailModalSchoolName').textContent = `${row.namaInstitusi} (${row.jenjang})`;
@@ -1309,11 +1288,6 @@
       document.getElementById('detailModalItemName').textContent = row.item;
       document.getElementById('detailModalQtyPrice').textContent = `${row.qty || 1} x ${fmt(row.hargaSatuan)}`;
       document.getElementById('detailModalTotalNominal').textContent = fmt(row.nominal);
-
-      const reportBtn = document.getElementById('detailModalReportBtn');
-      if (reportBtn) {
-        reportBtn.href = `reporting.html?npsn=${encodeURIComponent(currentNpsn)}&name=${encodeURIComponent(row.namaInstitusi)}&desc=${encodeURIComponent(row.item)}&amount=${encodeURIComponent(row.nominal)}&reason=${encodeURIComponent('Pemeriksaan pos rencana anggaran: ' + row.item + ' senilai ' + fmt(row.nominal) + ' (' + row.invoiceNo + ' • ' + row.vendorName + ')')}&date=${encodeURIComponent(ymd)}&agency=BPK_BPKP`;
-      }
 
       document.getElementById('rabDetailModal').style.display = 'flex';
     }
