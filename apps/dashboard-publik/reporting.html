@@ -1092,6 +1092,30 @@
         }
       }
 
+      // Jika anomaly belum didapat dari desc, coba cari via institusi_id
+      if (!anomaly && sch?.id) {
+        try {
+          let aRes = await fetch(`http://localhost:2028/rest/v1/audit_anomaly?institusi_id=eq.${encodeURIComponent(sch.id)}`);
+          if (!aRes.ok) aRes = await fetch(`http://localhost:2021/rest/v1/audit_anomaly?institusi_id=eq.${encodeURIComponent(sch.id)}`);
+          if (aRes.ok) {
+            const aList = await aRes.json();
+            if (aList && aList.length > 0) {
+              anomaly = aList[0];
+            }
+          }
+        } catch (err) {
+          console.warn('Anomaly lookup by institusi_id error:', err);
+        }
+      }
+
+      // Auto-assign params dari record anomaly jika URL tidak menyediakannya
+      if (anomaly) {
+        if (!desc) desc = anomaly.tipe_anomali;
+        if (!amount) amount = anomaly.nominal_selisih;
+        if (!reason) reason = anomaly.keterangan;
+        if (!date) date = anomaly.tanggal_ditemukan;
+      }
+
       // Tentukan Nama Sekolah
       if (sch) {
         name = sch.nama_institusi || sch.name || name;
@@ -1232,6 +1256,16 @@
         applyNominalScheme(finalAmount);
       } else {
         setNominalTier('MID');
+      }
+
+      // Dukungan override APH dari URL (misal: agency=KPK, agency=KEJAKSAAN, agency=BPK_BPKP)
+      const agencyParam = urlParams.get('agency');
+      if (agencyParam) {
+        const upperAgency = agencyParam.toUpperCase();
+        const agencyCard = document.querySelector(`.agency-card[data-agency="${upperAgency}"]`);
+        if (agencyCard) {
+          selectAgency(upperAgency, agencyCard, true);
+        }
       }
 
       // Tampilkan kantor APH terdekat sesuai instansi aktif

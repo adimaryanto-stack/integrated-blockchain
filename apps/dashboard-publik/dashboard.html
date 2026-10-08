@@ -215,15 +215,16 @@
     <!-- Dashboard Tabs -->
     <div style="background: #ffffff; border: 1px solid var(--color-border); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow-sm);">
       <div style="display: flex; border-bottom: 1px solid var(--color-border); padding: 0 16px; overflow-x: auto;">
-        <button class="dash-tab-btn active" onclick="switchDashTab('tx')">
+        <button class="dash-tab-btn active" data-tab="tx" onclick="switchDashTab('tx')">
           <span class="material-symbols-outlined" style="font-size: 18px;">receipt_long</span>
           <span>Daftar Transaksi & Kwitansi</span>
         </button>
-        <button class="dash-tab-btn" onclick="switchDashTab('audit')">
+        <button class="dash-tab-btn" data-tab="audit" onclick="switchDashTab('audit')">
           <span class="material-symbols-outlined" style="font-size: 18px;">security</span>
           <span>Audit & Temuan Anomali</span>
+          <span id="auditCountBadge" style="display: none; background: #DC2626; color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 999px; margin-left: 4px;">0</span>
         </button>
-        <button class="dash-tab-btn" onclick="switchDashTab('forum')">
+        <button class="dash-tab-btn" data-tab="forum" onclick="switchDashTab('forum')">
           <span class="material-symbols-outlined" style="font-size: 18px;">forum</span>
           <span>Diskusi & Aduan Publik</span>
         </button>
@@ -245,7 +246,7 @@
                 <th style="padding: 12px 14px;">KATEGORI</th>
                 <th style="padding: 12px 14px;">SUMBER</th>
                 <th style="padding: 12px 14px; text-align: right;">NOMINAL</th>
-                <th style="padding: 12px 14px; text-align: center;">BUKTI STRUK</th>
+                <th style="padding: 12px 14px; text-align: center;">TINDAKAN / BUKTI</th>
               </tr>
             </thead>
             <tbody id="txTableBody">
@@ -257,6 +258,15 @@
 
       <!-- Tab 2: Audit Anomalies -->
       <div id="tabContentAudit" style="padding: 24px; display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h3 style="font-size: 17px; font-weight: 800; color: #0f172a; margin: 0 0 4px 0;">Catatan Audit & Temuan Anomali Anggaran</h3>
+            <p style="font-size: 13px; color: var(--color-text-muted); margin: 0;">Daftar temuan audit forensik dan deviasi anggaran resmi yang terdeteksi pada satuan pendidikan ini.</p>
+          </div>
+          <span id="auditStatusSummary" style="font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 8px; background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA;">
+            Memeriksa catatan...
+          </span>
+        </div>
         <div id="schoolAuditList">
           <div style="text-align: center; padding: 48px; color: var(--color-text-muted);">
             <p>Memeriksa catatan audit untuk sekolah ini...</p>
@@ -341,9 +351,15 @@
         </div>
       </div>
 
-      <button onclick="closeReceiptModalDirect()" class="btn-watchlist-pill" style="width: 100%; justify-content: center;">
-        Tutup Bukti Kuitansi
-      </button>
+      <div style="display: flex; gap: 10px; margin-top: 6px;">
+        <button onclick="closeReceiptModalDirect()" class="btn-watchlist-pill" style="flex: 1; justify-content: center;">
+          Tutup Bukti Kuitansi
+        </button>
+        <a id="modalReportTxLink" href="reporting.html" class="btn-report" style="flex: 1; justify-content: center; background: #DC2626; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; border-radius: 10px;">
+          <span class="material-symbols-outlined" style="font-size: 16px;">flag</span>
+          Laporkan Transaksi
+        </a>
+      </div>
     </div>
   </div>
 
@@ -379,6 +395,25 @@
     let likes = 0;
     let isLiked = false;
 
+    const API_PRIMARY = 'http://localhost:2028/rest/v1';
+    const API_SECONDARY = 'http://localhost:2021/rest/v1';
+
+    async function fetchApi(path) {
+      try {
+        const res = await fetch(`${API_PRIMARY}${path}`);
+        if (res.ok) return await res.json();
+      } catch (e) {
+        // Fallback
+      }
+      try {
+        const res2 = await fetch(`${API_SECONDARY}${path}`);
+        if (res2.ok) return await res2.json();
+      } catch (err) {
+        console.warn('Fetch fallback failed for:', path, err);
+      }
+      return null;
+    }
+
     function getParam(param) {
       const urlParams = new URLSearchParams(window.location.search);
       return urlParams.get(param);
@@ -389,24 +424,47 @@
       if (npsnFromUrl) currentNpsn = npsnFromUrl;
 
       try {
-        const res = await fetch(`http://localhost:2021/rest/v1/schools?npsn=eq.${encodeURIComponent(currentNpsn)}`);
-        const list = await res.json();
+        let list = await fetchApi(`/schools?npsn=eq.${encodeURIComponent(currentNpsn)}`);
         
+        if (!Array.isArray(list) || list.length === 0) {
+          // Coba fetch dari tabel institusi_pendidikan
+          const ipList = await fetchApi(`/institusi_pendidikan?npsn=eq.${encodeURIComponent(currentNpsn)}`);
+          if (Array.isArray(ipList) && ipList.length > 0) {
+            const ip = ipList[0];
+            list = [{
+              id: ip.id,
+              name: ip.nama_institusi,
+              npsn: ip.npsn,
+              location: ip.alamat || `${ip.kabupaten_kota_nama || ''}, ${ip.provinsi_nama || ''}`,
+              accreditation: 'A'
+            }];
+          }
+        }
+
         if (Array.isArray(list) && list.length > 0) {
           currentSchool = list[0];
         } else {
           // Find first school from database
-          const fb = await fetch('http://localhost:2021/rest/v1/schools?limit=1');
-          const fbList = await fb.json();
-          currentSchool = fbList[0];
-          currentNpsn = currentSchool.npsn;
+          const fbList = await fetchApi('/schools?limit=1');
+          if (Array.isArray(fbList) && fbList.length > 0) {
+            currentSchool = fbList[0];
+            currentNpsn = currentSchool.npsn;
+          }
         }
 
-        renderSchoolHeader(currentSchool);
-        loadFinancials(currentSchool.id);
-        loadTransactions(currentSchool.id);
-        loadSchoolAnomalies(currentSchool.npsn);
-        loadSchoolComments(currentSchool.npsn);
+        if (currentSchool) {
+          renderSchoolHeader(currentSchool);
+          loadFinancials(currentSchool.id);
+          loadTransactions(currentSchool.id);
+          loadSchoolAnomalies(currentSchool.npsn);
+          loadSchoolComments(currentSchool.npsn);
+
+          // Buka tab spesifik jika ada di param ?tab=audit atau hash #audit
+          const tabParam = getParam('tab') || (window.location.hash ? window.location.hash.replace('#', '') : null);
+          if (tabParam && ['tx', 'audit', 'forum'].includes(tabParam.toLowerCase())) {
+            switchDashTab(tabParam.toLowerCase());
+          }
+        }
       } catch (err) {
         console.error('Error loading school:', err);
       }
@@ -423,13 +481,10 @@
 
     async function loadFinancials(schoolId) {
       try {
-        const [fRes, tRes] = await Promise.all([
-          fetch(`http://localhost:2021/rest/v1/incoming_funds?school_id=eq.${schoolId}`),
-          fetch(`http://localhost:2021/rest/v1/transactions?school_id=eq.${schoolId}`)
+        const [funds, txs] = await Promise.all([
+          fetchApi(`/incoming_funds?school_id=eq.${schoolId}`) || [],
+          fetchApi(`/transactions?school_id=eq.${schoolId}`) || []
         ]);
-
-        const funds = fRes.ok ? await fRes.json() : [];
-        const txs = tRes.ok ? await tRes.json() : [];
 
         let totalRec = (funds || []).reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
         let totalSpn = (txs || []).reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
@@ -452,8 +507,7 @@
     async function loadTransactions(schoolId) {
       const tbody = document.getElementById('txTableBody');
       try {
-        const res = await fetch(`http://localhost:2021/rest/v1/transactions?school_id=eq.${schoolId}&order=date.desc&limit=25`);
-        const txs = await res.json();
+        const txs = await fetchApi(`/transactions?school_id=eq.${schoolId}&order=date.desc&limit=25`);
         currentTxs = Array.isArray(txs) ? txs : [];
 
         document.getElementById('txCountBadge').textContent = `${currentTxs.length} Transaksi terverifikasi`;
@@ -467,6 +521,8 @@
 
         tbody.innerHTML = currentTxs.map((t, idx) => {
           const dateStr = t.date ? new Date(t.date).toLocaleDateString('id-ID', { dateStyle: 'medium' }) : '-';
+          const reportTxUrl = `reporting.html?npsn=${encodeURIComponent(currentNpsn)}&name=${encodeURIComponent(currentSchool?.name || '')}&desc=${encodeURIComponent(t.description)}&amount=${encodeURIComponent(t.amount)}&reason=${encodeURIComponent('Dugaan ketidaksesuaian transaksi belanja ' + t.category + ': ' + t.description)}&date=${encodeURIComponent(t.date || '')}`;
+
           return `
             <tr style="border-bottom: 1px solid var(--color-border); transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
               <td style="padding: 12px 14px; color: var(--color-text-muted); font-size: 12px;">${dateStr}</td>
@@ -479,10 +535,16 @@
               <td style="padding: 12px 14px; font-size: 12px; color: #475569;">${t.fund_source || 'BOS'}</td>
               <td style="padding: 12px 14px; text-align: right; font-weight: 800; color: #0f172a;">${fmt(t.amount)}</td>
               <td style="padding: 12px 14px; text-align: center;">
-                <button onclick="openReceiptModal(${idx})" class="btn-watchlist-pill" style="font-size: 11px; padding: 4px 10px;">
-                  <span class="material-symbols-outlined" style="font-size: 14px;">receipt</span>
-                  Lihat Kwitansi
-                </button>
+                <div style="display: flex; justify-content: center; align-items: center; gap: 6px;">
+                  <button onclick="openReceiptModal(${idx})" class="btn-watchlist-pill" style="font-size: 11px; padding: 4px 10px;">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">receipt</span>
+                    Lihat Kwitansi
+                  </button>
+                  <a href="${reportTxUrl}" class="btn-report" style="font-size: 11px; padding: 4px 10px; background: #DC2626; color: #fff; text-decoration: none; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(220,38,38,0.25);">
+                    <span class="material-symbols-outlined" style="font-size: 13px;">flag</span>
+                    Laporkan Transaksi
+                  </a>
+                </div>
               </td>
             </tr>
           `;
@@ -495,33 +557,143 @@
 
     async function loadSchoolAnomalies(npsn) {
       const container = document.getElementById('schoolAuditList');
+      const badge = document.getElementById('auditCountBadge');
+      const summary = document.getElementById('auditStatusSummary');
+
       try {
-        const res = await fetch(`http://localhost:2021/rest/v1/audit_anomaly`);
-        const list = await res.json();
-        const anomalies = (list || []).filter(a => a.institusi_pendidikan?.npsn == npsn || a.nama_institusi?.toLowerCase().includes((currentSchool?.name || '').toLowerCase()));
+        const list = await fetchApi('/audit_anomaly?order=tanggal_ditemukan.desc');
+        const sNameLower = (currentSchool?.name || '').toLowerCase();
+
+        const anomalies = (list || []).filter(a => {
+          const aNpsn = a.institusi_pendidikan?.npsn || a.npsn;
+          const aNameLower = (a.nama_institusi || '').toLowerCase();
+          return (
+            (aNpsn && String(aNpsn) === String(npsn)) ||
+            (sNameLower && (aNameLower.includes(sNameLower) || sNameLower.includes(aNameLower))) ||
+            (currentSchool?.id && (a.institusi_id === currentSchool.id))
+          );
+        });
+
+        if (badge) {
+          badge.style.display = anomalies.length > 0 ? 'inline-block' : 'none';
+          badge.textContent = anomalies.length;
+        }
+
+        if (summary) {
+          if (anomalies.length > 0) {
+            summary.style.background = '#FEF2F2';
+            summary.style.color = '#DC2626';
+            summary.style.borderColor = '#FECACA';
+            summary.textContent = `⚠️ Terdeteksi ${anomalies.length} Temuan Audit Terbuka`;
+          } else {
+            summary.style.background = '#ECFDF5';
+            summary.style.color = '#047857';
+            summary.style.borderColor = '#A7F3D0';
+            summary.textContent = '✓ Penggunaan Anggaran Terpantau Wajar';
+          }
+        }
 
         if (anomalies.length === 0) {
           container.innerHTML = `
-            <div style="text-align: center; padding: 48px; color: var(--color-text-muted);">
+            <div style="background: #FFFFFF; border: 1px solid var(--color-border); border-radius: 16px; text-align: center; padding: 48px; color: var(--color-text-muted);">
               <span class="material-symbols-outlined" style="font-size: 48px; color: #16A34A; margin-bottom: 8px;">verified_user</span>
               <h4 style="font-size: 16px; font-weight: 800; color: #0f172a;">Tidak Ditemukan Anomali</h4>
-              <p style="font-size: 13px; margin-top: 4px;">Sistem audit mendeteksi seluruh penggunaan dana sekolah ini berjalan wajar.</p>
+              <p style="font-size: 13px; margin-top: 4px;">Sistem audit mendeteksi seluruh penggunaan dana satuan pendidikan ini berjalan wajar dan akuntabel.</p>
             </div>
           `;
           return;
         }
 
-        container.innerHTML = anomalies.map(a => `
-          <div style="background: #FFF7ED; border: 1px solid #FFEDD5; border-left: 4px solid #EA580C; border-radius: 12px; padding: 18px; margin-bottom: 12px;">
-            <div style="display: flex; justify-content: space-between; font-weight: 800; color: #C2410C; font-size: 14px;">
-              <span>${a.tipe_anomali}</span>
-              <span>${a.tingkat_keparahan}</span>
+        const fmt = n => window.DBClient ? window.DBClient.formatIDR(n) : 'Rp ' + Number(n).toLocaleString('id-ID');
+
+        container.innerHTML = anomalies.map(a => {
+          const sev = a.tingkat_keparahan || 'MEDIUM';
+          const sevColor = sev === 'CRITICAL' ? '#DC2626' : sev === 'HIGH' ? '#EA580C' : sev === 'MEDIUM' ? '#CA8A04' : '#2563EB';
+          const sevBg = sev === 'CRITICAL' ? '#FEE2E2' : sev === 'HIGH' ? '#FFEDD5' : sev === 'MEDIUM' ? '#FEF9C3' : '#DBEAFE';
+          const dateStr = a.tanggal_ditemukan ? new Date(a.tanggal_ditemukan).toLocaleDateString('id-ID', { dateStyle: 'long' }) : '-';
+          const amountVal = Number(a.nominal_selisih || 0);
+          const selisihFormatted = amountVal > 0 ? fmt(amountVal) : 'Belum ditaksir';
+
+          // Saluran APH otomatis berdasarkan nominal temuan
+          let recommendedAgency = 'BPK_BPKP';
+          let agencyBadge = 'BPK / BPKP RI (Audit Forensik)';
+          let agencyColor = '#1D4ED8';
+          let agencyBg = '#EFF6FF';
+
+          if (amountVal > 500000000) {
+            recommendedAgency = 'KPK';
+            agencyBadge = 'KPK RI / Kejaksaan Pidsus (Skala Tinggi)';
+            agencyColor = '#DC2626';
+            agencyBg = '#FEF2F2';
+          } else if (amountVal <= 50000000 && amountVal > 0) {
+            recommendedAgency = 'POLSEK';
+            agencyBadge = 'Polsek Terdekat (Skala Rendah)';
+            agencyColor = '#334155';
+            agencyBg = '#F1F5F9';
+          }
+
+          // Link langsung ke formulir pelaporan dengan data prefilled
+          const reportUrl = `reporting.html?npsn=${encodeURIComponent(npsn)}&name=${encodeURIComponent(currentSchool?.name || a.nama_institusi || '')}&desc=${encodeURIComponent(a.tipe_anomali || 'Temuan Anomali')}&amount=${encodeURIComponent(amountVal)}&reason=${encodeURIComponent(a.keterangan || '')}&date=${encodeURIComponent(a.tanggal_ditemukan || '')}&agency=${encodeURIComponent(recommendedAgency)}`;
+
+          return `
+            <div style="background: #ffffff; border: 1.5px solid #E2E8F0; border-left: 5px solid ${sevColor}; border-radius: 16px; padding: 22px; margin-bottom: 16px; box-shadow: 0 4px 14px rgba(15,23,42,0.04);">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px; margin-bottom: 14px;">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
+                    <span style="font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 6px; background: ${sevBg}; color: ${sevColor}; text-transform: uppercase; letter-spacing: 0.04em;">
+                      ${sev}
+                    </span>
+                    <span style="font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px; background: #F1F5F9; color: #475569;">
+                      STATUS: ${a.status || 'TEMUAN'}
+                    </span>
+                    <span style="font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 6px; background: ${agencyBg}; color: ${agencyColor};">
+                      SALURAN APH: ${agencyBadge}
+                    </span>
+                    <span style="font-size: 12px; color: var(--color-text-muted);">
+                      Ditemukan: ${dateStr}
+                    </span>
+                  </div>
+                  <h4 style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 4px 0;">
+                    ${a.tipe_anomali}
+                  </h4>
+                  <div style="font-size: 13px; font-weight: 600; color: var(--color-primary); display: flex; align-items: center; gap: 4px;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">school</span>
+                    <span>${currentSchool?.name || a.nama_institusi} (NPSN: ${npsn})</span>
+                  </div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 11px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase;">NOMINAL SELISIH / RESIKO</div>
+                  <div style="font-size: 20px; font-weight: 800; color: #DC2626;">${selisihFormatted}</div>
+                </div>
+              </div>
+
+              <p style="font-size: 14px; color: #334155; line-height: 1.6; margin: 0 0 16px 0;">
+                ${a.keterangan || 'Ditemukan indikasi penyimpangan alokasi anggaran yang memerlukan verifikasi lebih lanjut.'}
+              </p>
+
+              ${(a.audit_what || a.audit_why || a.audit_how) ? `
+                <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; font-size: 13px; line-height: 1.55; color: #334155;">
+                  ${a.audit_what ? `<div style="margin-bottom: 6px;"><strong>WHAT (APA MASALAHNYA):</strong> ${a.audit_what}</div>` : ''}
+                  ${a.audit_why ? `<div style="margin-bottom: 6px;"><strong>WHY (MENGAPA TERJADI):</strong> ${a.audit_why}</div>` : ''}
+                  ${a.audit_where ? `<div style="margin-bottom: 6px;"><strong>WHERE (LOKASI):</strong> ${a.audit_where}</div>` : ''}
+                  ${a.audit_when ? `<div style="margin-bottom: 6px;"><strong>WHEN (WAKTU):</strong> ${a.audit_when}</div>` : ''}
+                  ${a.audit_who ? `<div style="margin-bottom: 6px;"><strong>WHO (PIHAK TERKAIT):</strong> ${a.audit_who}</div>` : ''}
+                  ${a.audit_how ? `<div><strong>HOW (REKOMENDASI AUDITOR):</strong> ${a.audit_how}</div>` : ''}
+                </div>
+              ` : ''}
+
+              <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; border-top: 1px solid #F1F5F9; padding-top: 16px;">
+                <a href="${reportUrl}" class="btn-report" style="background: #DC2626; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 12px; font-size: 13.5px; font-weight: 800; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(220,38,38,0.25); transition: all 0.2s ease;">
+                  <span class="material-symbols-outlined" style="font-size: 18px;">flag</span>
+                  <span>Laporkan Transaksi</span>
+                </a>
+              </div>
             </div>
-            <p style="font-size: 13px; color: #7C2D12; margin-top: 6px;">${a.keterangan}</p>
-          </div>
-        `).join('');
+          `;
+        }).join('');
       } catch (e) {
         console.warn('Audit error:', e);
+        container.innerHTML = '<div style="text-align: center; padding: 24px; color: #ef4444;">Gagal memuat catatan audit.</div>';
       }
     }
 
@@ -530,8 +702,7 @@
       if (!list) return;
 
       try {
-        const res = await fetch(`http://localhost:2021/rest/v1/school_comments?npsn=eq.${encodeURIComponent(npsn)}&order=created_at.desc`);
-        const comments = await res.json();
+        const comments = await fetchApi(`/school_comments?npsn=eq.${encodeURIComponent(npsn)}&order=created_at.desc`);
         
         if (!Array.isArray(comments) || comments.length === 0) {
           list.innerHTML = `
@@ -558,9 +729,10 @@
       }
     }
 
-    function switchDashTab(tab) {
+    function switchDashTab(tab, clickedBtn) {
       document.querySelectorAll('.dash-tab-btn').forEach(b => b.classList.remove('active'));
-      event.currentTarget.classList.add('active');
+      const targetBtn = clickedBtn || (window.event && window.event.currentTarget) || document.querySelector(`.dash-tab-btn[data-tab="${tab}"]`);
+      if (targetBtn) targetBtn.classList.add('active');
 
       document.getElementById('tabContentTx').style.display = tab === 'tx' ? 'block' : 'none';
       document.getElementById('tabContentAudit').style.display = tab === 'audit' ? 'block' : 'none';
@@ -579,6 +751,11 @@
       document.getElementById('modalReceiptDesc').textContent = t.description;
       document.getElementById('modalReceiptAmount').textContent = fmt(t.amount);
       document.getElementById('modalReceiptTax').textContent = fmt(t.tax_amount || 0);
+
+      const reportTxBtn = document.getElementById('modalReportTxLink');
+      if (reportTxBtn) {
+        reportTxBtn.href = `reporting.html?npsn=${encodeURIComponent(currentNpsn)}&name=${encodeURIComponent(currentSchool?.name || '')}&desc=${encodeURIComponent(t.description)}&amount=${encodeURIComponent(t.amount)}&reason=${encodeURIComponent('Pemeriksaan bukti kuitansi belanja ' + t.category + ': ' + t.description + ' senilai ' + fmt(t.amount))}&date=${encodeURIComponent(t.date || '')}`;
+      }
 
       document.getElementById('receiptModal').style.display = 'flex';
     }
