@@ -1,7 +1,7 @@
 # 🏛️ Integrated Blockchain - Platform Transparansi Anggaran Pendidikan Indonesia
 
 [![HKI Registered](https://img.shields.io/badge/Hak%20Cipta%20HKI-No.%20001519028%20(DJKI)-gold.svg)](HKI.md)
-[![Version](https://img.shields.io/badge/Version-v2.5.3%20(6%20Okt%202026)-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-v2.6.0%20(8%20Okt%202026)-blue.svg)](CHANGELOG.md)
 [![Status](https://img.shields.io/badge/All%2010%20Ports-100%25%20Verified%20Online-brightgreen.svg)](#-peta-10-port--akses-dashboard)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15%2F16-black.svg?logo=next.js&logoColor=white)](https://nextjs.org/)
@@ -31,7 +31,7 @@ Sistem tata kelola dan transparansi keuangan pendidikan Indonesia terintegrasi d
 |---|:---:|---|:---:|
 | 🏛️ **Sertifikat Hak Cipta (HKI)** | `Markdown` / `PDF` | Surat Pencatatan Ciptaan resmi Kementerian Hukum RI (No. 001519028). | [**Buka `HKI.md`**](HKI.md) |
 | 🌐 **Panduan Visual & Interaktif** | `HTML` | Tampilan panduan grafis modern untuk pengguna umum / non-programmer. | [**Buka `README.html`**](README.html) |
-| 📝 **Changelog & Riwayat Rilis** | `Markdown` | Catatan lengkap versi, pembaruan terkini v2.5.3, dan log perbaikan sistem. | [**Buka `CHANGELOG.md`**](CHANGELOG.md) |
+| 📝 **Changelog & Riwayat Rilis** | `Markdown` | Catatan lengkap versi, pembaruan terkini v2.6.0, dan log perbaikan sistem. | [**Buka `CHANGELOG.md`**](CHANGELOG.md) |
 | 📜 **Pemberitahuan Pihak Ketiga (HKI)** | `Markdown` | Pengakuan hak cipta & lisensi 54 dependensi open-source untuk pendaftaran HKI. | [**Buka `THIRD_PARTY_NOTICES.md`**](THIRD_PARTY_NOTICES.md) |
 | 📋 **Product Requirements (PRD)** | `Markdown` | Spesifikasi lengkap sistem, alur bisnis dana APBN/APBD/CSR, & hak akses. | [**Buka `PRD.md`**](PRD.md) |
 | 🏆 **MVP & Laporan Verifikasi** | `Markdown` | Laporan pengujian fitur 10 port, performa latensi, dan integrasi database. | [**Buka `MVP.md`**](MVP.md) |
@@ -265,7 +265,13 @@ Berikut adalah ringkasan pembaruan arsitektur dan peningkatan fitur sistem:
 - **Kompresi Dokumentasi Proyek Fisik**: Integrasi langsung kompresi WebP pada unggah foto dokumentasi kegiatan fisik sekolah di `PhotoDocumentation.tsx` (hemat ruang simpan 70–85%).
 - **Penyelarasan Sistem & Koneksi DB**: Penyelarasan judul tren pada Dashboard Kementerian (Port 2021) dan peningkatan timeout pool PostgreSQL ke 30s di Proxy API (Port 2028).
 
-> 📘 **Riwayat lengkap seluruh versi terdahulu (v1.0.0 s.d. v2.5.3) dapat dibaca di: [CHANGELOG.md](CHANGELOG.md)**.
+### 🟢 15. Perombakan Modul API Wilayah & Standarisasi Menu API Integrasi (v2.6.0)
+- **Transformasi Modul API Wilayah (`MasterDataWilayah.tsx`)**: Sinkronisasi live PostgreSQL 16 (Port 2027) untuk 38 provinsi, 514 kabupaten/kota, dan kecamatan dengan pengelompokan 6 gugus pulau nusantara dan hierarki navigasi mendalam.
+- **Standarisasi Menu Integrasi API**: Penyelarasan nama & ikon sidebar (API Wilayah, API DIKTI, API HIMBARA, API AI AKSARA, API KPK, API Kejaksaan RI, API BPK/BPKP, API Polsek) dengan pemetaan izin RBAC otomatis.
+- **Integrasi Basis Data Polsek & Probe Jaringan Nyata**: Penarikan data kantor polisi dari tabel `polsek_directory` dan uji koneksi langsung dengan diagnostik TLS/DNS nyata.
+- **Persistensi Konfigurasi Bank & Kueri Transaksi Riil**: Penyimpanan status konfigurasi bank di tabel `bank_configs` dan endpoint inquiry membaca transaksi riil institusi dari database lokal.
+
+> 📘 **Riwayat lengkap seluruh versi terdahulu (v1.0.0 s.d. v2.6.0) dapat dibaca di: [CHANGELOG.md](CHANGELOG.md)**.
 
 ---
 

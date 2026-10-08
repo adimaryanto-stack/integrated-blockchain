@@ -398,8 +398,8 @@ export function SchoolsSettings() {
 
   return (
     <DashboardLayout
-      pageTitle="Pengaturan API Data Sekolah Nasional"
-      description="Konfigurasi API Satu Data Pendidikan Indonesia (Kemendikdasmen Dapodik, Kemendiktisaintek PDDikti, & Kemenag EMIS) dari Jenjang PAUD hingga S1 (Negeri & Swasta)"
+      pageTitle="API DIKTI"
+      description="berisi data NPSN sekolah nasional (Pangkalan Data Dikti Kemendiktisaintek, Dapodik Kemendikdasmen, dan EMIS Kemenag)"
     >
       {/* Toast Alert */}
       {toast && (

@@ -23,7 +23,8 @@ import {
   Compass,
   Copy,
   Globe,
-  Code
+  Code,
+  Wifi
 } from "lucide-react";
 import {
   INDONESIA_POLSEK_DIRECTORY,
@@ -92,15 +93,69 @@ const PROVIDER_METADATA: Record<string, ProviderMeta> = {
 };
 
 const SAMPLE_LOCATIONS = [
-  { label: "Bandar Lampung (Kedaton)", lat: -5.3831, lon: 105.2580 },
-  { label: "DKI Jakarta (Gambir)", lat: -6.1730, lon: 106.8120 },
-  { label: "Bandung (Coblong)", lat: -6.8830, lon: 107.6150 },
-  { label: "Surabaya (Genteng)", lat: -7.2600, lon: 112.7520 },
-  { label: "Medan (Medan Baru)", lat: 3.5850, lon: 98.6650 },
-  { label: "Makassar (Ujung Pandang)", lat: -5.1380, lon: 119.4100 },
-  { label: "Denpasar Bali (Sanur)", lat: -8.6910, lon: 115.2460 },
-  { label: "IKN Nusantara (Sepaku)", lat: -0.9700, lon: 116.7100 }
+  { label: "Bandar Lampung", sub: "Kedaton / T. Karang", lat: -5.3831, lon: 105.2580 },
+  { label: "DKI Jakarta", sub: "Gambir / Menteng", lat: -6.1730, lon: 106.8120 },
+  { label: "Bandung", sub: "Coblong / Dago", lat: -6.8830, lon: 107.6150 },
+  { label: "Surabaya", sub: "Genteng / Gubeng", lat: -7.2600, lon: 112.7520 },
+  { label: "Medan", sub: "Medan Baru / Kota", lat: 3.5850, lon: 98.6650 },
+  { label: "Makassar", sub: "Ujung Pandang", lat: -5.1380, lon: 119.4100 },
+  { label: "Denpasar Bali", sub: "Sanur / Renon", lat: -8.6910, lon: 115.2460 },
+  { label: "IKN Nusantara", sub: "Sepaku / Kaltim", lat: -0.9700, lon: 116.7100 }
 ];
+
+// Helper: Safely normalize any polsek record (PostgreSQL, OSM, or local sample)
+function normalizePolsekItem(
+  raw: any,
+  currentLat = -5.3831,
+  currentLon = 105.2580
+): PolsekData & { jarakKm: number; mapsUrl: string } {
+  const pLat = parseFloat(raw.latitude ?? raw.lat ?? raw.koordinat_lat ?? currentLat);
+  const pLon = parseFloat(raw.longitude ?? raw.lon ?? raw.koordinat_lng ?? currentLon);
+  const validLat = isNaN(pLat) ? currentLat : pLat;
+  const validLon = isNaN(pLon) ? currentLon : pLon;
+
+  const rawJarak = raw.jarakKm !== undefined && raw.jarakKm !== null ? Number(raw.jarakKm) : null;
+  let dist = rawJarak;
+  if (dist === null || isNaN(dist)) {
+    const R = 6371;
+    const dLat = ((validLat - currentLat) * Math.PI) / 180;
+    const dLon = ((validLon - currentLon) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((currentLat * Math.PI) / 180) *
+        Math.cos((validLat * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    dist = Math.round(R * c * 10) / 10;
+  }
+
+  const telp = String(raw.telepon || raw.kontak || raw.hotline || "110");
+  const nama = String(raw.nama || raw.namaPolsek || raw.nama_polsek || "Polsek Wilayah");
+  const polres = String(raw.polres || raw.polresInduk || raw.polres_induk || "Polres Wilayah Hukum");
+  const polda = String(raw.polda || "Polda Wilayah");
+  const alamat = String(raw.alamat || "Wilayah Hukum Kepolisian Setempat");
+  const statusSiaga = String(raw.statusSiaga || raw.status_siaga || "Siaga 24 Jam");
+  const mapsUrl = String(raw.mapsUrl || `https://www.google.com/maps/dir/?api=1&destination=${validLat},${validLon}`);
+
+  return {
+    id: String(raw.id || `polsek-${Math.random()}`),
+    nama,
+    polres,
+    polda,
+    provinsi: String(raw.provinsi || raw.wilayah || "Indonesia"),
+    kabupatenKota: String(raw.kabupatenKota || raw.wilayahHukum || polres),
+    kecamatan: String(raw.kecamatan || ""),
+    alamat,
+    telepon: telp,
+    hotline: String(raw.hotline || "110"),
+    latitude: validLat,
+    longitude: validLon,
+    statusSiaga,
+    jarakKm: Math.round((dist ?? 1.2) * 10) / 10,
+    mapsUrl
+  };
+}
 
 export function PolsekSettings() {
   const [config, setConfig] = useState<PolsekApiConfig>({
@@ -118,6 +173,8 @@ export function PolsekSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [isDirectTesting, setIsDirectTesting] = useState(false);
+  const [directTestResult, setDirectTestResult] = useState<any>(null);
   const [testResult, setTestResult] = useState<{
     success: boolean;
     latencyMs?: number;
@@ -138,6 +195,46 @@ export function PolsekSettings() {
   const showToast = (type: "success" | "error" | "info", text: string) => {
     setToast({ type, text });
     setTimeout(() => setToast(null), 4000);
+  };
+
+  // Direct Live Probe Connection Test (Similar to KPK / Kejaksaan / BPK)
+  const handleRunDirectConnectionTest = async () => {
+    setIsDirectTesting(true);
+    setDirectTestResult(null);
+    try {
+      const res = await fetch("http://localhost:2028/api/polsek/test-connection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          endpointUrl: config.endpointUrl,
+          apiKey: config.apiKey,
+          provider: config.provider
+        })
+      });
+      const data = await res.json();
+      setDirectTestResult(data);
+      if (data.success) {
+        showToast("success", `Uji koneksi berhasil (${data.latencyMs}ms)! Terhubung ke host endpoint.`);
+      } else {
+        showToast("error", data.message || "Uji koneksi gagal.");
+      }
+    } catch (e: any) {
+      setDirectTestResult({
+        success: false,
+        latencyMs: 0,
+        message: "Gagal menghubungi proxy server port 2028: " + e.message,
+        blockHashProof: "0x0000000000000000000000000000000000000000000000000000000000000000",
+        diagnostics: {
+          isRealLive: false,
+          targetUrl: config.endpointUrl,
+          checkedAt: new Date().toISOString(),
+          networkError: e.message
+        }
+      });
+      showToast("error", "Koneksi ke proxy error: " + e.message);
+    } finally {
+      setIsDirectTesting(false);
+    }
   };
 
   // Load configuration on mount (from backend PostgreSQL or localStorage fallback)
@@ -182,9 +279,19 @@ export function PolsekSettings() {
 
     loadConfig();
 
-    // Initial search for default sample location
-    const initialList = findNearestPolsek(-5.3831, 105.2580, 25, 4);
-    setDetectedPolsekList(initialList);
+    // Initial load from PostgreSQL polsek directory
+    fetch("http://localhost:2028/api/polsek/directory")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setDetectedPolsekList(data.slice(0, 5).map((item: any) => normalizePolsekItem(item, -5.3831, 105.2580)));
+        } else {
+          setDetectedPolsekList(findNearestPolsek(-5.3831, 105.2580, 25, 4).map((item) => normalizePolsekItem(item, -5.3831, 105.2580)));
+        }
+      })
+      .catch(() => {
+        setDetectedPolsekList(findNearestPolsek(-5.3831, 105.2580, 25, 4).map((item) => normalizePolsekItem(item, -5.3831, 105.2580)));
+      });
   }, []);
 
   // Update endpoint URL when provider changes
@@ -317,7 +424,7 @@ export function PolsekSettings() {
 
       // Update simulator view with test result samples
       if (sampleList.length > 0) {
-        setDetectedPolsekList(sampleList);
+        setDetectedPolsekList(sampleList.map((item: any) => normalizePolsekItem(item, simLat, simLon)));
       }
     } catch (err: any) {
       setTestResult({
@@ -343,14 +450,16 @@ export function PolsekSettings() {
             latitude: simLat,
             longitude: simLon,
             radiusKm: config.radiusKm,
-            limit: 5
+            limit: 5,
+            provider: config.provider
           })
         });
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data.polsekList) && data.polsekList.length > 0) {
-            setDetectedPolsekList(data.polsekList);
-            showToast("success", `Ditemukan ${data.polsekList.length} Polsek terdekat dari ${simLocationName}`);
+            const normalized = data.polsekList.map((item: any) => normalizePolsekItem(item, simLat, simLon));
+            setDetectedPolsekList(normalized);
+            showToast("success", `Ditemukan ${normalized.length} Polsek terdekat dari ${simLocationName}`);
             setIsSimSearching(false);
             return;
           }
@@ -360,7 +469,7 @@ export function PolsekSettings() {
       }
 
       await new Promise((r) => setTimeout(r, 300));
-      const results = findNearestPolsek(simLat, simLon, config.radiusKm, 5);
+      const results = findNearestPolsek(simLat, simLon, config.radiusKm, 5).map((item) => normalizePolsekItem(item, simLat, simLon));
       setDetectedPolsekList(results);
       showToast("success", `Ditemukan ${results.length} Polsek terdekat dari ${simLocationName}`);
     } catch (err: any) {
@@ -385,7 +494,7 @@ export function PolsekSettings() {
         setSimLat(lat);
         setSimLon(lon);
         setSimLocationName(`Koordinat GPS Anda (${lat}, ${lon})`);
-        const results = findNearestPolsek(lat, lon, config.radiusKm, 5);
+        const results = findNearestPolsek(lat, lon, config.radiusKm, 5).map((item) => normalizePolsekItem(item, lat, lon));
         setDetectedPolsekList(results);
         showToast("success", `GPS terdeteksi! Menampilkan ${results.length} Polsek terdekat.`);
       },
@@ -400,7 +509,7 @@ export function PolsekSettings() {
 
   return (
     <DashboardLayout
-      pageTitle="Pengaturan API Polsek Terdekat"
+      pageTitle="API Polsek"
       description="Konfigurasi API Integrasi Deteksi Kepolisian Sektor (Polsek/Polres) Terdekat dari Lokasi Pelapor se-Indonesia untuk Tindak Lanjut Cepat Laporan & Whistleblower"
     >
       {/* Toast Alert */}
@@ -616,19 +725,32 @@ export function PolsekSettings() {
 
               {/* Endpoint URL */}
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-bold text-ink uppercase tracking-wider">
-                    Endpoint URL / Base Address
+                <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
+                  <label className="text-xs font-bold text-ink uppercase tracking-wider flex items-center gap-1.5">
+                    <Globe size={13} className="text-blue-600" />
+                    <span>Endpoint URL / Base Address Satwil</span>
                   </label>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setConfig({ ...config, endpointUrl: currentProviderMeta.defaultEndpoint })
-                    }
-                    className="text-[11px] text-navy hover:underline flex items-center gap-1 font-semibold"
-                  >
-                    <RotateCcw size={11} /> Reset Default Endpoint
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleRunDirectConnectionTest}
+                      disabled={isDirectTesting}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md border border-blue-200 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
+                      title="Uji koneksi jaringan langsung (probe latency, IP remote server, TLS)"
+                    >
+                      <Wifi size={11} className={isDirectTesting ? "animate-spin" : ""} />
+                      <span>{isDirectTesting ? "Menguji..." : "Uji Koneksi"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setConfig({ ...config, endpointUrl: currentProviderMeta.defaultEndpoint })
+                      }
+                      className="text-[10px] text-muted hover:text-navy hover:underline flex items-center gap-1 font-semibold"
+                    >
+                      <RotateCcw size={10} /> Reset Default
+                    </button>
+                  </div>
                 </div>
                 <input
                   type="text"
@@ -637,6 +759,67 @@ export function PolsekSettings() {
                   placeholder="https://..."
                   className="w-full bg-slate-50 border border-line rounded-lg px-3.5 py-2 text-xs font-mono text-ink outline-none focus:border-navy focus:ring-2 focus:ring-navy/20"
                 />
+
+                {/* Inline Real Connection Test Result Alert (Matching KPK/Kejaksaan/BPK & Reference Image) */}
+                {directTestResult && (
+                  <div
+                    className={`p-3.5 rounded-xl border flex items-start gap-3 animate-fadeIn text-xs mt-3 ${
+                      directTestResult.success
+                        ? "bg-emerald-50/80 border-emerald-200 text-emerald-950"
+                        : "bg-red-50/80 border-red-200 text-red-950"
+                    }`}
+                  >
+                    {directTestResult.success ? (
+                      <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertCircle size={16} className="text-red-600 shrink-0 mt-0.5" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <strong className="block font-bold">
+                          {directTestResult.success ? "Uji Koneksi API Berhasil" : "Koneksi API Gagal"}
+                        </strong>
+                        {directTestResult.latencyMs !== undefined && (
+                          <span className="text-[10px] font-mono bg-white/80 px-2 py-0.5 rounded border border-emerald-300 font-bold text-emerald-800 shrink-0">
+                            {directTestResult.latencyMs} ms
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[11px] mt-0.5 block leading-relaxed">
+                        {directTestResult.message}
+                      </span>
+
+                      {directTestResult.diagnostics && (
+                        <div className="mt-2.5 pt-2 border-t border-emerald-200/80 text-[11px] space-y-1">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 font-mono text-[10px]">
+                            <div className="flex items-center justify-between bg-white/70 px-2 py-1 rounded border border-emerald-100">
+                              <span className="text-slate-500">IP Remote Server:</span>
+                              <span className="font-bold text-slate-800">{directTestResult.diagnostics.resolvedIp || "127.0.0.1"}</span>
+                            </div>
+                            <div className="flex items-center justify-between bg-white/70 px-2 py-1 rounded border border-emerald-100">
+                              <span className="text-slate-500">Status HTTP:</span>
+                              <span className="font-bold text-emerald-700">
+                                {directTestResult.diagnostics.httpStatus || 200} {directTestResult.diagnostics.httpStatusText || "OK"}
+                              </span>
+                            </div>
+                            {directTestResult.diagnostics.tlsProtocol && (
+                              <div className="flex items-center justify-between bg-white/70 px-2 py-1 rounded border border-emerald-100">
+                                <span className="text-slate-500">Enkripsi TLS:</span>
+                                <span className="font-bold text-slate-800">
+                                  {directTestResult.diagnostics.tlsProtocol} ({directTestResult.diagnostics.tlsCipher?.split('_')[1] || "AES-GCM"})
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex items-center justify-between bg-white/70 px-2 py-1 rounded border border-emerald-100">
+                              <span className="text-slate-500">Basis Data:</span>
+                              <span className="font-bold text-blue-700">PostgreSQL 16 (Port 2027)</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Overpass Turbo Assistant (Aktif saat provider OpenStreetMap dipilih) */}
@@ -905,15 +1088,15 @@ out center tags 10;`}
         </div>
 
         {/* Right Column: Simulator Polsek Terdekat (5 cols - Precision CSS) */}
-        <div className="lg:col-span-5 space-y-6 min-w-0">
-          <div className="p-4 sm:p-5 bg-white border border-line rounded-xl shadow-sm flex flex-col h-[780px] max-h-[85vh] min-w-0 overflow-hidden">
+        <div className="lg:col-span-5 min-w-0">
+          <div className="lg:sticky lg:top-6 flex flex-col bg-white border border-line rounded-xl shadow-sm overflow-hidden h-[820px] max-h-[calc(100vh-2.5rem)]">
             {/* Simulator Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-line mb-3 shrink-0">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="h-8 w-8 rounded-lg bg-red-600 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
-                  <Siren size={18} />
+            <div className="flex items-center justify-between p-4 pb-3 border-b border-line bg-white shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="h-9 w-9 rounded-lg bg-red-600 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
+                  <Siren size={20} />
                 </div>
-                <div className="min-w-0 truncate">
+                <div className="min-w-0">
                   <h4 className="font-bold text-xs text-ink truncate">Simulator Deteksi Polsek</h4>
                   <p className="text-[10px] text-muted truncate">Uji pencarian kantor Polsek terdekat dari pelapor</p>
                 </div>
@@ -924,86 +1107,103 @@ out center tags 10;`}
               </span>
             </div>
 
-            {/* Quick Sample Selector */}
-            <div className="mb-3 shrink-0">
-              <label className="block text-[11px] font-bold text-ink mb-1">
-                Pilih Lokasi Sampel Pelapor:
-              </label>
-              <div className="grid grid-cols-2 gap-1.5">
-                {SAMPLE_LOCATIONS.map((loc) => (
-                  <button
-                    key={loc.label}
-                    type="button"
-                    onClick={() => {
-                      setSimLat(loc.lat);
-                      setSimLon(loc.lon);
-                      setSimLocationName(loc.label);
-                      const results = findNearestPolsek(loc.lat, loc.lon, config.radiusKm, 5);
-                      setDetectedPolsekList(results);
-                    }}
-                    className={`text-left px-2 py-1.5 rounded border text-[10px] font-medium truncate transition-all cursor-pointer ${
-                      simLat === loc.lat && simLon === loc.lon
-                        ? "bg-navy text-white border-navy font-semibold shadow-xs"
-                        : "bg-slate-50 text-ink border-line hover:bg-slate-100"
-                    }`}
-                    title={loc.label}
-                  >
-                    📍 {loc.label}
-                  </button>
-                ))}
+            {/* Controls Container: Sample Buttons & Inputs */}
+            <div className="p-4 pb-2 space-y-3 shrink-0 border-b border-slate-100 bg-slate-50/40">
+              {/* Quick Sample Selector */}
+              <div>
+                <label className="block text-[11px] font-bold text-ink mb-1.5">
+                  Pilih Lokasi Sampel Pelapor:
+                </label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {SAMPLE_LOCATIONS.map((loc) => {
+                    const isSelected = simLat === loc.lat && simLon === loc.lon;
+                    return (
+                      <button
+                        key={loc.label}
+                        type="button"
+                        onClick={() => {
+                          setSimLat(loc.lat);
+                          setSimLon(loc.lon);
+                          setSimLocationName(`${loc.label} (${loc.sub})`);
+                          const results = findNearestPolsek(loc.lat, loc.lon, config.radiusKm, 5).map((item) =>
+                            normalizePolsekItem(item, loc.lat, loc.lon)
+                          );
+                          setDetectedPolsekList(results);
+                        }}
+                        className={`text-left px-2.5 py-1.5 rounded-md border text-[10px] transition-all cursor-pointer min-w-0 ${
+                          isSelected
+                            ? "bg-navy text-white border-navy font-semibold shadow-xs"
+                            : "bg-white text-ink border-line hover:bg-slate-100"
+                        }`}
+                        title={`${loc.label} - ${loc.sub}`}
+                      >
+                        <div className="flex items-center gap-1 min-w-0">
+                          <span className="shrink-0">📍</span>
+                          <span className="font-bold truncate">{loc.label}</span>
+                        </div>
+                        <div className={`text-[9px] truncate pl-4 ${isSelected ? "text-slate-200" : "text-muted"}`}>
+                          {loc.sub}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
 
-            {/* GPS & Coordinate Inputs */}
-            <div className="bg-slate-50 p-2.5 rounded-lg border border-line mb-3 space-y-2 shrink-0">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-ink">Titik Koordinat Pelapor:</span>
+              {/* GPS & Coordinate Inputs */}
+              <div className="bg-white p-2.5 rounded-lg border border-line space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-ink flex items-center gap-1">
+                    <MapPin size={12} className="text-red-600" />
+                    <span>Titik Koordinat Pelapor:</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleUseMyLocation}
+                    className="inline-flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-800 font-bold hover:underline cursor-pointer"
+                  >
+                    <LocateFixed size={11} /> Gunakan GPS Saya
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="text-[9px] text-muted block mb-0.5">Latitude (Lintang)</span>
+                    <input
+                      type="number"
+                      step="any"
+                      value={simLat}
+                      onChange={(e) => setSimLat(parseFloat(e.target.value) || 0)}
+                      className="w-full bg-slate-50 border border-line rounded px-2 py-1 text-xs font-mono text-ink outline-none focus:border-navy"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-muted block mb-0.5">Longitude (Bujur)</span>
+                    <input
+                      type="number"
+                      step="any"
+                      value={simLon}
+                      onChange={(e) => setSimLon(parseFloat(e.target.value) || 0)}
+                      className="w-full bg-slate-50 border border-line rounded px-2 py-1 text-xs font-mono text-ink outline-none focus:border-navy"
+                    />
+                  </div>
+                </div>
+
                 <button
                   type="button"
-                  onClick={handleUseMyLocation}
-                  className="inline-flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-800 font-bold hover:underline cursor-pointer"
+                  onClick={handleSimulateSearch}
+                  disabled={isSimSearching}
+                  className="w-full bg-navy hover:bg-navy-dark text-white rounded-md py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50"
                 >
-                  <LocateFixed size={11} /> Gunakan GPS Saya
+                  <Compass size={13} className={isSimSearching ? "animate-spin" : ""} />
+                  <span>{isSimSearching ? "Mencari Polsek Terdekat..." : "Uji Deteksi Polsek Terdekat"}</span>
                 </button>
               </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <span className="text-[10px] text-muted block mb-0.5">Latitude (Lintang)</span>
-                  <input
-                    type="number"
-                    step="any"
-                    value={simLat}
-                    onChange={(e) => setSimLat(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-white border border-line rounded px-2 py-1 text-xs font-mono text-ink outline-none focus:border-navy"
-                  />
-                </div>
-                <div>
-                  <span className="text-[10px] text-muted block mb-0.5">Longitude (Bujur)</span>
-                  <input
-                    type="number"
-                    step="any"
-                    value={simLon}
-                    onChange={(e) => setSimLon(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-white border border-line rounded px-2 py-1 text-xs font-mono text-ink outline-none focus:border-navy"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleSimulateSearch}
-                disabled={isSimSearching}
-                className="w-full bg-navy hover:bg-navy-dark text-white rounded-md py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50"
-              >
-                <Compass size={13} className={isSimSearching ? "animate-spin" : ""} />
-                <span>{isSimSearching ? "Mencari Polsek Terdekat..." : "Uji Deteksi Polsek Terdekat"}</span>
-              </button>
             </div>
 
-            {/* Detected Polsek Results Cards */}
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-w-0">
-              <div className="flex items-center justify-between text-[11px] font-bold text-muted px-0.5 pb-1">
+            {/* Detected Polsek Results Cards (Scrollable flex-1) */}
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-2.5">
+              <div className="flex items-center justify-between text-[11px] font-bold text-muted px-0.5 pb-0.5">
                 <span>Daftar Polsek Terdekat ({detectedPolsekList.length}):</span>
                 <span>Radius: {config.radiusKm} km</span>
               </div>
@@ -1019,12 +1219,24 @@ out center tags 10;`}
               ) : (
                 detectedPolsekList.map((polsek, index) => {
                   const isFirst = index === 0;
+                  const telpStr = String(polsek.telepon || (polsek as any).kontak || "110");
+                  const dialNum = telpStr.replace(/[^0-9]/g, "") || "110";
+                  const nama = polsek.nama || (polsek as any).namaPolsek || "Polsek Wilayah";
+                  const polres = polsek.polres || (polsek as any).polresInduk || "Polres Wilayah Hukum";
+                  const polda = polsek.polda || "Polda Setempat";
+                  const alamat = polsek.alamat || "Wilayah Hukum Kepolisian Setempat";
+                  const statusSiaga = polsek.statusSiaga || (polsek as any).status_siaga || "Siaga 24 Jam";
+                  const jarak = typeof polsek.jarakKm === "number" ? polsek.jarakKm : (parseFloat(String(polsek.jarakKm)) || 0);
+                  const pLat = polsek.latitude || (polsek as any).lat || simLat;
+                  const pLon = polsek.longitude || (polsek as any).lon || simLon;
+                  const mapsUrl = polsek.mapsUrl || `https://www.google.com/maps/dir/?api=1&destination=${pLat},${pLon}`;
+
                   return (
                     <div
                       key={polsek.id}
                       className={`p-2.5 sm:p-3 rounded-lg border transition-all min-w-0 overflow-hidden ${
                         isFirst
-                          ? "bg-amber-50/40 border-amber-300 ring-1 ring-amber-300 shadow-xs"
+                          ? "bg-amber-50/50 border-amber-300 ring-1 ring-amber-300 shadow-xs"
                           : "bg-white border-line hover:border-slate-300"
                       }`}
                     >
@@ -1040,57 +1252,57 @@ out center tags 10;`}
                             >
                               #{index + 1}
                             </span>
-                            <h5 className="font-bold text-xs text-ink truncate" title={polsek.nama}>
-                              {polsek.nama}
+                            <h5 className="font-bold text-xs text-ink truncate" title={nama}>
+                              {nama}
                             </h5>
                           </div>
                           <p className="text-[10px] text-muted mt-0.5 truncate">
-                            {polsek.polres} &bull; {polsek.polda}
+                            {polres} &bull; {polda}
                           </p>
                         </div>
 
                         <span
                           className={`shrink-0 px-2 py-0.5 rounded text-[11px] font-bold font-mono ${
-                            polsek.jarakKm <= 3
+                            jarak <= 3
                               ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
-                              : polsek.jarakKm <= 10
+                              : jarak <= 10
                               ? "bg-blue-100 text-blue-800 border border-blue-300"
                               : "bg-slate-100 text-slate-800"
                           }`}
                         >
-                          {polsek.jarakKm} km
+                          {jarak > 0 ? `${jarak} km` : "< 1 km"}
                         </span>
                       </div>
 
                       <p className="text-[11px] text-slate-600 mt-1.5 leading-tight flex items-start gap-1 min-w-0">
                         <MapPin size={11} className="text-red-500 shrink-0 mt-0.5" />
-                        <span className="line-clamp-2">{polsek.alamat}</span>
+                        <span className="line-clamp-2">{alamat}</span>
                       </p>
 
                       <div className="mt-2 pt-2 border-t border-slate-200/80 flex items-center justify-between gap-1.5 text-[10px]">
                         <div className="flex items-center gap-1.5 min-w-0 truncate">
                           <span className="text-emerald-700 font-semibold flex items-center gap-1 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 text-[9px] shrink-0">
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                            {polsek.statusSiaga}
+                            {statusSiaga}
                           </span>
                           <span className="text-slate-500 font-mono text-[10px] truncate hidden sm:inline">
-                            {polsek.telepon}
+                            {telpStr}
                           </span>
                         </div>
 
                         <div className="flex items-center gap-1 shrink-0">
                           <a
-                            href={`tel:${polsek.telepon.replace(/[^0-9]/g, "") || "110"}`}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white font-bold text-[10px] shrink-0"
+                            href={`tel:${dialNum}`}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white font-bold text-[10px] shrink-0 transition-colors shadow-xs"
                             title="Hubungi SPKT Polsek / Call Center 110"
                           >
                             <PhoneCall size={9} /> SPKT
                           </a>
                           <a
-                            href={polsek.mapsUrl}
+                            href={mapsUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-navy font-bold text-[10px] border border-line shrink-0"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-navy font-bold text-[10px] border border-line shrink-0 transition-colors"
                             title="Buka Navigasi Google Maps"
                           >
                             <Navigation size={9} /> Rute <ExternalLink size={8} />
@@ -1104,9 +1316,12 @@ out center tags 10;`}
             </div>
 
             {/* Simulator Footer Status */}
-            <div className="pt-2 border-t border-line mt-2 text-[10px] text-muted flex items-center justify-between shrink-0">
-              <span>Siaga: <strong>110 (Bebas Pulsa)</strong></span>
-              <span className="text-emerald-600 font-semibold flex items-center gap-1">
+            <div className="p-3 border-t border-line text-[10px] text-muted flex items-center justify-between shrink-0 bg-slate-50/80">
+              <span className="flex items-center gap-1 font-medium">
+                <PhoneCall size={11} className="text-red-500" />
+                <span>Siaga: <strong className="text-ink font-mono">110</strong> (Bebas Pulsa)</span>
+              </span>
+              <span className="text-emerald-600 font-semibold flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                 <CheckCircle2 size={11} /> 100% Siaga Se-Indonesia
               </span>
             </div>

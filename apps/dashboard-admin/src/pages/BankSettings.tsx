@@ -430,7 +430,7 @@ export function BankSettings() {
 
   return (
     <DashboardLayout
-      pageTitle="Pengaturan API Bank Himbara"
+      pageTitle="API HIMBARA"
       description="Konfigurasi Standar Open Banking BI SNAP (Bank Indonesia Standar Nasional Open API Pembayaran) untuk Sinkronisasi Rekening Penampung BOS, APBD, dan Escrow Pendidikan"
     >
       {/* Toast Alert */}

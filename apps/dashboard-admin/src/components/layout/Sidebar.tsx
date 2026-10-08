@@ -91,7 +91,6 @@ export function Sidebar() {
           badgeColor: "bg-gold text-ink font-bold",
           module: "Mutasi Bank Himbara"
         },
-        { to: "/wilayah", label: "Master Data Wilayah", icon: MapPinned, module: "Master Data Wilayah" },
         { to: "/broadcast", label: "Broadcast Pengumuman", icon: Megaphone, module: "Broadcast" },
       ]
     },
@@ -100,13 +99,14 @@ export function Sidebar() {
       title: "Pengaturan API Key & Integrasi",
       icon: Key,
       items: [
-        { to: "/bank-settings", label: "API Bank Himbara (SNAP)", icon: CreditCard, module: "Pengaturan API Bank" },
-        { to: "/ai-settings", label: "API AI Aksara (Gemini)", icon: Bot, module: "Pengaturan AI Aksara" },
-        { to: "/kpk-settings", label: "API KPK RI", icon: Gavel, module: "Pengaturan API KPK" },
-        { to: "/kejaksaan-settings", label: "API Kejaksaan RI", icon: FileBadge, module: "Pengaturan API Kejaksaan" },
-        { to: "/bpk-bpkp-settings", label: "API BPK & BPKP", icon: Scale, module: "Pengaturan API BPK & BPKP" },
-        { to: "/polsek-settings", label: "API Polsek Terdekat", icon: Siren, module: "Pengaturan API Polsek" },
-        { to: "/schools-settings", label: "API Data Sekolah Nasional", icon: GraduationCap, module: "Pengaturan API Data Sekolah" },
+        { to: "/wilayah", label: "API Wilayah", icon: MapPinned, module: "API Wilayah" },
+        { to: "/schools-settings", label: "API DIKTI", icon: GraduationCap, module: "API DIKTI" },
+        { to: "/bank-settings", label: "API HIMBARA", icon: CreditCard, module: "API HIMBARA" },
+        { to: "/ai-settings", label: "API AI AKSARA", icon: Bot, module: "API AI AKSARA" },
+        { to: "/kpk-settings", label: "API KPK", icon: Gavel, module: "API KPK" },
+        { to: "/kejaksaan-settings", label: "API Kejaksaan RI", icon: FileBadge, module: "API Kejaksaan RI" },
+        { to: "/bpk-bpkp-settings", label: "API BPK/BPKP", icon: Scale, module: "API BPK/BPKP" },
+        { to: "/polsek-settings", label: "API Polsek", icon: Siren, module: "API Polsek" },
       ]
     }
   ];

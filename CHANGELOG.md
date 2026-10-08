@@ -4,6 +4,42 @@ Semua perubahan penting pada proyek **Integrated Blockchain - Platform Transpara
 
 Format pencatatan berpedoman pada [Keep a Changelog](https://keepachangelog.com/id-ID/1.0.0/) dan menganut prinsip [Semantic Versioning](https://semver.org/lang/id/).
 
+## [2.6.0] - 2026-10-08
+
+### 🗺️ Perombakan Modul API Wilayah & Navigasi Gugus Kepulauan (Port 2026)
+- **Transformasi Besar Master Data Wilayah (`MasterDataWilayah.tsx`)**:
+  - Sinkronisasi real-time penuh dengan basis data PostgreSQL (Port 2027) melalui endpoint proxy `/api/admin/provinces`, `/api/admin/regencies`, `/api/admin/districts`, dan `/api/schools/search`.
+  - Fitur pengelompokan 38 provinsi ke dalam 6 gugus kepulauan besar nusantara (`ISLAND_GROUPS`): Sumatera, Jawa, Bali & Nusa Tenggara, Kalimantan, Sulawesi, serta Maluku & Papua.
+  - Navigasi bertingkat / *hierarchical drill-down*: Pulau → Provinsi → Kabupaten/Kota (514 entitas) → Kecamatan → Satuan Pendidikan (468.724 sekolah).
+  - Tampilan statistik ringkas dinamis, visualisasi peta sebaran, filter instan, dan kartu preview entitas interaktif.
+
+### 🧭 Reorganisasi Standar Menu Integrasi API Admin (Dashboard Admin)
+- **Standardisasi Penamaan & Ikon Menu Sidebar (`Sidebar.tsx`, `DashboardLayout.tsx`)**:
+  - Seluruh modul API di sidebar dikelompokkan rapi di bawah kategori *"Pengaturan API Key & Integrasi"*:
+    - **API Wilayah** (`/wilayah`, ikon *MapPinned*)
+    - **API DIKTI** (`/schools-settings`, ikon *GraduationCap*)
+    - **API HIMBARA** (`/bank-settings`, ikon *CreditCard*)
+    - **API AI AKSARA** (`/ai-settings`, ikon *Bot*)
+    - **API KPK** (`/kpk-settings`, ikon *Gavel*)
+    - **API Kejaksaan RI** (`/kejaksaan-settings`, ikon *FileBadge*)
+    - **API BPK/BPKP** (`/bpk-bpkp-settings`, ikon *Scale*)
+    - **API Polsek** (`/polsek-settings`, ikon *Siren*)
+- **Pemetaan Hak Akses Cerdas (`adminStore.tsx`)**:
+  - Penambahan `aliasMap` untuk memetakan penamaan rute baru ke hak akses RBAC eksisting sehingga hak izin peran *Super Admin*, *Ops Admin*, *Admin Kementerian*, dan *Admin Wilayah* tetap terlindungi tanpa breaking changes.
+
+### 🔌 Ekspansi Proxy API Gateway & Persistensi PostgreSQL (Port 2028)
+- **Endpoint Data Kecamatan Baru (`/api/admin/districts`)**:
+  - Menyediakan endpoint kueri dinamis untuk data kecamatan dari tabel `public.kecamatan` dengan fallback cerdas berbasis ekstraksi regex lokasi sekolah.
+- **Integrasi Basis Data Polsek Langsung (`/api/polsek/directory`)**:
+  - Query langsung ke tabel `public.polsek_directory` di PostgreSQL dengan normalisasi data multi-format (`normalizePolsekItem`), mendukung uji koneksi langsung (`/api/polsek/test-connection`) dengan probe diagnostik jaringan nyata.
+- **Persistensi Konfigurasi & Mutasi Bank Himbara (`/api/admin/bank-configs`)**:
+  - Tabel `public.bank_configs` kini menjadi penyimpan permanen status aktif, endpoint, dan tipe otentikasi bank.
+  - Endpoint inquiry `/api/bank/inquiry` mengueri transaksi real-time sekolah langsung dari tabel `transactions` di PostgreSQL.
+- **Penyelarasan Vite Proxy (`vite.config.ts`)**:
+  - Reverse proxy dikembangkan dari `/api/admin` menjadi `/api` penuh untuk mencakup seluruh sub-rute API backend secara transparan.
+
+---
+
 ## [2.5.3] - 2026-10-06
 
 ### 🖼️ Modul Utilitas Kompresi Citra WebP Klien & Optimasi OCR (Port 2024)

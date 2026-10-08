@@ -19,11 +19,11 @@ Sistem **Integrated Blockchain - Platform Transparansi Anggaran Pendidikan Indon
    - `apps/dashboard-auditor` (Port 2023: Pengawasan Audit BPK & Deteksi Anomali AI)
    - `apps/dashboard-institusi-pendidikan` (Port 2024: RAB Sekolah, SPJ, OCR Belanja, & Engine Kompresi Citra WebP Canvas)
    - `apps/dashboard-apbd` (Port 2025: Validasi Kepatuhan Mandatori 20% APBD Lampung)
-   - `apps/dashboard-admin` (Port 2026: Super-Admin Console & Scoped RBAC)
-   - `proxy/proxy.js` (Port 2028: PostgREST REST API Gateway & Security Filter Engine)
+   - `apps/dashboard-admin` (Port 2026: Super-Admin Console, Scoped RBAC, Modul API Wilayah Hierarkis, & Konsol Integrasi API Nasional)
+   - `proxy/proxy.js` & `proxy/adminApi.js` (Port 2028: PostgREST REST API Gateway, Security Filter Engine, Polsek & Wilayah Data Provider)
    - `proxy/connectionProbe.js` (Port 2028: Real-Live Network Diagnostic Probe — TLS, DNS, HTTP Inspector)
-3. **Skema & Desain Basis Data Relasional**: Struktur 35+ tabel master, relasi entitas (*ERD*), view agregasi (*materialized view*), dan trigger otomatis (*cascading delete*) pada PostgreSQL.
-4. **Logika Bisnis & Algoritma Khusus**: Formula distribusi transfer dana berjenjang, validasi ambang batas 20% APBD (UUD 1945), rekonsiliasi kas bank multi-rekening, mesin kalkulasi spasial jarak terdekat (Haversine distance engine), algoritma kompresi dan konversi citra kuitansi ke WebP via HTML5 Canvas murni, dan alur pelaporan korupsi dana pendidikan ke KPK/Kejaksaan/BPK-BPKP.
+3. **Skema & Desain Basis Data Relasional**: Struktur 41 tabel master, relasi entitas (*ERD*), view agregasi (*materialized view*), dan trigger otomatis (*cascading delete*) pada PostgreSQL.
+4. **Logika Bisnis & Algoritma Khusus**: Formula distribusi transfer dana berjenjang, validasi ambang batas 20% APBD (UUD 1945), rekonsiliasi kas bank multi-rekening, mesin kalkulasi spasial jarak terdekat (Haversine distance engine), pengelompokan hierarki gugus kepulauan & wilayah administrasi nasional (38 provinsi, 514 kabupaten/kota, kecamatan), algoritma kompresi dan konversi citra kuitansi ke WebP via HTML5 Canvas murni, dan alur pelaporan korupsi dana pendidikan ke KPK/Kejaksaan/BPK-BPKP.
 
 ---
 

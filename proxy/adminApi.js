@@ -658,6 +658,61 @@ router.get('/regencies', async (req, res) => {
   }
 });
 
+router.get('/districts', async (req, res) => {
+  try {
+    const regencyId = req.query.regency_id || req.query.regencyId;
+    const regencyName = req.query.regency || req.query.kabupatenKota;
+
+    try {
+      let query = `SELECT id, nama as name FROM public.kecamatan`;
+      let params = [];
+      if (regencyId) {
+        params.push(regencyId);
+        query += ` WHERE regency_id = $1 OR kabupaten_kota_id = $1`;
+      } else if (regencyName) {
+        params.push(regencyName);
+        query += ` WHERE regency_id IN (SELECT id FROM regencies WHERE name ILIKE $1)`;
+      }
+      query += ` ORDER BY nama ASC LIMIT 200`;
+
+      const result = await adminDbPool.query(query, params);
+      if (result.rows.length > 0) {
+        return res.json(result.rows);
+      }
+    } catch (kErr) {
+      // fallback to schools location extraction
+    }
+
+    let fallbackQuery = `
+      SELECT DISTINCT TRIM(SUBSTRING(s.location FROM 'Kec\\.\\s*([^,]+)')) as name
+      FROM schools s
+    `;
+    let params = [];
+    if (regencyId) {
+      params.push(regencyId);
+      fallbackQuery += ` WHERE s.regency_id = $1 AND s.location ~ 'Kec\\.'`;
+    } else if (regencyName) {
+      params.push(regencyName);
+      fallbackQuery += `
+        LEFT JOIN regencies r ON s.regency_id = r.id
+        WHERE r.name ILIKE $1 AND s.location ~ 'Kec\\.'
+      `;
+    } else {
+      fallbackQuery += ` WHERE s.location ~ 'Kec\\.' LIMIT 100`;
+    }
+    fallbackQuery += ` ORDER BY name ASC LIMIT 200`;
+
+    const result = await adminDbPool.query(fallbackQuery, params);
+    const cleanList = result.rows
+      .map(r => r.name)
+      .filter(n => n && n.length > 2 && !n.includes('RT') && !n.includes('RW'))
+      .map((name, idx) => ({ id: `kec-${idx + 1}`, name }));
+    res.json(cleanList);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Audit Logs ──────────────────────────────────────────────
 router.get('/audit-logs', (req, res) => {
   res.json(auditLogs);
@@ -763,11 +818,31 @@ let bankConfigs = [
   },
 ];
 
-router.get('/bank-configs', (req, res) => {
+router.get('/bank-configs', async (req, res) => {
+  try {
+    const dbRes = await adminDbPool.query('SELECT * FROM public.bank_configs ORDER BY is_primary_default DESC, bank_name ASC');
+    if (dbRes.rows.length > 0) {
+      const mapped = dbRes.rows.map(r => ({
+        bankName: r.bank_name,
+        bankCode: r.bank_code,
+        bankFullName: r.bank_full_name,
+        isActive: r.is_active,
+        isPrimaryDefault: r.is_primary_default,
+        apiEndpoint: r.api_endpoint,
+        authType: r.auth_type,
+        lastSyncAt: r.last_sync_at,
+        activeSchoolsCount: r.active_schools_count,
+        statusDescription: r.status_description
+      }));
+      return res.json(mapped);
+    }
+  } catch (err) {
+    console.warn('[Bank Configs DB GET Error]:', err.message);
+  }
   res.json(bankConfigs);
 });
 
-router.post('/bank-configs/:bankName/toggle', (req, res) => {
+router.post('/bank-configs/:bankName/toggle', async (req, res) => {
   const { bankName } = req.params;
   const { active } = req.body;
   const bank = bankConfigs.find(b => b.bankName.toUpperCase() === bankName.toUpperCase());
@@ -778,6 +853,16 @@ router.post('/bank-configs/:bankName/toggle', (req, res) => {
     ? `${new Date().toISOString().split('T')[0]} ${new Date().toTimeString().split(' ')[0]} WIB`
     : bank.lastSyncAt;
 
+  try {
+    await adminDbPool.query(`
+      UPDATE public.bank_configs
+      SET is_active = $1, last_sync_at = $2, updated_at = NOW()
+      WHERE UPPER(bank_name) = UPPER($3)
+    `, [bank.isActive, bank.lastSyncAt, bankName]);
+  } catch (err) {
+    console.warn('[Bank Toggle DB Error]:', err.message);
+  }
+
   recordAudit(
     `${active ? 'Mengaktifkan' : 'Menonaktifkan'} integrasi API Bank ${bank.bankName} secara KESELURUHAN (Berlaku untuk seluruh satuan pendidikan mitra di Indonesia)`,
     "bank_api_configs",
@@ -787,12 +872,24 @@ router.post('/bank-configs/:bankName/toggle', (req, res) => {
   res.json({ message: `Status integrasi API ${bank.bankName} diperbarui`, config: bank });
 });
 
-router.patch('/bank-configs/:bankName', (req, res) => {
+router.patch('/bank-configs/:bankName', async (req, res) => {
   const { bankName } = req.params;
   const bank = bankConfigs.find(b => b.bankName.toUpperCase() === bankName.toUpperCase());
   if (!bank) return res.status(404).json({ error: `Bank ${bankName} tidak terdaftar` });
 
   Object.assign(bank, req.body);
+  try {
+    await adminDbPool.query(`
+      UPDATE public.bank_configs
+      SET api_endpoint = COALESCE($1, api_endpoint),
+          auth_type = COALESCE($2, auth_type),
+          status_description = COALESCE($3, status_description),
+          updated_at = NOW()
+      WHERE UPPER(bank_name) = UPPER($4)
+    `, [bank.apiEndpoint, bank.authType, bank.statusDescription, bankName]);
+  } catch (err) {
+    console.warn('[Bank Patch DB Error]:', err.message);
+  }
   recordAudit(`Memperbarui konfigurasi API Bank ${bank.bankName}`, "bank_api_configs", bank.bankName);
   res.json({ message: `Konfigurasi API ${bank.bankName} disimpan`, config: bank });
 });
@@ -907,10 +1004,11 @@ router.get('/system-health', (req, res) => {
 // ── Database Overview & Live Data Inspection (Port 2027) ──────
 router.get('/database-overview', async (req, res) => {
   try {
-    const [schools, provinces, regencies, transactions, users, items] = await Promise.all([
+    const [schools, provinces, regencies, districts, transactions, users, items] = await Promise.all([
       adminDbPool.query('SELECT count(*) FROM schools'),
       adminDbPool.query('SELECT count(*) FROM provinces'),
       adminDbPool.query('SELECT count(*) FROM regencies'),
+      adminDbPool.query('SELECT count(*) FROM public.kecamatan'),
       adminDbPool.query('SELECT count(*) FROM transactions'),
       adminDbPool.query('SELECT count(*) FROM users'),
       adminDbPool.query('SELECT count(*) FROM transaction_items'),
@@ -924,17 +1022,32 @@ router.get('/database-overview', async (req, res) => {
       LIMIT 10
     `);
 
+    const totalSekolah = parseInt(schools.rows[0].count);
+    const totalProvinces = parseInt(provinces.rows[0].count);
+    const totalKabupaten = parseInt(regencies.rows[0].count);
+    const totalKecamatan = parseInt(districts.rows[0].count);
+    const totalTransactions = parseInt(transactions.rows[0].count);
+    const totalUsers = parseInt(users.rows[0].count);
+    const totalItems = parseInt(items.rows[0].count);
+
     res.json({
       status: 'online',
       dbPort: 2027,
       proxyPort: 2028,
+      totalProvinces,
+      totalKabupaten,
+      totalKecamatan,
+      totalSekolah,
+      totalTransactions,
       tables: {
-        schools: parseInt(schools.rows[0].count),
-        provinces: parseInt(provinces.rows[0].count),
-        regencies: parseInt(regencies.rows[0].count),
-        transactions: parseInt(transactions.rows[0].count),
-        users: parseInt(users.rows[0].count),
-        transactionItems: parseInt(items.rows[0].count),
+        schools: totalSekolah,
+        provinces: totalProvinces,
+        regencies: totalKabupaten,
+        districts: totalKecamatan,
+        kecamatan: totalKecamatan,
+        transactions: totalTransactions,
+        users: totalUsers,
+        transactionItems: totalItems,
       },
       sampleTransactions: recentTx.rows,
       connectedAt: new Date().toISOString()

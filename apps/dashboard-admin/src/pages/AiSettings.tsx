@@ -332,7 +332,7 @@ export function AiSettings() {
 
   return (
     <DashboardLayout
-      pageTitle="Pengaturan Tanya Aksara AI"
+      pageTitle="API AI AKSARA"
       description="Konfigurasi API Token & LLM Provider untuk Maskot Interaktif Tanya Aksara di Portal Publik (Port 2019)"
     >
       {/* Toast Alert */}

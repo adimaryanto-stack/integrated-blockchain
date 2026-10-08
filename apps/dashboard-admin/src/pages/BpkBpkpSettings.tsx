@@ -236,7 +236,7 @@ export function BpkBpkpSettings() {
   const [testScenario, setTestScenario] = useState<"bos_triwulan" | "mandatory_20" | "ai_faa_anomaly" | "block_audit_hash">("bos_triwulan");
   const [officeSearch, setOfficeSearch] = useState("");
   const [officeLembagaFilter, setOfficeLembagaFilter] = useState<"all" | "BPK RI" | "BPKP RI">("all");
-  const [offices] = useState<BpkBpkpOffice[]>(DEFAULT_OFFICES);
+  const [offices, setOffices] = useState<BpkBpkpOffice[]>(DEFAULT_OFFICES);
 
   // Load existing config from PostgreSQL on mount
   useEffect(() => {
@@ -264,6 +264,18 @@ export function BpkBpkpSettings() {
         }
       } catch (e) {
         console.warn("Gagal memuat konfigurasi BPK/BPKP dari proxy:", e);
+      }
+
+      try {
+        const dirRes = await fetch("http://localhost:2028/api/bpk-bpkp/directory");
+        if (dirRes.ok) {
+          const dirData = await dirRes.json();
+          if (Array.isArray(dirData) && dirData.length > 0) {
+            setOffices(dirData);
+          }
+        }
+      } catch (dirErr) {
+        console.warn("Gagal memuat direktori kantor BPK/BPKP dari database:", dirErr);
       }
     }
     loadConfig();
@@ -418,7 +430,7 @@ export function BpkBpkpSettings() {
 
   return (
     <DashboardLayout
-      pageTitle="Pengaturan API Auditor BPK & BPKP"
+      pageTitle="API BPK/BPKP"
       description="Konfigurasi Integrasi Pengawasan Keuangan Negara (e-Audit BPK RI & SISWASKAU BPKP RI) untuk Pengawasan Real-Time Buku Besar Blockchain"
     >
       <div className="space-y-6">

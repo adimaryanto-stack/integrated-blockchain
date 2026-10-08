@@ -14,15 +14,15 @@ const routeModuleMap: Record<string, string> = {
   "/ai-faa": "AI-FAA Console",
   "/bank-mutations": "Mutasi Bank Himbara",
   "/broadcast": "Broadcast",
-  "/wilayah": "Master Data Wilayah",
+  "/wilayah": "API Wilayah",
   "/access-control": "Access Control Matrix",
-  "/ai-settings": "Pengaturan AI Aksara",
-  "/kpk-settings": "Pengaturan API KPK",
-  "/kejaksaan-settings": "Pengaturan API Kejaksaan",
-  "/bpk-bpkp-settings": "Pengaturan API BPK & BPKP",
-  "/polsek-settings": "Pengaturan API Polsek",
-  "/schools-settings": "Pengaturan API Data Sekolah",
-  "/bank-settings": "Pengaturan API Bank",
+  "/schools-settings": "API DIKTI",
+  "/bank-settings": "API HIMBARA",
+  "/ai-settings": "API AI AKSARA",
+  "/kpk-settings": "API KPK",
+  "/kejaksaan-settings": "API Kejaksaan RI",
+  "/bpk-bpkp-settings": "API BPK/BPKP",
+  "/polsek-settings": "API Polsek",
 };
 
 export function DashboardLayout({

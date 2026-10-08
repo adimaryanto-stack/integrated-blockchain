@@ -220,8 +220,7 @@ export function KpkSettings() {
   const [testScenario, setTestScenario] = useState<"jaga_bos" | "wbs_markup" | "elhkpn_verify" | "blockchain_evidence">("jaga_bos");
   const [channelSearch, setChannelSearch] = useState("");
   const [bidangFilter, setBidangFilter] = useState<string>("all");
-  const [channels] = useState<KpkChannel[]>(KPK_CHANNELS);
-
+  const [channels, setChannels] = useState<KpkChannel[]>(KPK_CHANNELS);
 
   // Load existing config from PostgreSQL on mount
   useEffect(() => {
@@ -249,6 +248,18 @@ export function KpkSettings() {
         }
       } catch (e) {
         console.warn("Gagal memuat konfigurasi KPK dari proxy:", e);
+      }
+
+      try {
+        const dirRes = await fetch("http://localhost:2028/api/kpk/directory");
+        if (dirRes.ok) {
+          const dirData = await dirRes.json();
+          if (Array.isArray(dirData) && dirData.length > 0) {
+            setChannels(dirData);
+          }
+        }
+      } catch (dirErr) {
+        console.warn("Gagal memuat direktori kanal KPK dari database:", dirErr);
       }
     }
     loadConfig();
@@ -403,7 +414,7 @@ export function KpkSettings() {
 
   return (
     <DashboardLayout
-      pageTitle="Pengaturan API KPK RI"
+      pageTitle="API KPK"
       description="Konfigurasi Integrasi Antirasuah & Pengawasan Anggaran KPK RI (Portal JAGA.ID & Whistleblowing System KWS) untuk Deteksi Dini Korupsi Pendidikan"
     >
       <div className="space-y-6">

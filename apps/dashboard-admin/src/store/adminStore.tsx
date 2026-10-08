@@ -484,26 +484,47 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     if (currentUser.role === "super_admin") return true;
     const rolePerm = rolePermissions.find((r) => r.role === currentUser.role);
     if (!rolePerm) return false;
-    const mod = rolePerm.permissions[module];
+
+    const aliasMap: Record<string, string> = {
+      "API Wilayah": "Master Data Wilayah",
+      "Master Data Wilayah": "Master Data Wilayah",
+      "API DIKTI": "Pengaturan API Data Sekolah",
+      "Pengaturan API Data Sekolah": "Pengaturan API Data Sekolah",
+      "API HIMBARA": "Pengaturan API Bank",
+      "Pengaturan API Bank": "Pengaturan API Bank",
+      "API AI AKSARA": "Pengaturan AI Aksara",
+      "Pengaturan AI Aksara": "Pengaturan AI Aksara",
+      "API KPK": "Pengaturan API KPK",
+      "Pengaturan API KPK": "Pengaturan API KPK",
+      "API Kejaksaan RI": "Pengaturan API Kejaksaan",
+      "Pengaturan API Kejaksaan": "Pengaturan API Kejaksaan",
+      "API BPK/BPKP": "Pengaturan API BPK & BPKP",
+      "Pengaturan API BPK & BPKP": "Pengaturan API BPK & BPKP",
+      "API Polsek": "Pengaturan API Polsek",
+      "Pengaturan API Polsek": "Pengaturan API Polsek",
+    };
+    const effectiveModule = aliasMap[module] || module;
+
+    const mod = rolePerm.permissions[effectiveModule];
     if (!mod) {
-      if (module === "Pengaturan API KPK") {
+      if (effectiveModule === "Pengaturan API KPK") {
         if (currentUser.role === "ops_admin" || currentUser.role === "admin_kementerian") return action !== "delete";
       }
-      if (module === "Pengaturan API Kejaksaan") {
+      if (effectiveModule === "Pengaturan API Kejaksaan") {
         if (currentUser.role === "ops_admin" || currentUser.role === "admin_kementerian") return action !== "delete";
       }
-      if (module === "Pengaturan API BPK & BPKP") {
+      if (effectiveModule === "Pengaturan API BPK & BPKP") {
         if (currentUser.role === "ops_admin" || currentUser.role === "admin_kementerian") return action !== "delete";
       }
-      if (module === "Pengaturan API Polsek") {
+      if (effectiveModule === "Pengaturan API Polsek") {
         if (currentUser.role === "ops_admin") return action !== "delete";
         if (currentUser.role === "admin_kementerian") return action === "view";
       }
-      if (module === "Pengaturan API Data Sekolah") {
+      if (effectiveModule === "Pengaturan API Data Sekolah" || effectiveModule === "Master Data Wilayah") {
         if (currentUser.role === "ops_admin" || currentUser.role === "admin_kementerian") return action !== "delete";
         if (currentUser.role === "admin_wilayah") return action === "view";
       }
-      if (module === "Pengaturan API Bank") {
+      if (effectiveModule === "Pengaturan API Bank") {
         if (currentUser.role === "ops_admin") return action !== "delete";
         if (currentUser.role === "admin_kementerian") return action === "view";
       }

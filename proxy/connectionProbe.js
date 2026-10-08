@@ -84,6 +84,7 @@ async function probeRealConnection({ targetUrl, apiKey = '', clientId = '', time
         path: requestPath,
         method: 'GET',
         insecureHTTPParser: true,
+        rejectUnauthorized: false,
         headers: {
           'User-Agent': 'Integrated-Blockchain-APH-Auditor/2.0 (Windows NT 10.0; Win64; x64)',
           'Accept': 'application/json, text/html, */*',

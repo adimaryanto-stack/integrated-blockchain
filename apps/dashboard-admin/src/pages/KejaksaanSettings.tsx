@@ -230,7 +230,7 @@ export function KejaksaanSettings() {
   const [testScenario, setTestScenario] = useState<"pidsus_tipikor" | "halojpn_legal" | "pps_kawal" | "blockchain_evidence">("pidsus_tipikor");
   const [officeSearch, setOfficeSearch] = useState("");
   const [satkerFilter, setSatkerFilter] = useState<string>("all");
-  const [offices] = useState<KejaksaanOffice[]>(KEJAKSAAN_OFFICES);
+  const [offices, setOffices] = useState<KejaksaanOffice[]>(KEJAKSAAN_OFFICES);
 
   // Load existing config from PostgreSQL on mount
   useEffect(() => {
@@ -258,6 +258,18 @@ export function KejaksaanSettings() {
         }
       } catch (e) {
         console.warn("Gagal memuat konfigurasi Kejaksaan dari proxy:", e);
+      }
+
+      try {
+        const dirRes = await fetch("http://localhost:2028/api/kejaksaan/directory");
+        if (dirRes.ok) {
+          const dirData = await dirRes.json();
+          if (Array.isArray(dirData) && dirData.length > 0) {
+            setOffices(dirData);
+          }
+        }
+      } catch (dirErr) {
+        console.warn("Gagal memuat direktori kantor Kejaksaan dari database:", dirErr);
       }
     }
     loadConfig();
@@ -412,7 +424,7 @@ export function KejaksaanSettings() {
 
   return (
     <DashboardLayout
-      pageTitle="Pengaturan API Kejaksaan RI"
+      pageTitle="API Kejaksaan RI"
       description="Konfigurasi Integrasi Penegakan Hukum & Pengamanan Pembangunan Strategis Kejaksaan RI (CMS Pidsus, HALO JPN & PPS JAMINTEL)"
     >
       <div className="space-y-6">
