@@ -95,11 +95,14 @@ export default function RencanaAnggaranPage() {
 
   const transactionsWithActiveYear = useMemo(() => {
     return rencanaList.filter(t => {
-      const isMatchInst = t.institusiId === 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7' || t.namaInstitusi === 'KB AL-IKHLAS' || t.institusiId === 'inst-sd-0';
+      const activeSchoolName = currentUser?.nama_sekolah || 'KB AL-IKHLAS';
+      const isMatchInst =
+        t.namaInstitusi.toLowerCase() === activeSchoolName.toLowerCase() ||
+        (activeSchoolName.toUpperCase().includes('AL-IKHLAS') && (t.institusiId === 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7' || t.namaInstitusi === 'KB AL-IKHLAS'));
       const isMatchYear = t.tanggal ? t.tanggal.includes(activeTahun.toString()) : false;
       return isMatchInst && isMatchYear;
     });
-  }, [rencanaList, activeTahun]);
+  }, [rencanaList, activeTahun, currentUser]);
 
   // States
   const [searchTerm, setSearchTerm] = useState('');

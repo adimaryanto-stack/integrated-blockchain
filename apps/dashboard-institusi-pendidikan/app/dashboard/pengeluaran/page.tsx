@@ -37,14 +37,17 @@ export default function PengeluaranPage() {
   const isReadOnly = currentUser?.is_active === false;
   const allInstitusi = useMemo(() => getAllInstitusi(), [dbData, isSupabaseMode]);
 
-  // Dynamically filter transactions for the active school (KB AL-IKHLAS) and active year
+  // Dynamically filter transactions for the active school (currentUser or KB AL-IKHLAS) and active year
   const transactionsWithActiveYear = useMemo(() => {
     return transaksiList.filter(t => {
-      const isMatchInst = t.institusiId === 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7' || t.namaInstitusi === 'KB AL-IKHLAS' || t.institusiId === 'inst-sd-0';
+      const activeSchoolName = currentUser?.nama_sekolah || 'KB AL-IKHLAS';
+      const isMatchInst =
+        t.namaInstitusi.toLowerCase() === activeSchoolName.toLowerCase() ||
+        (activeSchoolName.toUpperCase().includes('AL-IKHLAS') && (t.institusiId === 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7' || t.namaInstitusi === 'KB AL-IKHLAS'));
       const isMatchYear = t.tanggal ? t.tanggal.includes(activeTahun.toString()) : false;
       return isMatchInst && isMatchYear;
     });
-  }, [transaksiList, activeTahun]);
+  }, [transaksiList, activeTahun, currentUser]);
 
 
   // States
@@ -66,7 +69,7 @@ export default function PengeluaranPage() {
 
   // Form States
   const [formTanggal, setFormTanggal] = useState('2026-06-06');
-  const [formSchoolId, setFormSchoolId] = useState('inst-sd-0');
+  const [formSchoolId, setFormSchoolId] = useState('e45bdf94-41c6-4ee0-9864-8c3c7c4576f7');
   const [formKategori, setFormKategori] = useState<TransaksiGlobal['kategori']>('Operasional');
   const [formVendor, setFormVendor] = useState('');
   const [formSumberDana, setFormSumberDana] = useState('BOS Reguler');
@@ -137,7 +140,7 @@ export default function PengeluaranPage() {
     setFormIsEditMode(false);
     setEditId(null);
     setFormTanggal('2026-06-06');
-    setFormSchoolId('inst-sd-0');
+    setFormSchoolId('e45bdf94-41c6-4ee0-9864-8c3c7c4576f7');
     setFormKategori('Operasional');
     setFormVendor('');
     setFormItems([{ id: '1', name: '', qty: 1, price: 0, unit: 'pcs', notes: '' }]);
