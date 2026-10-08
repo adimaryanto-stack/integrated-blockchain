@@ -42,6 +42,7 @@ const roleOrder: AdminRole[] = [
   "admin_kementerian",
   "admin_wilayah",
   "admin_satuan",
+  "operator_satuan",
 ];
 
 export function AccessControlMatrix() {
@@ -511,6 +512,7 @@ export function AccessControlMatrix() {
                 <option value="admin_kementerian">Admin Kementerian</option>
                 <option value="admin_wilayah">Admin Wilayah (Dinas)</option>
                 <option value="admin_satuan">Admin Satuan (Kepala Sekolah)</option>
+                <option value="operator_satuan">Operator Satuan (Belanja & Operator)</option>
               </select>
             </div>
 

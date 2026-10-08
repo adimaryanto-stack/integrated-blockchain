@@ -41,31 +41,31 @@ export default function LoginPage() {
       badgeClass: 'bg-indigo-100 text-indigo-700 border-indigo-200',
       btnClass: 'hover:border-indigo-500 hover:bg-indigo-50/50',
       user: {
-        id: 'u-admin-sekolah',
-        username: 'admin.sekolah',
-        email: 'admin@sekolah.sch.id',
+        id: 'u-kbalikhlas-admin',
+        username: 'admin.kbalikhlas',
+        email: 'admin@kbalikhlas.sch.id',
         role: 'ADMIN' as const,
-        nama_sekolah: 'Satuan Pendidikan',
-        npsn: 'Nasional'
+        nama_sekolah: 'KB AL-IKHLAS',
+        npsn: '69893669'
       },
       password: 'Admin@Sekolah2026',
-      desc: 'Pagu anggaran, mutasi kas bank, audit & user manager'
+      desc: 'Pagu anggaran, mutasi kas bank, persetujuan RAB & audit manager'
     },
     {
       roleTitle: 'Operator Sekolah',
-      badge: 'Operasional Belanja',
+      badge: 'Operasional Belanja & RAB',
       badgeClass: 'bg-emerald-100 text-emerald-700 border-emerald-200',
       btnClass: 'hover:border-emerald-500 hover:bg-emerald-50/50',
       user: {
-        id: 'u-operator-sekolah',
-        username: 'operator.sekolah',
-        email: 'operator@sekolah.sch.id',
+        id: 'u-kbalikhlas-operator',
+        username: 'operator.kbalikhlas',
+        email: 'operator@kbalikhlas.sch.id',
         role: 'OPERATOR' as const,
-        nama_sekolah: 'Satuan Pendidikan',
-        npsn: 'Nasional'
+        nama_sekolah: 'KB AL-IKHLAS',
+        npsn: '69893669'
       },
       password: 'Operator@Sekolah2026',
-      desc: 'Input realisasi belanja, kuitansi scan OCR & diskusi RAB'
+      desc: 'Buat & kelola rencana (RAB), catat pengeluaran & kuitansi OCR'
     }
   ];
 
@@ -105,8 +105,8 @@ export default function LoginPage() {
           username: data[0].username,
           email: data[0].email,
           role: data[0].role === 'OPERATOR' ? 'OPERATOR' : 'ADMIN',
-          nama_sekolah: 'Satuan Pendidikan',
-          npsn: data[0].institusi_id?.replace(/[^0-9]/g, '') || '69893669',
+          nama_sekolah: 'KB AL-IKHLAS',
+          npsn: '69893669',
           is_active: data[0].is_active
         };
       }
@@ -154,8 +154,8 @@ export default function LoginPage() {
               username: data[0].username,
               email: data[0].email,
               role: data[0].role === 'OPERATOR' ? 'OPERATOR' : 'ADMIN',
-              nama_sekolah: 'Satuan Pendidikan',
-              npsn: data[0].institusi_id?.replace(/[^0-9]/g, '') || '69893669',
+              nama_sekolah: 'KB AL-IKHLAS',
+              npsn: '69893669',
               is_active: data[0].is_active
             };
           }
@@ -212,8 +212,8 @@ export default function LoginPage() {
           username: dbUser.username,
           email: dbUser.email,
           role: dbUser.role === 'OPERATOR' ? 'OPERATOR' : 'ADMIN',
-          nama_sekolah: 'Satuan Pendidikan',
-          npsn: dbUser.institusi_id?.replace(/[^0-9]/g, '') || '-',
+          nama_sekolah: 'KB AL-IKHLAS',
+          npsn: '69893669',
           is_active: dbUser.is_active
         };
 

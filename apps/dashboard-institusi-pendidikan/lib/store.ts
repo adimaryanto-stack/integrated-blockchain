@@ -86,16 +86,23 @@ interface AppState {
   currentUser: CurrentSchoolUser;
   setCurrentUser: (user: CurrentSchoolUser) => void;
   logout: () => void;
+  isEditProfileOpen: boolean;
+  setEditProfileOpen: (open: boolean) => void;
 }
 
 export interface CurrentSchoolUser {
   id: string;
   username: string;
   email: string;
-  role: 'ADMIN' | 'OPERATOR';
+  role: 'ADMIN' | 'OPERATOR' | 'SUPER_ADMIN' | 'AUDITOR';
   nama_sekolah: string;
   npsn: string;
   is_active?: boolean;
+  nama_lengkap?: string;
+  phone?: string;
+  mfa_enabled?: boolean;
+  scope_type?: 'global' | 'wilayah' | 'satuan';
+  scope_id?: string;
 }
 
 export function isReadOnlyUser(user: CurrentSchoolUser | null | undefined): boolean {
@@ -420,12 +427,19 @@ export const useAppStore = create<AppState>((set) => ({
   currentUser: {
     id: 'u-kbalikhlas-admin',
     username: 'admin.kbalikhlas',
+    nama_lengkap: 'Hj. Siti Aminah, S.Pd',
     email: 'admin@kbalikhlas.sch.id',
+    phone: '0812-3456-7890',
     role: 'ADMIN',
     nama_sekolah: 'KB AL-IKHLAS',
     npsn: '69893669',
-    is_active: true
+    is_active: true,
+    mfa_enabled: true,
+    scope_type: 'satuan',
+    scope_id: '69893669 - KB AL-IKHLAS',
   },
+  isEditProfileOpen: false,
+  setEditProfileOpen: (open) => set({ isEditProfileOpen: open }),
   setCurrentUser: (user) => {
     if (typeof window !== 'undefined') {
       try {
@@ -444,11 +458,16 @@ export const useAppStore = create<AppState>((set) => ({
       currentUser: {
         id: 'u-kbalikhlas-admin',
         username: 'admin.kbalikhlas',
+        nama_lengkap: 'Hj. Siti Aminah, S.Pd',
         email: 'admin@kbalikhlas.sch.id',
+        phone: '0812-3456-7890',
         role: 'ADMIN',
         nama_sekolah: 'KB AL-IKHLAS',
         npsn: '69893669',
-        is_active: true
+        is_active: true,
+        mfa_enabled: true,
+        scope_type: 'satuan',
+        scope_id: '69893669 - KB AL-IKHLAS',
       }
     });
   },

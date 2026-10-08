@@ -1,7 +1,7 @@
 # 🏛️ Integrated Blockchain - Platform Transparansi Anggaran Pendidikan Indonesia
 
 [![HKI Registered](https://img.shields.io/badge/Hak%20Cipta%20HKI-No.%20001519028%20(DJKI)-gold.svg)](HKI.md)
-[![Version](https://img.shields.io/badge/Version-v2.6.0%20(8%20Okt%202026)-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-v2.6.1%20(8%20Okt%202026)-blue.svg)](CHANGELOG.md)
 [![Status](https://img.shields.io/badge/All%2010%20Ports-100%25%20Verified%20Online-brightgreen.svg)](#-peta-10-port--akses-dashboard)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15%2F16-black.svg?logo=next.js&logoColor=white)](https://nextjs.org/)
@@ -31,7 +31,7 @@ Sistem tata kelola dan transparansi keuangan pendidikan Indonesia terintegrasi d
 |---|:---:|---|:---:|
 | 🏛️ **Sertifikat Hak Cipta (HKI)** | `Markdown` / `PDF` | Surat Pencatatan Ciptaan resmi Kementerian Hukum RI (No. 001519028). | [**Buka `HKI.md`**](HKI.md) |
 | 🌐 **Panduan Visual & Interaktif** | `HTML` | Tampilan panduan grafis modern untuk pengguna umum / non-programmer. | [**Buka `README.html`**](README.html) |
-| 📝 **Changelog & Riwayat Rilis** | `Markdown` | Catatan lengkap versi, pembaruan terkini v2.6.0, dan log perbaikan sistem. | [**Buka `CHANGELOG.md`**](CHANGELOG.md) |
+| 📝 **Changelog & Riwayat Rilis** | `Markdown` | Catatan lengkap versi, pembaruan terkini v2.6.1, dan log perbaikan sistem. | [**Buka `CHANGELOG.md`**](CHANGELOG.md) |
 | 📜 **Pemberitahuan Pihak Ketiga (HKI)** | `Markdown` | Pengakuan hak cipta & lisensi 54 dependensi open-source untuk pendaftaran HKI. | [**Buka `THIRD_PARTY_NOTICES.md`**](THIRD_PARTY_NOTICES.md) |
 | 📋 **Product Requirements (PRD)** | `Markdown` | Spesifikasi lengkap sistem, alur bisnis dana APBN/APBD/CSR, & hak akses. | [**Buka `PRD.md`**](PRD.md) |
 | 🏆 **MVP & Laporan Verifikasi** | `Markdown` | Laporan pengujian fitur 10 port, performa latensi, dan integrasi database. | [**Buka `MVP.md`**](MVP.md) |

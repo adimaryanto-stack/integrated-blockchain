@@ -233,19 +233,43 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         // ignore
       }
     });
+    // Purge stale admin_accounts and role_permissions if outdated
+    try {
+      const rawAdmins = localStorage.getItem("admin_db_admin_accounts");
+      if (rawAdmins) {
+        const parsedAdmins = JSON.parse(rawAdmins);
+        if (Array.isArray(parsedAdmins)) {
+          if (parsedAdmins.some((a: any) => a.id === "adm-005") || !parsedAdmins.some((a: any) => a.id === "u-kbalikhlas-operator")) {
+            localStorage.removeItem("admin_db_admin_accounts");
+            setAdminAccounts(initialAdminUsers);
+          }
+        }
+      }
+      const rawPerms = localStorage.getItem("admin_db_role_permissions");
+      if (rawPerms) {
+        const parsedPerms = JSON.parse(rawPerms);
+        if (Array.isArray(parsedPerms) && !parsedPerms.some((p: any) => p.role === "operator_satuan")) {
+          localStorage.removeItem("admin_db_role_permissions");
+          setRolePermissions(initialRolePermissions);
+        }
+      }
+    } catch {
+      // ignore
+    }
   }, []);
 
   // Synchronize state from Local PostgreSQL via Proxy Gateway on startup
   useEffect(() => {
     async function syncFromLocalDb() {
       try {
-        const [usersRes, instRes, bankRes, dsRes, flagsRes, bankMutRes] = await Promise.all([
+        const [usersRes, instRes, bankRes, dsRes, flagsRes, bankMutRes, adminUsersRes] = await Promise.all([
           fetch(`${ADMIN_API_BASE}/users`),
           fetch(`${ADMIN_API_BASE}/institutions?limit=100`),
           fetch(`${ADMIN_API_BASE}/bank-configs`),
           fetch(`${ADMIN_API_BASE}/data-sources`),
           fetch(`${ADMIN_API_BASE}/ai-faa/flags`),
           fetch(`${ADMIN_API_BASE}/bank-mutations?limit=100`),
+          fetch(`${ADMIN_API_BASE}/admin-users`).catch(() => null),
         ]);
 
         // ── Replace users with LIVE database records ──────────────────────
@@ -341,6 +365,14 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
           const liveMutations = await bankMutRes.json();
           if (Array.isArray(liveMutations) && liveMutations.length > 0) {
             setBankMutations(liveMutations);
+          }
+        }
+
+        // ── Replace admin accounts with LIVE database records ─────────────
+        if (adminUsersRes && adminUsersRes.ok) {
+          const liveAdmins = await adminUsersRes.json();
+          if (Array.isArray(liveAdmins) && liveAdmins.length > 0) {
+            setAdminAccounts(liveAdmins);
           }
         }
 
@@ -1235,6 +1267,13 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     if (currentUser?.id === id) {
       setCurrentUser((prev) => (prev ? { ...prev, scopeType, scopeId } : null));
     }
+    // Persist to live PostgreSQL database via proxy
+    fetch(`${ADMIN_API_BASE}/admin-users/${id}/scope`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scopeType, scopeId }),
+    }).catch(() => null);
+
     recordAudit({
       actor: currentUser ? `${currentUser.name} (${currentUser.role})` : "Super Admin",
       actorScope: "global",

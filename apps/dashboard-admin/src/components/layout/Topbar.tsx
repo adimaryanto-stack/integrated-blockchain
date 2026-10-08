@@ -77,7 +77,8 @@ export function Topbar({ pageTitle }: { pageTitle: string }) {
     ops_admin: "Ops Admin",
     admin_kementerian: "Admin Kementerian",
     admin_wilayah: "Admin Wilayah",
-    admin_satuan: "Admin Satuan",
+    admin_satuan: "Admin Satuan (Kepsek)",
+    operator_satuan: "Operator Satuan",
   };
 
   const unreadNotifs = broadcasts.length + aiFlags.filter(f => f.status === "baru").length;
@@ -208,7 +209,8 @@ export function Topbar({ pageTitle }: { pageTitle: string }) {
                     { role: "ops_admin" as AdminRole, label: "Ops Admin", color: "text-navy" },
                     { role: "admin_kementerian" as AdminRole, label: "Admin Kementerian", color: "text-blue-600" },
                     { role: "admin_wilayah" as AdminRole, label: "Admin Wilayah", color: "text-emerald-700" },
-                    { role: "admin_satuan" as AdminRole, label: "Admin Satuan", color: "text-amber-700" },
+                    { role: "admin_satuan" as AdminRole, label: "Admin Satuan (Kepsek)", color: "text-amber-700" },
+                    { role: "operator_satuan" as AdminRole, label: "Operator Satuan", color: "text-indigo-600" },
                   ] as const
                 ).map(({ role, label, color }) => (
                   <button

@@ -12,18 +12,18 @@ Sistem **Integrated Blockchain - Platform Transparansi Anggaran Pendidikan Indon
 
 1. **Arsitektur Sistem Terintegrasi 10 Port**: Desain topologi, protokol komunikasi, dan orkestrasi 8 aplikasi dashboard terhubung (:2019-:2028).
 2. **Kode Sumber Logika Aplikasi Frontend & Backend**: Seluruh kode orisinal pada:
-   - `apps/dashboard-publik` (Port 2019: Portal Civic-Tech Vite)
+   - `apps/dashboard-publik` (Port 2019: Portal Civic-Tech Vite, Filter Mutasi Bank Multi-Tahun, & Pagination Belanja Publik)
    - `apps/transparansi-anggaran/apps/web-next` (Port 2020: Portal Transparansi Publik Next.js)
    - `apps/dashboard-kementerian` (Port 2021: Penetapan Pagu & Alokasi Nasional)
    - `apps/dashboard-bank` (Port 2022: Rekapitulasi Kas & Rekening Escrow)
    - `apps/dashboard-auditor` (Port 2023: Pengawasan Audit BPK & Deteksi Anomali AI)
-   - `apps/dashboard-institusi-pendidikan` (Port 2024: RAB Sekolah, SPJ, OCR Belanja, & Engine Kompresi Citra WebP Canvas)
+   - `apps/dashboard-institusi-pendidikan` (Port 2024: RAB Sekolah, SPJ, OCR Belanja, Engine Kompresi Citra WebP Canvas, Scoped Access Control Matrix Satuan, & Modal Kredensial Pengguna)
    - `apps/dashboard-apbd` (Port 2025: Validasi Kepatuhan Mandatori 20% APBD Lampung)
-   - `apps/dashboard-admin` (Port 2026: Super-Admin Console, Scoped RBAC, Modul API Wilayah Hierarkis, & Konsol Integrasi API Nasional)
-   - `proxy/proxy.js` & `proxy/adminApi.js` (Port 2028: PostgREST REST API Gateway, Security Filter Engine, Polsek & Wilayah Data Provider)
+   - `apps/dashboard-admin` (Port 2026: Super-Admin Console, Scoped RBAC, Modul API Wilayah Hierarkis, Operator Satuan Role Matrix, & Konsol Integrasi API Nasional)
+   - `proxy/proxy.js` & `proxy/adminApi.js` (Port 2028: PostgREST REST API Gateway, Dynamic Type-Casting Filter Engine, Live RBAC Users Provider, Polsek & Wilayah Data Provider)
    - `proxy/connectionProbe.js` (Port 2028: Real-Live Network Diagnostic Probe — TLS, DNS, HTTP Inspector)
-3. **Skema & Desain Basis Data Relasional**: Struktur 41 tabel master, relasi entitas (*ERD*), view agregasi (*materialized view*), dan trigger otomatis (*cascading delete*) pada PostgreSQL.
-4. **Logika Bisnis & Algoritma Khusus**: Formula distribusi transfer dana berjenjang, validasi ambang batas 20% APBD (UUD 1945), rekonsiliasi kas bank multi-rekening, mesin kalkulasi spasial jarak terdekat (Haversine distance engine), pengelompokan hierarki gugus kepulauan & wilayah administrasi nasional (38 provinsi, 514 kabupaten/kota, kecamatan), algoritma kompresi dan konversi citra kuitansi ke WebP via HTML5 Canvas murni, dan alur pelaporan korupsi dana pendidikan ke KPK/Kejaksaan/BPK-BPKP.
+3. **Skema & Desain Basis Data Relasional**: Struktur 42 tabel master, relasi entitas (*ERD*), view agregasi (*materialized view*), dan trigger otomatis (*cascading delete*) pada PostgreSQL.
+4. **Logika Bisnis & Algoritma Khusus**: Formula distribusi transfer dana berjenjang, validasi ambang batas 20% APBD (UUD 1945), rekonsiliasi kas bank multi-rekening, mesin kalkulasi spasial jarak terdekat (Haversine distance engine), pengelompokan hierarki gugus kepulauan & wilayah administrasi nasional (38 provinsi, 514 kabupaten/kota, kecamatan), algoritma kompresi dan konversi citra kuitansi ke WebP via HTML5 Canvas murni, matriks hak akses berjenjang tingkat satuan pendidikan (*Scoped RBAC matrix*), dan alur pelaporan korupsi dana pendidikan ke KPK/Kejaksaan/BPK-BPKP.
 
 ---
 

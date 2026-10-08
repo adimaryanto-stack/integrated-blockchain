@@ -6,7 +6,11 @@ import Link from 'next/link';
 import { useAppStore } from '@/lib/store';
 import { tahunAnggaranData } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
-import { Bell, Search, Menu, CheckCheck, Info, AlertTriangle, Sparkles, Database } from 'lucide-react';
+import EditProfileModal from '@/components/profile/EditProfileModal';
+import { 
+  Bell, Search, Menu, CheckCheck, Info, AlertTriangle, Sparkles, Database,
+  UserCheck, KeyRound, LogOut, ChevronDown, ShieldCheck, Users, Building2, UserCog
+} from 'lucide-react';
 
 interface HeaderProps {
   title: string;
@@ -34,8 +38,11 @@ export default function Header({ title, subtitle, showYearSelector = true, showS
     markAllAsRead,
     markAllAsUnread,
     currentUser,
-    setCurrentUser
+    setCurrentUser,
+    setEditProfileOpen,
+    logout
   } = useAppStore();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [activeTahunList, setActiveTahunList] = useState<{ tahun: number; status: string }[]>(() => {
     if (tahunAnggaranData && tahunAnggaranData.length > 0) {
       return [...tahunAnggaranData].sort((a, b) => a.tahun - b.tahun);
@@ -301,42 +308,152 @@ export default function Header({ title, subtitle, showYearSelector = true, showS
             )}
           </div>
 
-          {/* User Profile Quick Pill / Link to Login */}
-          <Link
-            href="/login"
-            className={`flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full border shadow-xs transition-all text-xs ${
-              isReadOnly 
-                ? 'bg-rose-50/80 border-rose-300 hover:bg-rose-100/70' 
-                : 'bg-white/80 border-slate-200/80 hover:border-indigo-300 hover:bg-indigo-50/50'
-            }`}
-            title="Klik untuk ganti akun atau login"
-          >
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 ${
-              isReadOnly
-                ? 'bg-rose-600'
-                : currentUser?.role === 'OPERATOR' 
-                ? 'bg-gradient-to-br from-emerald-500 to-teal-600' 
-                : 'bg-gradient-to-br from-indigo-500 to-purple-600'
-            }`}>
-              {(currentUser?.username || 'KB').substring(0, 2).toUpperCase()}
-            </div>
-            <span className="font-semibold text-slate-700 hidden sm:inline truncate max-w-[120px]">
-              {currentUser?.username || 'admin.kbalikhlas'}
-            </span>
-            <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
-              isReadOnly
-                ? 'bg-rose-100 text-rose-700 border border-rose-300'
-                : currentUser?.role === 'OPERATOR' 
-                ? 'bg-emerald-100 text-emerald-800' 
-                : 'bg-indigo-100 text-indigo-800'
-            }`}>
-              {isReadOnly 
-                ? `${currentUser?.role === 'ADMIN' ? 'Admin' : 'Operator'} (Non-Aktif)` 
-                : currentUser?.role === 'OPERATOR' ? 'Operator' : 'Admin'}
-            </span>
-          </Link>
+          {/* User Profile Dropdown Pill */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                setShowProfileMenu(!showProfileMenu);
+                setShowNotifications(false);
+              }}
+              className={`flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full border shadow-xs transition-all text-xs cursor-pointer ${
+                isReadOnly 
+                  ? 'bg-rose-50/80 border-rose-300 hover:bg-rose-100/70' 
+                  : 'bg-white/80 border-slate-200/80 hover:border-indigo-300 hover:bg-indigo-50/50'
+              }`}
+              title="Klik untuk melihat menu profil, edit akun, atau access control"
+            >
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 ${
+                isReadOnly
+                  ? 'bg-rose-600'
+                  : currentUser?.role === 'OPERATOR' 
+                  ? 'bg-gradient-to-br from-emerald-500 to-teal-600' 
+                  : 'bg-gradient-to-br from-indigo-500 to-purple-600'
+              }`}>
+                {(currentUser?.username || 'KB').substring(0, 2).toUpperCase()}
+              </div>
+              <span className="font-semibold text-slate-700 hidden sm:inline truncate max-w-[120px]">
+                {currentUser?.username || 'admin.kbalikhlas'}
+              </span>
+              <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
+                isReadOnly
+                  ? 'bg-rose-100 text-rose-700 border border-rose-300'
+                  : currentUser?.role === 'OPERATOR' 
+                  ? 'bg-emerald-100 text-emerald-800' 
+                  : 'bg-indigo-100 text-indigo-800'
+              }`}>
+                {isReadOnly 
+                  ? `${currentUser?.role === 'ADMIN' ? 'Admin' : 'Operator'} (Non-Aktif)` 
+                  : currentUser?.role === 'OPERATOR' ? 'Operator' : 'Admin'}
+              </span>
+              <ChevronDown size={13} className="text-slate-400" />
+            </button>
+
+            {/* Profile Dropdown Menu */}
+            {showProfileMenu && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setShowProfileMenu(false)} />
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl border border-slate-200/80 shadow-2xl z-40 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  {/* Account Header */}
+                  <div className="p-4 bg-gradient-to-br from-slate-50 to-indigo-50/50 border-b border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-sm font-extrabold text-white shadow-sm shrink-0 ${
+                        isReadOnly
+                          ? 'bg-rose-600'
+                          : currentUser?.role === 'OPERATOR'
+                          ? 'bg-gradient-to-br from-emerald-500 to-teal-600'
+                          : 'bg-gradient-to-br from-indigo-600 to-purple-600'
+                      }`}>
+                        {(currentUser?.username || 'KB').substring(0, 2).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-xs font-bold text-slate-800 truncate">
+                          {currentUser?.nama_lengkap || currentUser?.username || 'Admin Sekolah'}
+                        </h4>
+                        <p className="text-[11px] text-slate-500 font-mono truncate">{currentUser?.email || 'admin@kbalikhlas.sch.id'}</p>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <span className={`text-[9px] px-2 py-0.2 rounded-full font-bold uppercase tracking-wider ${
+                            isReadOnly
+                              ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                              : currentUser?.role === 'OPERATOR'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-indigo-100 text-indigo-800'
+                          }`}>
+                            {isReadOnly ? 'Akses Non-Aktif' : currentUser?.role === 'OPERATOR' ? 'Operator Sekolah' : 'Admin Satuan'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 pt-2.5 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-slate-600">
+                      <span className="font-semibold">{currentUser?.nama_sekolah || 'KB AL-IKHLAS'}</span>
+                      <span className="font-mono text-indigo-600 font-bold">NPSN: {currentUser?.npsn || '69893669'}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions List */}
+                  <div className="p-2 space-y-1">
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        setEditProfileOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-indigo-600 hover:bg-indigo-50/70 transition-colors cursor-pointer text-left"
+                    >
+                      <UserCog size={15} className="text-indigo-600 shrink-0" />
+                      <div className="flex-1">
+                        <div>Edit Profil & Kredensial</div>
+                        <div className="text-[10px] font-normal text-slate-400">Ubah email, kontak, kata sandi & 2FA</div>
+                      </div>
+                    </button>
+
+                    <Link
+                      href="/dashboard/access-control"
+                      onClick={() => setShowProfileMenu(false)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-indigo-600 hover:bg-indigo-50/70 transition-colors text-left"
+                    >
+                      <KeyRound size={15} className="text-purple-600 shrink-0" />
+                      <div className="flex-1">
+                        <div>Access Control & RBAC Matrix</div>
+                        <div className="text-[10px] font-normal text-slate-400">Matriks hak akses peran & scope satuan</div>
+                      </div>
+                    </Link>
+
+                    <Link
+                      href="/dashboard/users"
+                      onClick={() => setShowProfileMenu(false)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-indigo-600 hover:bg-indigo-50/70 transition-colors text-left"
+                    >
+                      <Users size={15} className="text-emerald-600 shrink-0" />
+                      <div className="flex-1">
+                        <div>User Manager Satuan</div>
+                        <div className="text-[10px] font-normal text-slate-400">Kelola akun operator & staf sekolah</div>
+                      </div>
+                    </Link>
+                  </div>
+
+                  {/* Logout / Switch Account */}
+                  <div className="p-2 border-t border-slate-100 bg-slate-50/60">
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        logout();
+                        router.push('/login');
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors text-left"
+                    >
+                      <LogOut size={15} className="shrink-0" />
+                      <span>Ganti Akun / Keluar</span>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Global Edit Profile Modal */}
+      <EditProfileModal />
     </header>
   );
 }

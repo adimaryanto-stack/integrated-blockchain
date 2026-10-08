@@ -22,7 +22,8 @@ export type AdminRole =
   | "ops_admin"
   | "admin_kementerian"
   | "admin_wilayah"
-  | "admin_satuan";
+  | "admin_satuan"
+  | "operator_satuan";
 
 export type ScopeType =
   | "global"

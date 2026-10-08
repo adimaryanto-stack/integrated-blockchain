@@ -748,6 +748,7 @@ export function KpkSettings() {
                 {/* Inline Real Connection Test Result Alert (Matching Polsek Reference Image) */}
                 {directTestResult && (
                   <div
+                    id="direct-telemetry-kpk"
                     className={`p-3.5 rounded-xl border flex items-start gap-3 animate-fadeIn text-xs mt-4 ${
                       directTestResult.success
                         ? "bg-emerald-50/80 border-emerald-200 text-emerald-950"
@@ -984,7 +985,7 @@ export function KpkSettings() {
                             type="button"
                             onClick={() => {
                               setDirectTestResult(testResult);
-                              setIsModalOpen(true);
+                              document.getElementById("direct-telemetry-kpk")?.scrollIntoView({ behavior: "smooth" });
                             }}
                             className="font-bold text-red-600 hover:text-red-700 hover:underline inline-flex items-center gap-1"
                           >

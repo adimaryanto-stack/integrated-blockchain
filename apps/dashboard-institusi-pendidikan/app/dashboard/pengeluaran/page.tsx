@@ -8,7 +8,8 @@ import { fmtRupiah } from '@/lib/utils/formatters';
 import {
   CreditCard, Search, Plus, Eye, X, Calendar, User, Building2,
   CheckCircle2, AlertTriangle, ShieldAlert, ShieldCheck, Tag, ShoppingBag, Landmark,
-  Camera, Trash2, Settings, MoreHorizontal, BookOpen, Wrench, Users, GraduationCap, RefreshCw, Lock
+  Camera, Trash2, Settings, MoreHorizontal, BookOpen, Wrench, Users, GraduationCap, RefreshCw, Lock,
+  Edit3, FileText
 } from 'lucide-react';
 import Tesseract from 'tesseract.js';
 import { parseReceiptText } from '@/lib/utils/ocrParser';
@@ -36,6 +37,70 @@ export default function PengeluaranPage() {
   const { activeTahun, dbData, isSupabaseMode, addNotification, transaksiList, setTransaksiList, currentUser } = useAppStore();
   const isReadOnly = currentUser?.is_active === false;
   const allInstitusi = useMemo(() => getAllInstitusi(), [dbData, isSupabaseMode]);
+
+  // Load transactions from local PostgreSQL database for the active school
+  useEffect(() => {
+    let isMounted = true;
+    async function loadTransactionsFromDb() {
+      try {
+        const { supabase } = await import('@/lib/supabase');
+        const schoolId = currentUser?.nama_sekolah?.toUpperCase().includes('AL-IKHLAS')
+          ? 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7'
+          : (allInstitusi[0]?.id || 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7');
+
+        const { data: dbTxs, error } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('school_id', schoolId)
+          .order('date', { ascending: true });
+
+        if (error) {
+          console.error('[Load DB Transactions Error]', error);
+          return;
+        }
+
+        if (dbTxs && dbTxs.length > 0 && isMounted) {
+          const { INITIAL_TRANSACTIONS } = await import('@/lib/data/transactions');
+          const mapped: TransaksiGlobal[] = dbTxs.map((t: any, idx: number) => {
+            const d = t.date ? new Date(t.date) : new Date();
+            const dStr = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+            const amt = Number(t.amount || 0);
+
+            // Match with seed if exists for enriched metadata
+            const seedMatch = INITIAL_TRANSACTIONS.find(
+              it => it.institusiId === schoolId && it.item.toLowerCase() === (t.description || '').toLowerCase()
+            );
+
+            return {
+              id: t.id,
+              tanggal: seedMatch?.tanggal || dStr,
+              institusiId: t.school_id,
+              namaInstitusi: currentUser?.nama_sekolah || seedMatch?.namaInstitusi || 'KB AL-IKHLAS',
+              jenjang: seedMatch?.jenjang || (currentUser?.nama_sekolah?.toUpperCase().includes('PAUD') || currentUser?.nama_sekolah?.toUpperCase().includes('KB') ? 'PAUD' : 'SD'),
+              kategori: (t.category as any) || seedMatch?.kategori || 'Operasional',
+              item: t.description || seedMatch?.item || 'Pengeluaran Sekolah',
+              qty: seedMatch?.qty || 1,
+              hargaSatuan: seedMatch?.hargaSatuan || amt,
+              nominal: amt,
+              strukStatus: seedMatch?.strukStatus || 'VALID',
+              strukMessage: seedMatch?.strukMessage || 'Faktur transaksi pengeluaran riil terverifikasi sah.',
+              invoiceNo: seedMatch?.invoiceNo || `INV-MAN-${String(idx + 1).padStart(4, '0')}`,
+              vendorName: seedMatch?.vendorName || 'Vendor Umum'
+            };
+          });
+
+          setTransaksiList(prev => {
+            const otherSchools = prev.filter(p => p.institusiId !== schoolId);
+            return [...mapped, ...otherSchools];
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load transactions from DB:', err);
+      }
+    }
+    loadTransactionsFromDb();
+    return () => { isMounted = false; };
+  }, [currentUser]);
 
   // Dynamically filter transactions for the active school (currentUser or KB AL-IKHLAS) and active year
   const transactionsWithActiveYear = useMemo(() => {
@@ -118,16 +183,23 @@ export default function PengeluaranPage() {
   };
 
   const dateToYmd = (dateStr: string): string => {
+    if (!dateStr) return '2026-06-06';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
     const months: Record<string, string> = {
       jan: '01', feb: '02', mar: '03', apr: '04', mei: '05', jun: '06',
       jul: '07', agu: '08', sep: '09', okt: '10', nov: '11', des: '12'
     };
-    const parts = dateStr.split(' ');
+    const parts = dateStr.trim().split(/\s+/);
     if (parts.length === 3) {
       const day = parts[0].padStart(2, '0');
-      const month = months[parts[1].toLowerCase()] || '01';
+      const mKey = parts[1].toLowerCase().slice(0, 3);
+      const month = months[mKey] || '01';
       const year = parts[2];
       return `${year}-${month}-${day}`;
+    }
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      return d.toISOString().split('T')[0];
     }
     return '2026-06-06';
   };
@@ -140,9 +212,10 @@ export default function PengeluaranPage() {
     setFormIsEditMode(false);
     setEditId(null);
     setFormTanggal('2026-06-06');
-    setFormSchoolId('e45bdf94-41c6-4ee0-9864-8c3c7c4576f7');
+    setFormSchoolId(currentUser?.nama_sekolah?.toUpperCase().includes('AL-IKHLAS') ? 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7' : (allInstitusi[0]?.id || 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7'));
     setFormKategori('Operasional');
     setFormVendor('');
+    setFormSumberDana(currentUser?.nama_sekolah?.toUpperCase().includes('PAUD') || currentUser?.nama_sekolah?.toUpperCase().includes('KB') ? 'BOP PAUD' : 'BOS Reguler');
     setFormItems([{ id: '1', name: '', qty: 1, price: 0, unit: 'pcs', notes: '' }]);
     setFormOngkir(0);
     setFormPajak(11);
@@ -160,7 +233,7 @@ export default function PengeluaranPage() {
     setFormTanggal(dateToYmd(row.tanggal));
     setFormSchoolId(row.institusiId);
     setFormKategori(row.kategori);
-    setFormVendor(row.vendorName);
+    setFormVendor(row.vendorName || '');
     
     const itemQty = row.qty || 1;
     const cleanItemQty = itemQty > 0 ? itemQty : 1;
@@ -175,7 +248,7 @@ export default function PengeluaranPage() {
       {
         id: `edit-item-${Date.now()}`,
         name: cleanItemName,
-        qty: itemQty,
+        qty: cleanItemQty,
         price: itemPrice,
         unit: 'pcs',
         notes: ''
@@ -185,6 +258,40 @@ export default function PengeluaranPage() {
     setFormPajak(calculatedTaxPercent);
     setFormKeterangan(row.strukMessage || '');
     setTambahModalOpen(true);
+  };
+
+  const handleDeleteTransaksi = async (row: TransaksiGlobal) => {
+    if (isReadOnly) {
+      alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat). Anda tidak dapat menghapus transaksi.');
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      `Apakah Anda yakin ingin menghapus transaksi "${row.item}" senilai Rp ${fmtRupiah(row.nominal)}?`
+    );
+    if (!confirmDelete) return;
+
+    // Hapus dari state lokal
+    setTransaksiList(prev => prev.filter(t => t.id !== row.id));
+
+    // Hapus dari database PostgreSQL jika ID valid
+    try {
+      const { supabase } = await import('@/lib/supabase');
+      const { error } = await supabase.from('transactions').delete().eq('id', row.id);
+      if (error) {
+        console.error('[Hapus Transaksi DB Error]', error);
+      } else {
+        console.log('[Hapus Transaksi DB Berhasil]', row.id);
+      }
+    } catch (err) {
+      console.error('[Hapus Transaksi DB Exception]', err);
+    }
+
+    addNotification({
+      message: `Transaksi Dihapus: Transaksi "${row.item}" berhasil dihapus.`,
+      type: 'info',
+      link: `/dashboard/pengeluaran`
+    });
   };
 
   const handlePrintReceipt = () => {
@@ -304,7 +411,7 @@ export default function PengeluaranPage() {
   };
 
   // Add Transaksi Handler
-  const handleAddTransaksiSubmit = (e: React.FormEvent) => {
+  const handleAddTransaksiSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isReadOnly) {
       alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat). Anda tidak dapat menyimpan atau mengubah transaksi.');
@@ -315,16 +422,35 @@ export default function PengeluaranPage() {
     const overallTotal = subtotalItems + formOngkir + calculatedPajak;
     if (overallTotal <= 0) return;
 
+    // School mapping: Ensure school name is never 'Institusi Umum'
     const school = allInstitusi.find(i => i.id === formSchoolId);
-    const schoolName = school ? school.nama_institusi : 'Institusi Umum';
-    const schoolJenjang = school ? school.jenjang : 'SD';
+    const defaultSchoolName = currentUser?.nama_sekolah || 'KB AL-IKHLAS';
+    const defaultJenjang = currentUser?.nama_sekolah?.toUpperCase().includes('PAUD') || currentUser?.nama_sekolah?.toUpperCase().includes('KB') ? 'PAUD' : 'SD';
+    const existingItem = formIsEditMode && editId ? transaksiList.find(t => t.id === editId) : null;
+    const schoolName = school?.nama_institusi || existingItem?.namaInstitusi || defaultSchoolName;
+    const schoolJenjang = school?.jenjang || existingItem?.jenjang || defaultJenjang;
 
     const mainItemName = formItems[0]?.name || 'Belanja Umum';
     const mainQty = formItems[0]?.qty || 1;
     const mainHarga = formItems[0]?.price || 0;
+    const totalQty = formItems.reduce((sum, item) => sum + item.qty, 0);
     const itemDescription = formItems.length > 1
-      ? `${mainQty}x ${mainItemName} (+ ${formItems.length - 1} item lainnya)`
-      : `${mainQty}x ${mainItemName}`;
+      ? `${mainQty > 1 ? `${mainQty}x ` : ''}${mainItemName} (+ ${formItems.length - 1} item lainnya)`
+      : `${mainQty > 1 ? `${mainQty}x ` : ''}${mainItemName}`;
+
+    // Format ISO date
+    const dateParts = formTanggal.split('-');
+    let isoDate: string;
+    if (dateParts.length === 3) {
+      const y = parseInt(dateParts[0], 10);
+      const m = parseInt(dateParts[1], 10);
+      const d = parseInt(dateParts[2], 10);
+      isoDate = new Date(Date.UTC(y, m - 1, d, 12, 0, 0)).toISOString();
+    } else {
+      isoDate = new Date().toISOString();
+    }
+
+    const formattedDisplayDate = new Date(isoDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 
     if (formIsEditMode && editId) {
       const oldTrans = transaksiList.find(t => t.id === editId);
@@ -334,13 +460,13 @@ export default function PengeluaranPage() {
         if (t.id === editId) {
           return {
             ...t,
-            tanggal: new Date(formTanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
+            tanggal: formattedDisplayDate,
             institusiId: formSchoolId,
             namaInstitusi: schoolName,
             jenjang: schoolJenjang,
             kategori: formKategori,
             item: itemDescription,
-            qty: formItems.reduce((sum, item) => sum + item.qty, 0),
+            qty: totalQty,
             hargaSatuan: mainHarga,
             nominal: overallTotal,
             vendorName: formVendor || 'Vendor Umum'
@@ -348,6 +474,24 @@ export default function PengeluaranPage() {
         }
         return t;
       }));
+
+      try {
+        const { supabase } = await import('@/lib/supabase');
+        await supabase
+          .from('transactions')
+          .update({
+            category: formKategori,
+            description: itemDescription,
+            amount: overallTotal,
+            tax_amount: calculatedPajak,
+            shipping_cost: formOngkir,
+            fund_source: formSumberDana,
+            date: isoDate
+          })
+          .eq('id', editId);
+      } catch (err) {
+        console.warn('[Supabase DB Update warning]', err);
+      }
 
       addNotification({
         message: `Perubahan Belanja: Transaksi "${itemDescription}" di ${schoolName} diperbarui menjadi Rp ${fmtRupiah(overallTotal)}.`,
@@ -365,23 +509,57 @@ export default function PengeluaranPage() {
         });
       }
     } else {
+      const newUuid = (typeof window !== 'undefined' && window.crypto?.randomUUID)
+        ? window.crypto.randomUUID()
+        : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+          });
+
       const newTrans: TransaksiGlobal = {
-        id: `tr-glob-manual-${Date.now()}`,
-        tanggal: new Date(formTanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
+        id: newUuid,
+        tanggal: formattedDisplayDate,
         institusiId: formSchoolId,
         namaInstitusi: schoolName,
         jenjang: schoolJenjang,
         kategori: formKategori,
         item: itemDescription,
-        qty: formItems.reduce((sum, item) => sum + item.qty, 0),
+        qty: totalQty,
         hargaSatuan: mainHarga,
         nominal: overallTotal,
         strukStatus: 'VALID',
-        strukMessage: 'Dibuat secara manual oleh Super Admin.',
+        strukMessage: 'Dibuat dan diverifikasi oleh Admin Sekolah.',
         invoiceNo: `INV-MAN-${Date.now().toString().slice(-4)}`,
         vendorName: formVendor || 'Vendor Umum'
       };
       setTransaksiList(prev => [newTrans, ...prev]);
+
+      try {
+        const { supabase } = await import('@/lib/supabase');
+        const { error: insertErr } = await supabase
+          .from('transactions')
+          .insert({
+            id: newUuid,
+            school_id: formSchoolId,
+            date: isoDate,
+            category: formKategori,
+            description: itemDescription,
+            amount: overallTotal,
+            tax_amount: calculatedPajak,
+            shipping_cost: formOngkir,
+            fund_source: formSumberDana,
+            created_at: new Date().toISOString()
+          });
+
+        if (insertErr) {
+          console.error('[Supabase Insert Error]', insertErr);
+        } else {
+          console.log('[Supabase Insert Success]', newUuid);
+        }
+      } catch (err) {
+        console.error('[Supabase DB Insert Exception]', err);
+      }
 
       addNotification({
         message: `Penambahan Belanja: Transaksi baru "${itemDescription}" senilai Rp ${fmtRupiah(overallTotal)} berhasil disimpan untuk ${schoolName}.`,
@@ -400,7 +578,7 @@ export default function PengeluaranPage() {
     // Reset Form
     setFormVendor('');
     setFormTanggal('2026-06-06');
-    setFormSumberDana('BOS Reguler');
+    setFormSumberDana(currentUser?.nama_sekolah?.toUpperCase().includes('PAUD') || currentUser?.nama_sekolah?.toUpperCase().includes('KB') ? 'BOP PAUD' : 'BOS Reguler');
     setFormItems([{ id: '1', name: '', qty: 1, price: 0, unit: 'pcs', notes: '' }]);
     setFormOngkir(0);
     setFormPajak(11);
@@ -639,7 +817,7 @@ export default function PengeluaranPage() {
                   <th className="sheet-header-cell text-left" style={{ minWidth: 260 }}>Kategori & Rincian Belanja</th>
                   <th className="sheet-header-cell text-center" style={{ width: 100 }}>Item</th>
                   <th className="sheet-header-cell text-right" style={{ width: 160 }}>Nominal</th>
-                  <th className="sheet-header-cell text-center" style={{ width: 100 }}>Aksi</th>
+                  <th className="sheet-header-cell text-center" style={{ width: 220, minWidth: 200 }}>Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -679,36 +857,52 @@ export default function PengeluaranPage() {
                         {fmtRupiah(row.nominal)}
                       </td>
                       <td className="sheet-cell text-center">
-                        <div className="flex items-center justify-center gap-1.5">
+                        <div className="flex items-center justify-center gap-1">
                           <button
+                            type="button"
                             onClick={() => {
                               setSelectedTransaksi(row);
                               setPreviewStrukOpen(true);
                             }}
-                            className="btn py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-text-primary flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
+                            className="btn py-1 px-1.5 bg-slate-100 hover:bg-slate-200 text-text-primary flex items-center gap-1 text-[10px] font-semibold cursor-pointer rounded-lg transition"
+                            title="Pratinjau Kuitansi Fisik"
                           >
-                            <Eye size={12} />
+                            <Eye size={11} />
                             Struk
                           </button>
-                          {isReadOnly ? (
-                            <button
-                              onClick={() => {
-                                setSelectedTransaksi(row);
-                                setDetailModalOpen(true);
-                              }}
-                              className="btn py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-text-primary flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
-                            >
-                              <Eye size={12} />
-                              Lihat
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleOpenEditModal(row)}
-                              className="btn py-1.5 px-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
-                            >
-                              <Settings size={12} />
-                              Detail
-                            </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedTransaksi(row);
+                              setDetailModalOpen(true);
+                            }}
+                            className="btn py-1 px-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 flex items-center gap-1 text-[10px] font-semibold cursor-pointer rounded-lg transition"
+                            title="Lihat Detail Transaksi & Audit AI"
+                          >
+                            <FileText size={11} />
+                            Detail
+                          </button>
+                          {!isReadOnly && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditModal(row)}
+                                className="btn py-1 px-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 flex items-center gap-1 text-[10px] font-semibold cursor-pointer rounded-lg transition"
+                                title="Edit Transaksi Pengeluaran"
+                              >
+                                <Edit3 size={11} />
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteTransaksi(row)}
+                                className="btn py-1 px-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center gap-1 text-[10px] font-semibold cursor-pointer rounded-lg transition"
+                                title="Hapus Transaksi"
+                              >
+                                <Trash2 size={11} />
+                                Hapus
+                              </button>
+                            </>
                           )}
                         </div>
                       </td>
@@ -832,6 +1026,58 @@ export default function PengeluaranPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Detail Modal Action Footer */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-4 mt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDetailModalOpen(false);
+                    setPreviewStrukOpen(true);
+                  }}
+                  className="btn py-2 px-3 bg-slate-100 hover:bg-slate-200 text-text-primary flex items-center gap-1.5 text-xs font-semibold cursor-pointer rounded-xl transition"
+                >
+                  <Eye size={13} />
+                  Cetak / Pratinjau Struk
+                </button>
+                <div className="flex items-center gap-2">
+                  {!isReadOnly && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const trans = selectedTransaksi;
+                          setDetailModalOpen(false);
+                          handleOpenEditModal(trans);
+                        }}
+                        className="btn py-2 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 flex items-center gap-1.5 text-xs font-semibold cursor-pointer rounded-xl transition"
+                      >
+                        <Edit3 size={13} />
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const trans = selectedTransaksi;
+                          setDetailModalOpen(false);
+                          handleDeleteTransaksi(trans);
+                        }}
+                        className="btn py-2 px-3 bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center gap-1.5 text-xs font-semibold cursor-pointer rounded-xl transition"
+                      >
+                        <Trash2 size={13} />
+                        Hapus
+                      </button>
+                    </>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setDetailModalOpen(false)}
+                    className="btn py-2 px-3 bg-slate-100 hover:bg-slate-200 text-text-secondary text-xs font-semibold rounded-xl"
+                  >
+                    Tutup
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -928,7 +1174,7 @@ export default function PengeluaranPage() {
                 </div>
               </div>
 
-              {/* School Selector - Locked to KB AL-IKHLAS */}
+              {/* School Selector - Locked to Current School */}
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider block">Institusi Pendidikan</label>
                 <div className="relative">
@@ -936,7 +1182,7 @@ export default function PengeluaranPage() {
                   <input
                     type="text"
                     disabled
-                    value="KB AL-IKHLAS (PAUD - NPSN: 69893669)"
+                    value={`${currentUser?.nama_sekolah || 'KB AL-IKHLAS'} (${currentUser?.nama_sekolah?.toUpperCase().includes('SD') ? 'SD' : 'PAUD'} - NPSN: ${currentUser?.npsn || '69893669'})`}
                     className="w-full pl-9 pr-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs text-text-muted font-semibold focus:outline-none"
                   />
                 </div>
@@ -1193,7 +1439,7 @@ export default function PengeluaranPage() {
                       Math.round((formItems.reduce((sum, item) => sum + (item.qty * item.price), 0) * formPajak) / 100) === 0
                     }
                   >
-                    SIMPAN TRANSAKSI
+                    {formIsEditMode ? 'SIMPAN PERUBAHAN' : 'SIMPAN PENGELUARAN'}
                   </button>
                 )}
                 <button

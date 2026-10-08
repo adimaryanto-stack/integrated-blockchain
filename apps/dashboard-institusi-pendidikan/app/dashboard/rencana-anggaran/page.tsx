@@ -8,7 +8,8 @@ import { fmtRupiah } from '@/lib/utils/formatters';
 import {
   CreditCard, Search, Plus, Eye, X, Calendar, User, Building2,
   CheckCircle2, AlertTriangle, ShieldAlert, ShieldCheck, Tag, ShoppingBag, Landmark,
-  Camera, Trash2, Settings, MoreHorizontal, BookOpen, Wrench, Users, GraduationCap, RefreshCw, Lock
+  Camera, Trash2, Settings, MoreHorizontal, BookOpen, Wrench, Users, GraduationCap, RefreshCw, Lock,
+  Edit3, FileText
 } from 'lucide-react';
 import Tesseract from 'tesseract.js';
 import { parseReceiptText } from '@/lib/utils/ocrParser';
@@ -45,10 +46,11 @@ export default function RencanaAnggaranPage() {
     async function loadRencanaFromDb() {
       try {
         const { supabase } = await import('@/lib/supabase');
+        const schoolId = 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7';
         const { data: items } = await supabase
           .from('rincian_pengeluaran_item')
           .select('*')
-          .eq('institusi_id', 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7')
+          .eq('institusi_id', schoolId)
           .order('nomor', { ascending: true });
 
         if (items && items.length > 0 && isMounted) {
@@ -69,9 +71,9 @@ export default function RencanaAnggaranPage() {
             return {
               id: `rab-db-${it.id || idx}`,
               tanggal: dates[idx % dates.length],
-              institusiId: 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7',
-              namaInstitusi: 'KB AL-IKHLAS',
-              jenjang: 'PAUD',
+              institusiId: schoolId,
+              namaInstitusi: currentUser?.nama_sekolah || 'KB AL-IKHLAS',
+              jenjang: (currentUser?.nama_sekolah?.toUpperCase().includes('SD') ? 'SD' : 'PAUD'),
               kategori: categories[idx % categories.length],
               item: it.nama_produk_jasa,
               qty: it.qty || 1,
@@ -91,15 +93,26 @@ export default function RencanaAnggaranPage() {
     }
     loadRencanaFromDb();
     return () => { isMounted = false; };
-  }, []);
+  }, [currentUser]);
+
+  // Support ?action=tambah URL parameter to auto-open create modal
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('action') === 'tambah' && !isReadOnly) {
+        handleOpenTambahModal();
+      }
+    }
+  }, [isReadOnly]);
 
   const transactionsWithActiveYear = useMemo(() => {
     return rencanaList.filter(t => {
       const activeSchoolName = currentUser?.nama_sekolah || 'KB AL-IKHLAS';
       const isMatchInst =
         t.namaInstitusi.toLowerCase() === activeSchoolName.toLowerCase() ||
+        t.institusiId === 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7' ||
         (activeSchoolName.toUpperCase().includes('AL-IKHLAS') && (t.institusiId === 'e45bdf94-41c6-4ee0-9864-8c3c7c4576f7' || t.namaInstitusi === 'KB AL-IKHLAS'));
-      const isMatchYear = t.tanggal ? t.tanggal.includes(activeTahun.toString()) : false;
+      const isMatchYear = !activeTahun || (t.tanggal ? t.tanggal.includes(activeTahun.toString()) : true);
       return isMatchInst && isMatchYear;
     });
   }, [rencanaList, activeTahun, currentUser]);
@@ -169,16 +182,23 @@ export default function RencanaAnggaranPage() {
   };
 
   const dateToYmd = (dateStr: string): string => {
+    if (!dateStr) return '2026-06-06';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
     const months: Record<string, string> = {
       jan: '01', feb: '02', mar: '03', apr: '04', mei: '05', jun: '06',
       jul: '07', agu: '08', sep: '09', okt: '10', nov: '11', des: '12'
     };
-    const parts = dateStr.split(' ');
+    const parts = dateStr.trim().split(/\s+/);
     if (parts.length === 3) {
       const day = parts[0].padStart(2, '0');
-      const month = months[parts[1].toLowerCase()] || '01';
+      const mKey = parts[1].toLowerCase().slice(0, 3);
+      const month = months[mKey] || '01';
       const year = parts[2];
       return `${year}-${month}-${day}`;
+    }
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      return d.toISOString().split('T')[0];
     }
     return '2026-06-06';
   };
@@ -204,7 +224,7 @@ export default function RencanaAnggaranPage() {
 
   const handleOpenEditModal = (row: TransaksiGlobal) => {
     if (isReadOnly) {
-      alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat). Anda tidak dapat mengubah data transaksi!');
+      alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat). Anda tidak dapat mengubah data rencana anggaran!');
       return;
     }
     setFormIsEditMode(true);
@@ -213,7 +233,7 @@ export default function RencanaAnggaranPage() {
     setFormTanggal(dateToYmd(row.tanggal));
     setFormSchoolId(row.institusiId);
     setFormKategori(row.kategori);
-    setFormVendor(row.vendorName);
+    setFormVendor(row.vendorName || '');
     
     const itemQty = row.qty || 1;
     const cleanItemQty = itemQty > 0 ? itemQty : 1;
@@ -228,7 +248,7 @@ export default function RencanaAnggaranPage() {
       {
         id: `edit-item-${Date.now()}`,
         name: cleanItemName,
-        qty: itemQty,
+        qty: cleanItemQty,
         price: itemPrice,
         unit: 'pcs',
         notes: ''
@@ -238,6 +258,43 @@ export default function RencanaAnggaranPage() {
     setFormPajak(calculatedTaxPercent);
     setFormKeterangan(row.strukMessage || '');
     setTambahModalOpen(true);
+  };
+
+  const handleDeleteRencana = async (row: TransaksiGlobal) => {
+    if (isReadOnly) {
+      alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat). Anda tidak dapat menghapus rencana anggaran.');
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      `Apakah Anda yakin ingin menghapus rencana anggaran "${row.item}" senilai Rp ${fmtRupiah(row.nominal)}?`
+    );
+    if (!confirmDelete) return;
+
+    // Hapus dari state lokal Zustand
+    removeRencana(row.id);
+
+    // Jika item dimuat dari database lokal (prefix 'rab-db-'), hapus dari tabel PostgreSQL
+    if (row.id.startsWith('rab-db-')) {
+      const dbId = row.id.replace('rab-db-', '');
+      try {
+        const { supabase } = await import('@/lib/supabase');
+        const { error } = await supabase.from('rincian_pengeluaran_item').delete().eq('id', dbId);
+        if (error) {
+          console.error('[Hapus RAB DB Error]', error);
+        } else {
+          console.log('[Hapus RAB DB Berhasil]', dbId);
+        }
+      } catch (err) {
+        console.error('[Hapus RAB DB Exception]', err);
+      }
+    }
+
+    addNotification({
+      message: `Rencana Dihapus: Rencana anggaran "${row.item}" berhasil dihapus.`,
+      type: 'info',
+      link: `/dashboard/rencana-anggaran`
+    });
   };
 
   const handlePrintReceipt = () => {
@@ -356,8 +413,8 @@ export default function RencanaAnggaranPage() {
     }
   };
 
-  // Add Transaksi Handler
-  const handleAddTransaksiSubmit = (e: React.FormEvent) => {
+  // Add / Edit Transaksi Handler
+  const handleAddTransaksiSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isReadOnly) {
       alert('Akses Ditolak: Akun Anda berstatus NON-AKTIF (Hanya Lihat). Anda tidak dapat menyimpan atau mengubah data.');
@@ -368,16 +425,25 @@ export default function RencanaAnggaranPage() {
     const overallTotal = subtotalItems + formOngkir + calculatedPajak;
     if (overallTotal <= 0) return;
 
-    const school = allInstitusi.find(i => i.id === formSchoolId);
-    const schoolName = school ? school.nama_institusi : 'Institusi Umum';
-    const schoolJenjang = school ? school.jenjang : 'SD';
+    const existingItem = formIsEditMode && editId ? rencanaList.find(t => t.id === editId) : null;
+    const defaultSchoolName = currentUser?.nama_sekolah || 'KB AL-IKHLAS';
+    const defaultJenjang = (defaultSchoolName.toUpperCase().includes('PAUD') || defaultSchoolName.toUpperCase().includes('KB')) ? 'PAUD' : 'SD';
 
-    const mainItemName = formItems[0]?.name || 'Belanja Umum';
-    const mainQty = formItems[0]?.qty || 1;
+    const school = allInstitusi.find(i => i.id === formSchoolId);
+    const schoolName = school?.nama_institusi || existingItem?.namaInstitusi || defaultSchoolName;
+    const schoolJenjang = school?.jenjang || existingItem?.jenjang || defaultJenjang;
+
+    const mainItemName = formItems[0]?.name?.trim() || 'Belanja Umum';
+    const totalQty = formItems.reduce((sum, item) => sum + item.qty, 0);
     const mainHarga = formItems[0]?.price || 0;
     const itemDescription = formItems.length > 1
-      ? `${mainQty}x ${mainItemName} (+ ${formItems.length - 1} item lainnya)`
-      : `${mainQty}x ${mainItemName}`;
+      ? `${totalQty > 1 ? `${totalQty}x ` : ''}${mainItemName} (+ ${formItems.length - 1} item lainnya)`
+      : mainItemName;
+
+    const [y, m, d] = formTanggal.split('-').map(Number);
+    const formattedTanggal = !isNaN(y) && !isNaN(m) && !isNaN(d)
+      ? new Date(y, m - 1, d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+      : formTanggal;
 
     if (formIsEditMode && editId) {
       if (formStatus === 'REALIZED') {
@@ -389,13 +455,13 @@ export default function RencanaAnggaranPage() {
         removeRencana(editId);
         const newTrans: TransaksiGlobal = {
             id: `tr-glob-manual-${Date.now()}`,
-            tanggal: new Date(formTanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
+            tanggal: formattedTanggal,
             institusiId: formSchoolId,
             namaInstitusi: schoolName,
             jenjang: schoolJenjang,
             kategori: formKategori,
             item: itemDescription,
-            qty: formItems.reduce((sum, item) => sum + item.qty, 0),
+            qty: totalQty,
             hargaSatuan: mainHarga,
             nominal: overallTotal,
             strukStatus: 'VALID',
@@ -404,23 +470,33 @@ export default function RencanaAnggaranPage() {
             vendorName: formVendor || 'Vendor Umum'
         };
         addTransaksi(newTrans);
+
+        // Jika item berasal dari database lokal, hapus dari tabel rincian_pengeluaran_item
+        if (editId.startsWith('rab-db-')) {
+          const dbId = editId.replace('rab-db-', '');
+          import('@/lib/supabase').then(({ supabase }) => {
+            supabase.from('rincian_pengeluaran_item').delete().eq('id', dbId).then(() => {});
+          }).catch(err => console.error('[Delete Realized RAB DB Error]', err));
+        }
+
         addNotification({
           message: `Realisasi Rencana: Rencana "${itemDescription}" di ${schoolName} senilai Rp ${fmtRupiah(overallTotal)} telah direalisasikan.`,
           type: 'success',
           link: `/dashboard/pengeluaran`
         });
       } else {
+        // Update rencana di state lokal
         setRencanaList(prev => prev.map(t => {
           if (t.id === editId) {
             return {
               ...t,
-              tanggal: new Date(formTanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
+              tanggal: formattedTanggal,
               institusiId: formSchoolId,
               namaInstitusi: schoolName,
               jenjang: schoolJenjang,
               kategori: formKategori,
               item: itemDescription,
-              qty: formItems.reduce((sum, item) => sum + item.qty, 0),
+              qty: totalQty,
               hargaSatuan: mainHarga,
               nominal: overallTotal,
               vendorName: formVendor || 'Vendor Umum'
@@ -429,6 +505,22 @@ export default function RencanaAnggaranPage() {
           return t;
         }));
 
+        // Jika item berasal dari database lokal, sinkronkan ke PostgreSQL lokal
+        if (editId.startsWith('rab-db-')) {
+          const dbId = editId.replace('rab-db-', '');
+          import('@/lib/supabase').then(({ supabase }) => {
+            supabase.from('rincian_pengeluaran_item').update({
+              nama_produk_jasa: itemDescription,
+              harga_satuan: mainHarga,
+              qty: totalQty,
+              jumlah: overallTotal
+            }).eq('id', dbId).then(res => {
+              if (res.error) console.error('[Update RAB DB Error]', res.error);
+              else console.log('[Update RAB DB Sukses]', dbId);
+            });
+          }).catch(err => console.error('[Update RAB DB Exception]', err));
+        }
+
         addNotification({
           message: `Update Rencana: Rencana "${itemDescription}" di ${schoolName} diperbarui menjadi Rp ${fmtRupiah(overallTotal)}.`,
           type: 'info',
@@ -436,23 +528,46 @@ export default function RencanaAnggaranPage() {
         });
       }
     } else {
+      const newDbId = `rincian-kb-${Date.now()}`;
       const newTrans: TransaksiGlobal = {
-        id: `rab-${Date.now()}`,
-        tanggal: new Date(formTanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
+        id: `rab-db-${newDbId}`,
+        tanggal: formattedTanggal,
         institusiId: formSchoolId,
         namaInstitusi: schoolName,
         jenjang: schoolJenjang,
         kategori: formKategori,
         item: itemDescription,
-        qty: formItems.reduce((sum, item) => sum + item.qty, 0),
+        qty: totalQty,
         hargaSatuan: mainHarga,
         nominal: overallTotal,
         strukStatus: 'VALID',
-        strukMessage: 'Rencana anggaran dibuat secara manual.',
+        strukMessage: 'Dibuat oleh Operator / Admin Sekolah.',
         invoiceNo: `RAB-${Date.now().toString().slice(-4)}`,
         vendorName: formVendor || 'Vendor Umum'
       };
       setRencanaList(prev => [newTrans, ...prev]);
+
+      // Simpan ke database PostgreSQL lokal
+      try {
+        const { supabase } = await import('@/lib/supabase');
+        const { error: insertErr } = await supabase.from('rincian_pengeluaran_item').insert({
+          id: newDbId,
+          institusi_id: formSchoolId,
+          nomor_bulan: !isNaN(m) ? m : 1,
+          nomor: 99,
+          nama_produk_jasa: itemDescription,
+          harga_satuan: mainHarga,
+          qty: totalQty,
+          jumlah: overallTotal
+        });
+        if (insertErr) {
+          console.error('[Insert RAB DB Error]', insertErr);
+        } else {
+          console.log('[Insert RAB DB Sukses]', newDbId);
+        }
+      } catch (err) {
+        console.error('[Insert RAB DB Exception]', err);
+      }
 
       addNotification({
         message: `Penambahan Rencana: Rencana baru "${itemDescription}" senilai Rp ${fmtRupiah(overallTotal)} berhasil disimpan untuk ${schoolName}.`,
@@ -652,7 +767,7 @@ export default function RencanaAnggaranPage() {
                 title="Akun Anda berstatus Non-Aktif (Hanya Lihat)."
               >
                 <Lock size={14} />
-                Tambah Pengeluaran (Dinonaktifkan)
+                Tambah Rencana (Dinonaktifkan)
               </button>
             ) : (
               <button
@@ -660,7 +775,7 @@ export default function RencanaAnggaranPage() {
                 className="btn btn-primary shadow-lg shadow-indigo-500/10 font-bold py-2 px-4 text-xs w-full lg:w-auto shrink-0 cursor-pointer"
               >
                 <Plus size={14} />
-                Tambah Pengeluaran
+                Tambah Rencana (RAB)
               </button>
             )}
           </div>
@@ -704,7 +819,7 @@ export default function RencanaAnggaranPage() {
                   <th className="sheet-header-cell text-left" style={{ minWidth: 260 }}>Kategori & Rincian Belanja</th>
                   <th className="sheet-header-cell text-center" style={{ width: 100 }}>Item</th>
                   <th className="sheet-header-cell text-right" style={{ width: 160 }}>Nominal</th>
-                  <th className="sheet-header-cell text-center" style={{ width: 100 }}>Aksi</th>
+                  <th className="sheet-header-cell text-center" style={{ minWidth: 260 }}>Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -744,36 +859,48 @@ export default function RencanaAnggaranPage() {
                         {fmtRupiah(row.nominal)}
                       </td>
                       <td className="sheet-cell text-center">
-                        <div className="flex items-center justify-center gap-1.5">
+                        <div className="flex items-center justify-center gap-1.5 flex-nowrap">
                           <button
                             onClick={() => {
                               setSelectedTransaksi(row);
                               setPreviewStrukOpen(true);
                             }}
                             className="btn py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-text-primary flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
+                            title="Pratinjau Kuitansi / Struk"
                           >
                             <Eye size={12} />
                             Struk
                           </button>
-                          {isReadOnly ? (
-                            <button
-                              onClick={() => {
-                                setSelectedTransaksi(row);
-                                setDetailModalOpen(true);
-                              }}
-                              className="btn py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-text-primary flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
-                            >
-                              <Eye size={12} />
-                              Lihat
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleOpenEditModal(row)}
-                              className="btn py-1.5 px-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
-                            >
-                              <Settings size={12} />
-                              Detail
-                            </button>
+                          <button
+                            onClick={() => {
+                              setSelectedTransaksi(row);
+                              setDetailModalOpen(true);
+                            }}
+                            className="btn py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-text-primary flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
+                            title="Detail & Verifikasi AI"
+                          >
+                            <FileText size={12} />
+                            Detail
+                          </button>
+                          {!isReadOnly && (
+                            <>
+                              <button
+                                onClick={() => handleOpenEditModal(row)}
+                                className="btn py-1.5 px-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
+                                title="Edit Rencana Anggaran"
+                              >
+                                <Edit3 size={12} />
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteRencana(row)}
+                                className="btn py-1.5 px-2 bg-rose-50 hover:bg-rose-100 text-rose-700 flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
+                                title="Hapus Rencana Anggaran"
+                              >
+                                <Trash2 size={12} />
+                                Hapus
+                              </button>
+                            </>
                           )}
                         </div>
                       </td>
@@ -900,6 +1027,36 @@ export default function RencanaAnggaranPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Action Buttons inside detail modal */}
+              {!isReadOnly && (
+                <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 mt-5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const item = selectedTransaksi;
+                      setDetailModalOpen(false);
+                      handleOpenEditModal(item);
+                    }}
+                    className="btn py-2 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 flex items-center gap-1.5 text-xs font-semibold cursor-pointer rounded-xl"
+                  >
+                    <Edit3 size={14} />
+                    Edit Rencana Ini
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const item = selectedTransaksi;
+                      setDetailModalOpen(false);
+                      handleDeleteRencana(item);
+                    }}
+                    className="btn py-2 px-3 bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center gap-1.5 text-xs font-semibold cursor-pointer rounded-xl"
+                  >
+                    <Trash2 size={14} />
+                    Hapus Rencana Ini
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -996,7 +1153,7 @@ export default function RencanaAnggaranPage() {
                 </div>
               </div>
 
-              {/* School Selector - Locked to KB AL-IKHLAS */}
+              {/* School Selector - Dynamic */}
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider block">Institusi Pendidikan</label>
                 <div className="relative">
@@ -1004,7 +1161,7 @@ export default function RencanaAnggaranPage() {
                   <input
                     type="text"
                     disabled
-                    value="KB AL-IKHLAS (PAUD - NPSN: 69893669)"
+                    value={`${currentUser?.nama_sekolah || 'KB AL-IKHLAS'} (${currentUser?.nama_sekolah?.toUpperCase().includes('PAUD') || currentUser?.nama_sekolah?.toUpperCase().includes('KB') ? 'PAUD' : 'SD'} - NPSN: ${currentUser?.npsn || '69893669'})`}
                     className="w-full pl-9 pr-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs text-text-muted font-semibold focus:outline-none"
                   />
                 </div>
@@ -1277,7 +1434,7 @@ export default function RencanaAnggaranPage() {
                         Math.round((formItems.reduce((sum, item) => sum + (item.qty * item.price), 0) * formPajak) / 100) === 0
                       }
                     >
-                      SIMPAN RENCANA
+                      {formIsEditMode ? 'SIMPAN PERUBAHAN' : 'SIMPAN RENCANA'}
                     </button>
                   )}
                   <button

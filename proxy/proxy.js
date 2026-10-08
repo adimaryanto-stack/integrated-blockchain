@@ -2786,13 +2786,15 @@ function parseFilters(queryParams) {
     for (const val of vals) {
       if (typeof val !== 'string') continue;
 
+      const colCast = (key === 'id' || key.endsWith('_id')) ? `"${key}"::text` : `"${key}"`;
+
       if (val.startsWith('eq.')) {
         let v = val.slice(3).replace(/^["']|["']$/g, '');
-        if (v === 'null') { whereClauses.push(`"${key}" IS NULL`); }
-        else { whereClauses.push(`"${key}" = $${idx++}`); values.push(v); }
+        if (v === 'null') { whereClauses.push(`${colCast} IS NULL`); }
+        else { whereClauses.push(`${colCast} = $${idx++}`); values.push(v); }
       } else if (val.startsWith('neq.')) {
         let v = val.slice(4).replace(/^["']|["']$/g, '');
-        whereClauses.push(`"${key}" != $${idx++}`); values.push(v);
+        whereClauses.push(`${colCast} != $${idx++}`); values.push(v);
       } else if (val.startsWith('gte.')) {
         whereClauses.push(`"${key}" >= $${idx++}`); values.push(val.slice(4));
       } else if (val.startsWith('lte.')) {
@@ -2814,10 +2816,10 @@ function parseFilters(queryParams) {
       } else if (val.startsWith('in.')) {
         const list = val.slice(4, -1).split(',').map(s => s.trim().replace(/^["']|["']$/g, ''));
         const placeholders = list.map(() => `$${idx++}`);
-        whereClauses.push(`"${key}" IN (${placeholders.join(',')})`);
+        whereClauses.push(`${colCast} IN (${placeholders.join(',')})`);
         values.push(...list);
       } else if (val === 'is.null') {
-        whereClauses.push(`"${key}" IS NULL`);
+        whereClauses.push(`${colCast} IS NULL`);
       } else if (val === 'is.true') {
         whereClauses.push(`"${key}" = true`);
       } else if (val === 'is.false') {
@@ -2834,6 +2836,7 @@ function parseFilters(queryParams) {
       if (dotIdx === -1) return null;
       const col = part.substring(0, dotIdx);
       const rest = part.substring(dotIdx + 1);
+      const colCast = (col === 'id' || col.endsWith('_id')) ? `"${col}"::text` : `"${col}"`;
       if (rest.startsWith('ilike.')) {
         let v = rest.slice(6).replace(/\*/g, '%').replace(/^["']|["']$/g, '');
         if (!v.includes('%')) v = `%${v}%`;
@@ -2842,7 +2845,7 @@ function parseFilters(queryParams) {
       } else if (rest.startsWith('eq.')) {
         let v = rest.slice(3).replace(/^["']|["']$/g, '');
         values.push(v);
-        return `"${col}" = $${idx++}`;
+        return `${colCast} = $${idx++}`;
       } else if (rest.startsWith('like.')) {
         let v = rest.slice(5).replace(/\*/g, '%').replace(/^["']|["']$/g, '');
         if (!v.includes('%')) v = `%${v}%`;
@@ -2927,10 +2930,14 @@ function buildBaseQuery(table, selectParam) {
   } else if (table === 'audit_anomaly') {
     return `
       SELECT a.*,
+        COALESCE(ip.npsn, '') as npsn,
         (SELECT json_build_object('nama_institusi', ip.nama_institusi, 'npsn', ip.npsn)
          FROM institusi_pendidikan ip WHERE ip.id = a.institusi_id) as institusi_pendidikan
       FROM audit_anomaly a
+      LEFT JOIN institusi_pendidikan ip ON ip.id = a.institusi_id
     `;
+  } else if (table === 'institusi') {
+    return `SELECT * FROM institusi_pendidikan`;
   }
 
   return `SELECT * FROM "${table}"`;
@@ -3037,6 +3044,19 @@ app.all('/rest/v1/:table', async (req, res) => {
     if (method === 'POST') {
       const items = Array.isArray(req.body) ? req.body : [req.body];
       if (items.length === 0) return res.json([]);
+
+      // Ensure valid UUID for tables expecting UUID
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (table === 'transactions' || table === 'incoming_funds') {
+        items.forEach(item => {
+          if (item.id && !uuidRegex.test(item.id)) {
+            item.id = crypto.randomUUID();
+          }
+          if (item.school_id && !uuidRegex.test(item.school_id)) {
+            item.school_id = null;
+          }
+        });
+      }
 
       const columns = Object.keys(items[0]);
       const vals = [];

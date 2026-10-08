@@ -6,7 +6,8 @@ import { useAppStore } from '@/lib/store';
 import {
   LayoutDashboard, DollarSign, MapPin, Building2,
   GraduationCap, Users, ChevronDown, ChevronRight,
-  Menu, X, Landmark, School, ShieldCheck, CreditCard, ClipboardList, FolderKanban, LogOut
+  Menu, X, Landmark, School, ShieldCheck, CreditCard, ClipboardList, FolderKanban, LogOut,
+  KeyRound, UserCog
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 
@@ -20,7 +21,7 @@ const jenjangItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { sidebarOpen, toggleSidebar, dbData, isSupabaseMode, currentUser, setCurrentUser, logout } = useAppStore();
+  const { sidebarOpen, toggleSidebar, dbData, isSupabaseMode, currentUser, setCurrentUser, logout, setEditProfileOpen } = useAppStore();
   const [jenjangOpen, setJenjangOpen] = useState(pathname.includes('/jenjang'));
 
   useEffect(() => {
@@ -117,6 +118,11 @@ export default function Sidebar() {
             <Users size={18} />
             <span>User Manager</span>
           </Link>
+
+          <Link href="/dashboard/access-control" className={`sidebar-item ${pathname.includes('/access-control') ? 'active' : ''}`}>
+            <KeyRound size={18} />
+            <span>Access Control</span>
+          </Link>
         </nav>
 
         {/* Footer */}
@@ -126,7 +132,10 @@ export default function Sidebar() {
             return (
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center gap-2.5">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white shrink-0 ${
+                  <div 
+                    onClick={() => setEditProfileOpen(true)}
+                    title="Klik untuk Edit Profil"
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white shrink-0 cursor-pointer hover:scale-105 transition-transform ${
                     isReadOnly
                       ? 'bg-rose-600 shadow-sm'
                       : currentUser?.role === 'OPERATOR' 
@@ -135,9 +144,11 @@ export default function Sidebar() {
                   }`}>
                     {(currentUser?.username || 'KB').substring(0, 2).toUpperCase()}
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setEditProfileOpen(true)}>
                     <div className="flex items-center gap-1.5">
-                      <p className="text-xs font-semibold text-text-primary truncate">{currentUser?.username || 'admin.kbalikhlas'}</p>
+                      <p className="text-xs font-semibold text-text-primary truncate hover:text-indigo-600 transition-colors">
+                        {currentUser?.nama_lengkap || currentUser?.username || 'admin.kbalikhlas'}
+                      </p>
                     </div>
                     <div className="flex items-center gap-1 mt-0.5">
                       <span className={`text-[9px] px-1.5 py-0.2 rounded font-semibold uppercase tracking-wider ${
@@ -154,13 +165,22 @@ export default function Sidebar() {
                       </span>
                     </div>
                   </div>
-                  <Link
-                    href="/login"
-                    title="Ganti Akun / Logout"
-                    className="p-1.5 text-text-muted hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors shrink-0"
-                  >
-                    <LogOut size={15} />
-                  </Link>
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <button
+                      onClick={() => setEditProfileOpen(true)}
+                      title="Edit Profil & Kredensial"
+                      className="p-1.5 text-text-muted hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <UserCog size={15} />
+                    </button>
+                    <Link
+                      href="/login"
+                      title="Ganti Akun / Logout"
+                      className="p-1.5 text-text-muted hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                    >
+                      <LogOut size={15} />
+                    </Link>
+                  </div>
                 </div>
                 {isReadOnly && (
                   <div className="px-2 py-1 rounded bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-semibold text-center leading-tight">

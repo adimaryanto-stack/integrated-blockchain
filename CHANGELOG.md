@@ -4,6 +4,60 @@ Semua perubahan penting pada proyek **Integrated Blockchain - Platform Transpara
 
 Format pencatatan berpedoman pada [Keep a Changelog](https://keepachangelog.com/id-ID/1.0.0/) dan menganut prinsip [Semantic Versioning](https://semver.org/lang/id/).
 
+## [2.6.1] - 2026-10-08
+
+### 👤 Modul Profil Pengguna, Modal Kredensial & Scoped Access Control Satuan (Port 2024)
+- **Menu Dropdown Profil & Switcher Akun Header (`Header.tsx`)**:
+  - Penambahan interactive user dropdown menu pada header dengan inisial avatar dinamis, nama lengkap (`currentUser?.nama_lengkap`), lencana role (`Admin Satuan (Kepsek)` / `Operator Satuan`), NPSN sekolah, dan nama institusi.
+  - Akses navigasi kilat: *Edit Profil & Kredensial*, *Access Control & RBAC Matrix* (`/dashboard/access-control`), *User Manager Satuan* (`/dashboard/users`), serta *Ganti Akun / Keluar*.
+- **Modal Global Edit Profil & Kredensial (`EditProfileModal.tsx`)**:
+  - Komponen modal komprehensif 3 tab (*Biodata Pengguna*, *Keamanan & Kata Sandi*, dan *Informasi Satuan Pendidikan*).
+  - Sinkronisasi live ke basis data PostgreSQL dan store state Zustand dengan umpan balik visual instan.
+  - Proteksi wewenang khusus untuk akun non-aktif (*read-only*) dan pembatasan field sensitif untuk operator sekolah.
+- **Halaman Access Control Matrix & Scoped RBAC Satuan (`/dashboard/access-control/page.tsx`)**:
+  - Matriks wewenang per modul mencakup 9 modul utama institusi pendidikan (*Dashboard*, *Profil & Dokumen Satuan*, *Mutasi Rekening Kas Bank*, *Rencana Anggaran Biaya (RAB)*, *Paket Project Fisik*, *Pengeluaran & Scan Kuitansi OCR AI*, *Audit Integritas Anggaran AI*, *User Manager*, *Access Control Matrix*).
+  - Matriks hak akses berjenjang (*Scoped RBAC*) membedakan *Super Admin*, *Admin Satuan (Kepsek)*, dan *Operator Satuan*.
+  - Indikator telemetri integritas akses, ringkasan proteksi akun, dan panduan keamanan peran.
+- **Peningkatan Rencana Anggaran (RAB) & Pengeluaran (`rencana-anggaran/page.tsx`, `pengeluaran/page.tsx`)**:
+  - Penambahan fitur *Edit* dan *Hapus* Rencana Anggaran langsung dari tabel daftar dan modal rincian anggaran.
+  - Penyelarasan dinamis identitas institusi pada formulir pembuatan RAB sesuai pengguna yang sedang login (`currentUser?.nama_sekolah`).
+  - Pembaruan akun demo login default pada `login/page.tsx`: Admin Satuan (`admin.kbalikhlas` - Hj. Siti Aminah, S.Pd) dan Operator Satuan (`operator.kbalikhlas` - Ahmad Fauzi, S.Kom) pada KB AL-IKHLAS (NPSN: 69893669).
+- **Sidebar Navigasi Terpadu (`Sidebar.tsx`, `lib/store.ts`)**:
+  - Menu navigasi baru *Access Control* (`/dashboard/access-control`) dengan ikon *KeyRound*.
+  - Footer pengguna interaktif: avatar dan nama pengguna kini responsif terhadap klik untuk membuka modal Edit Profil secara instan, dilengkapi tombol cepat *UserCog*.
+  - Perluasan tipe data `CurrentSchoolUser` dan nilai default store Zustand untuk mendukung `nama_lengkap`, `phone`, `mfa_enabled`, `scope_type`, dan `scope_id`.
+
+### 🌐 Portal Warga Civic-Tech: Paging Transaksi Belanja & Filter Mutasi Bank (Port 2019)
+- **Navigasi Multi-Tahun & Paging Mutasi Kas Bank HIMBARA (`dashboard.html`)**:
+  - Penambahan tombol filter tahun mutasi interaktif (*2026*, *2025*, *2024*, dan *Semua*).
+  - Paging tabel mutasi rekening kas bank dengan navigasi halaman halus.
+- **Sistem Pagination & Ekspor CSV Transaksi Pembelanjaan Publik**:
+  - Implementasi fungsi pagination `goToTxPage`, nomor halaman numerik, dan tombol navigasi *Sebelumnya / Selanjutnya*.
+  - Sinkronisasi filter kata kunci pencarian, bulan pembelanjaan, dan sumber dana dengan reset halaman otomatis.
+  - Komputasi dinamis ringkasan footer untuk total nominal belanja dan jumlah data yang ditemukan.
+  - Tombol *Ekspor CSV* untuk mengunduh rekapitulasi data transaksi pembelanjaan publik.
+- **Penyelarasan Presisi Kartu Profil Satuan Pendidikan**:
+  - Penataan tata letak lencana (*badges*) Akreditasi, NPSN, dan status verifikasi sekolah agar sejajar rapi (*vertically & horizontally aligned*).
+
+### 🛡️ Dashboard Admin & Sinkronisasi Live PostgreSQL RBAC (Port 2026)
+- **Dukungan Peran Operator Satuan (`types/index.ts`, `dummyData.ts`, `AccessControlMatrix.tsx`, `Topbar.tsx`)**:
+  - Penambahan peran `operator_satuan` pada matriks wewenang dan pilihan peran switcher Topbar.
+  - Sinkronisasi data admin langsung dari tabel `users` PostgreSQL (`/api/admin/admin-users`).
+  - Penyesuaian endpoint PUT pembaruan wilayah wewenang pengguna (`/api/admin/admin-users/:id/scope`).
+- **Peningkatan Komponen UI Panel (`Panel.tsx`)**:
+  - Komponen `Panel` kini mendukung properti ikon opsional (`icon`) pada judul header untuk keseragaman estetika konsol admin.
+
+### 🔌 Proxy REST API Gateway: Kompatibilitas PostgREST & Casting Dinamis (Port 2028)
+- **Penyempurnaan PostgREST Filter Engine (`proxy.js`)**:
+  - Auto-casting kolom bertipe identifier (`id` dan `*_id`) ke tipe teks (`::text`) untuk mencegah kesalahan ketidakcocokan tipe kueri SQL.
+  - Join dinamis data `institusi_pendidikan` pada kueri `audit_anomaly` untuk penyediaan nomor NPSN sekolah.
+  - Alias tabel `institusi` merujuk langsung ke tabel `institusi_pendidikan`.
+  - Normalisasi otomatis UUID pada tabel `transactions` dan `incoming_funds`.
+- **Endpoint Sinkronisasi Pengguna Admin (`adminApi.js`)**:
+  - Penambahan rute GET `/api/admin/admin-users` dan PUT `/api/admin/admin-users/:id/scope`.
+
+---
+
 ## [2.6.0] - 2026-10-08
 
 ### 🗺️ Perombakan Modul API Wilayah & Navigasi Gugus Kepulauan (Port 2026)

@@ -1,10 +1,15 @@
 'use client';
 
+import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import MetricCard from '@/components/ui/MetricCard';
 import PctBadge from '@/components/ui/PctBadge';
 import { fmtPct, fmtRupiah } from '@/lib/utils/formatters';
-import { Wallet, TrendingUp, PieChart, Calendar, Landmark } from 'lucide-react';
+import {
+  Wallet, TrendingUp, PieChart, Calendar, Landmark,
+  ClipboardList, FolderKanban, CreditCard, ShieldCheck, ArrowRight,
+  KeyRound, UserCog
+} from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Area, AreaChart, Legend
@@ -22,7 +27,7 @@ interface YearData {
 }
 
 export default function DashboardPage() {
-  const { activeTahun, setActiveTahun } = useAppStore();
+  const { activeTahun, setActiveTahun, currentUser, setEditProfileOpen } = useAppStore();
 
   // Fetch institusi data for KB AL-IKHLAS from local PostgreSQL DB
   const [institusi, setInstitusi] = useState<any>({
@@ -216,6 +221,155 @@ export default function DashboardPage() {
             icon={<Landmark size={20} className="text-blue-600" />}
             accent="blue"
           />
+        </div>
+
+        {/* Quick Actions / Alur Kerja Operasional Sekolah */}
+        <div className="glass-card p-5 border border-indigo-100/80 bg-gradient-to-r from-indigo-50/60 via-purple-50/40 to-white">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-3 border-b border-indigo-100/60">
+            <div>
+              <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs shadow-sm">⚡</span>
+                Aksi Cepat Manajemen Anggaran
+              </h3>
+              <p className="text-xs text-text-muted mt-0.5">
+                Pusat pintasan bagi Operator & Admin Sekolah untuk membuat rencana (RAB) hingga pencatatan pengeluaran
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setEditProfileOpen(true)}
+                className="text-[11px] font-semibold px-3 py-1 rounded-full bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-300 transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+              >
+                <UserCog size={13} className="text-indigo-600" />
+                <span>Edit Profil</span>
+              </button>
+              <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                Akses: {currentUser?.role === 'OPERATOR' ? 'Operator Sekolah' : 'Admin Sekolah'}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {/* Quick Button 1: Buat Rencana (RAB) */}
+            <Link
+              href="/dashboard/rencana-anggaran?action=tambah"
+              className="p-3.5 bg-white rounded-2xl border-2 border-indigo-200 hover:border-indigo-500 hover:shadow-md transition-all group flex flex-col justify-between"
+            >
+              <div className="flex items-start justify-between">
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                  <ClipboardList size={18} />
+                </div>
+                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+                  + Buat Baru
+                </span>
+              </div>
+              <div className="mt-3">
+                <h4 className="text-xs font-bold text-slate-800 group-hover:text-indigo-600 transition-colors flex items-center gap-1">
+                  Buat Rencana (RAB)
+                  <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                </h4>
+                <p className="text-[10px] text-text-muted mt-0.5 leading-relaxed">
+                  Susun draf alokasi kegiatan, kebutuhan barang & pagu anggaran
+                </p>
+              </div>
+            </Link>
+
+            {/* Quick Button 2: Paket Project */}
+            <Link
+              href="/dashboard/rencana-anggaran/paket-project"
+              className="p-3.5 bg-white rounded-2xl border-2 border-slate-100 hover:border-emerald-400 hover:shadow-md transition-all group flex flex-col justify-between"
+            >
+              <div className="flex items-start justify-between">
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                  <FolderKanban size={18} />
+                </div>
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                  Dokumentasi
+                </span>
+              </div>
+              <div className="mt-3">
+                <h4 className="text-xs font-bold text-slate-800 group-hover:text-emerald-600 transition-colors flex items-center gap-1">
+                  Paket Project
+                  <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                </h4>
+                <p className="text-[10px] text-text-muted mt-0.5 leading-relaxed">
+                  Dokumentasi fisik foto kegiatan, RAB paket & histori vendor
+                </p>
+              </div>
+            </Link>
+
+            {/* Quick Button 3: Tambah Pengeluaran */}
+            <Link
+              href="/dashboard/pengeluaran"
+              className="p-3.5 bg-white rounded-2xl border-2 border-slate-100 hover:border-blue-400 hover:shadow-md transition-all group flex flex-col justify-between"
+            >
+              <div className="flex items-start justify-between">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                  <CreditCard size={18} />
+                </div>
+                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                  Kas Keluar
+                </span>
+              </div>
+              <div className="mt-3">
+                <h4 className="text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors flex items-center gap-1">
+                  Catat Pengeluaran
+                  <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                </h4>
+                <p className="text-[10px] text-text-muted mt-0.5 leading-relaxed">
+                  Input kuitansi riil belanja kas dan pemindaian OCR AI
+                </p>
+              </div>
+            </Link>
+
+            {/* Quick Button 4: Audit Anggaran */}
+            <Link
+              href="/dashboard/audit"
+              className="p-3.5 bg-white rounded-2xl border-2 border-slate-100 hover:border-amber-400 hover:shadow-md transition-all group flex flex-col justify-between"
+            >
+              <div className="flex items-start justify-between">
+                <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                  <ShieldCheck size={18} />
+                </div>
+                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                  AI Auditor
+                </span>
+              </div>
+              <div className="mt-3">
+                <h4 className="text-xs font-bold text-slate-800 group-hover:text-amber-600 transition-colors flex items-center gap-1">
+                  Audit Anggaran
+                  <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                </h4>
+                <p className="text-[10px] text-text-muted mt-0.5 leading-relaxed">
+                  Pemeriksaan anomali nota, duplikasi & potensi kerugian negara
+                </p>
+              </div>
+            </Link>
+
+            {/* Quick Button 5: Access Control & RBAC Matrix */}
+            <Link
+              href="/dashboard/access-control"
+              className="p-3.5 bg-white rounded-2xl border-2 border-slate-100 hover:border-purple-400 hover:shadow-md transition-all group flex flex-col justify-between"
+            >
+              <div className="flex items-start justify-between">
+                <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                  <KeyRound size={18} />
+                </div>
+                <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
+                  Scoped RBAC
+                </span>
+              </div>
+              <div className="mt-3">
+                <h4 className="text-xs font-bold text-slate-800 group-hover:text-purple-600 transition-colors flex items-center gap-1">
+                  Access Control
+                  <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                </h4>
+                <p className="text-[10px] text-text-muted mt-0.5 leading-relaxed">
+                  Matriks izin modul & delegasi peran satuan KB AL-IKHLAS
+                </p>
+              </div>
+            </Link>
+          </div>
         </div>
 
         {/* Ringkasan Pertahun Table */}

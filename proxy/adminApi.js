@@ -103,6 +103,67 @@ router.post('/logout', (req, res) => {
   res.json({ message: "Logout berhasil" });
 });
 
+// ── Admin Users Endpoints (Live PostgreSQL Synchronized RBAC) ─
+router.get('/admin-users', async (req, res) => {
+  try {
+    const result = await adminDbPool.query(`
+      SELECT id, username, full_name, email, role, scope_type, scope_id, mfa_enabled, is_active, created_at
+      FROM users
+      ORDER BY 
+        CASE 
+          WHEN id = 'adm-001' OR username = 'superadmin' THEN 1
+          WHEN id = 'adm-002' OR role = 'OPS_ADMIN' THEN 2
+          WHEN id = 'adm-003' OR role = 'ADMIN_KEMENTERIAN' THEN 3
+          WHEN id = 'adm-004' OR role = 'ADMIN_WILAYAH' THEN 4
+          WHEN id = 'u-kbalikhlas-admin' OR role = 'ADMIN' THEN 5
+          WHEN id = 'u-kbalikhlas-operator' OR role = 'OPERATOR' THEN 6
+          ELSE 7
+        END ASC, id ASC
+    `);
+
+    const mapped = result.rows.map(u => ({
+      id: u.id,
+      name: u.full_name || u.username,
+      username: u.username,
+      email: u.email,
+      role: u.role === 'SUPER_ADMIN' ? 'super_admin' :
+            u.role === 'OPS_ADMIN' ? 'ops_admin' :
+            u.role === 'ADMIN_KEMENTERIAN' ? 'admin_kementerian' :
+            u.role === 'ADMIN_WILAYAH' ? 'admin_wilayah' :
+            u.role === 'ADMIN' ? 'admin_satuan' :
+            u.role === 'OPERATOR' ? 'operator_satuan' :
+            u.role.toLowerCase(),
+      scopeType: (u.scope_type || (u.role === 'SUPER_ADMIN' || u.role === 'OPS_ADMIN' ? 'global' : u.role === 'ADMIN_KEMENTERIAN' ? 'kementerian' : u.role === 'ADMIN_WILAYAH' ? 'provinsi' : 'satuan')).toLowerCase(),
+      scopeId: (u.scope_type === 'global' || u.role === 'SUPER_ADMIN' || u.role === 'OPS_ADMIN') ? undefined : (u.scope_id || (u.role === 'ADMIN' || u.role === 'OPERATOR' ? '69893669 - KB AL-IKHLAS' : undefined)),
+      mfaEnabled: u.mfa_enabled !== false,
+      isActive: u.is_active !== false,
+      lastLoginAt: '2026-10-08 Aktif',
+      createdAt: u.created_at || '2026-01-15'
+    }));
+
+    res.json(mapped);
+  } catch (err) {
+    console.error('Error fetching admin-users from DB:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/admin-users/:id/scope', async (req, res) => {
+  const { id } = req.params;
+  const { scopeType, scopeId } = req.body;
+  try {
+    await adminDbPool.query(`
+      UPDATE users 
+      SET scope_type = $1, scope_id = $2
+      WHERE id = $3
+    `, [scopeType, scopeId || null, id]);
+    res.json({ success: true, id, scopeType, scopeId });
+  } catch (err) {
+    console.error('Error updating admin scope in DB:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Users Endpoints (Live PostgreSQL Database) ───────────────
 router.get('/users', async (req, res) => {
   try {
