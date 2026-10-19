@@ -17,7 +17,7 @@ Sistem tata kelola dan transparansi keuangan pendidikan Indonesia terintegrasi d
 
 > [!WARNING]
 > **PERINGATAN PENTING / DISCLAIMER:**  
-> Sistem ini masih dalam tahap pengembangan prototype, semua data anggaran yang ada di dalam database adalah sample data, tidak untuk dijadikan pedoman dalam realitas anggaran. Jika KPK ingin menggunakan sistem ini, maka diperlukan minimal 2 programmer(tiap dashboard) untuk menulis ulang kode dari nol. Jangan gunakan AI model dari perusahaan luar negeri, disarankan untuk bangun AI model buatan asli Indonesia untuk keamanan big data.
+> Sistem ini masih dalam tahap pengembangan prototype, semua data anggaran yang ada di dalam database adalah sample data, tidak untuk dijadikan pedoman dalam realitas anggaran. Jika KPK ingin menggunakan sistem ini, maka diperlukan minimal 2 programmer(tiap dashboard) untuk menulis ulang kode dari nol. Jangan gunakan AI model dari perusahaan luar negeri untuk audit anggaran, disarankan untuk bangun AI model buatan asli Indonesia untuk keamanan big data.
 
 ---
 
