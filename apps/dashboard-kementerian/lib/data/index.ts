@@ -35,6 +35,7 @@ export const usersData: User[] = [];
 // DO NOT add hardcoded data here — always sourced from local PostgreSQL
 export const provinceSchoolStatsData: any[] = [];
 export const masterProvinsiData: { id: string; kode_provinsi: string; nama_provinsi: string }[] = [];
+export const masterKabupatenKotaData: { id: string; provinsi_id: string; kode_kabupaten_kota: string; nama_kabupaten_kota: string; tipe: string }[] = [];
 
 export function updateTahunAnggaranData(newData: TahunAnggaran[]) {
   tahunAnggaranData.length = 0;
@@ -126,7 +127,7 @@ export async function initDbConnection(force = false) {
   };
 
   try {
-    const [taData, provData, kabkotaData, instData, sdData, pbData, userData, schoolStatsData, masterProvs] = await Promise.all([
+    const [taData, provData, kabkotaData, instData, sdData, pbData, userData, schoolStatsData, masterProvs, masterKabs] = await Promise.all([
       fetchPaginated(`${url}/rest/v1/tahun_anggaran?select=*&order=tahun.asc`, headers),
       fetchPaginated(`${url}/rest/v1/alokasi_provinsi?select=*,provinsi(*)&order=id.asc`, headers),
       fetchPaginated(`${url}/rest/v1/alokasi_kabupaten_kota?select=*,kabupaten_kota(*)&order=id.asc`, headers),
@@ -136,6 +137,7 @@ export async function initDbConnection(force = false) {
       fetchPaginated(`${url}/rest/v1/users?select=*&order=id.asc`, headers),
       fetchPaginated(`${url}/rest/v1/province_school_stats?select=*`, headers).catch(() => []),
       fetchPaginated(`${url}/rest/v1/provinsi?select=*&order=id.asc`, headers).catch(() => []),
+      fetchPaginated(`${url}/rest/v1/kabupaten_kota?select=*&order=id.asc`, headers).catch(() => []),
     ]);
 
     tahunAnggaranData.length = 0;
@@ -167,6 +169,11 @@ export async function initDbConnection(force = false) {
     if (masterProvs && masterProvs.length > 0) {
       masterProvinsiData.length = 0;
       masterProvinsiData.push(...masterProvs.map((p: any) => cleanRecord(p) as any));
+    }
+
+    if (masterKabs && masterKabs.length > 0) {
+      masterKabupatenKotaData.length = 0;
+      masterKabupatenKotaData.push(...masterKabs.map((k: any) => cleanRecord(k) as any));
     }
 
     isInitialized = true;
@@ -392,57 +399,10 @@ export async function updateAlokasiProvinsi(id: string, field: string, value: nu
       nilai_baru: fmtRupiah(value),
     });
 
-    // Cascade down to all child kabupaten/kota for this province
-    const kabsRes = await fetch(`${url}/rest/v1/alokasi_kabupaten_kota?alokasi_provinsi_id=eq.${id}&order=id.asc`, { headers });
-    if (kabsRes.ok) {
-      const kabs = await kabsRes.json();
-      if (Array.isArray(kabs) && kabs.length > 0) {
-        const kabCount = kabs.length;
-        const baseNominal = Math.floor(newNominal / kabCount);
-        const remainder = newNominal % kabCount;
-
-        await Promise.all(
-          kabs.map(async (k: any, idx: number) => {
-            const kNominal = idx === kabCount - 1 ? baseNominal + remainder : baseNominal;
-            const kRealisasi = k.realisasi_total;
-            const kSelisih = kNominal - kRealisasi;
-            const kPct = kNominal > 0 ? Math.round((kRealisasi / kNominal) * 1000) / 10 : 0;
-
-            await fetch(`${url}/rest/v1/alokasi_kabupaten_kota?id=eq.${k.id}`, {
-              method: 'PATCH',
-              headers,
-              body: JSON.stringify({
-                nominal_alokasi: kNominal,
-                selisih: kSelisih,
-                persentase_penyerapan: kPct,
-                updated_at: new Date().toISOString().split('T')[0]
-              })
-            });
-          })
-        );
-      }
-    }
-
-    // Cascade update to parent tahun_anggaran
-    const taId = prov.tahun_anggaran_id;
-    if (taId) {
-      const allProvsRes = await fetch(`${url}/rest/v1/alokasi_provinsi?tahun_anggaran_id=eq.${taId}`, { headers });
-      if (allProvsRes.ok) {
-        const allProvs = await allProvsRes.json();
-        const totalNominalTA = allProvs.reduce((s: number, p: any) => 
-          s + (p.id === id ? newNominal : p.nominal_alokasi), 0);
-
-        await fetch(`${url}/rest/v1/tahun_anggaran?id=eq.${taId}`, {
-          method: 'PATCH',
-          headers,
-          body: JSON.stringify({
-            total_anggaran: totalNominalTA
-          })
-        });
-      }
-    }
-
+    // Database PostgreSQL triggers (trg_alokasi_provinsi_update) automatically cascade down
+    // to all child kabupaten/kota and sync up to tahun_anggaran with exact BigInt precision!
     await initDbConnection(true); // force reload cache
+    useAppStore.getState().incrementVersion();
   } catch (err) {
     console.error('Failed to patch alokasi_provinsi:', err);
   }
@@ -505,31 +465,9 @@ export async function updateAlokasiKabupatenKota(id: string, field: string, valu
         throw new Error('Failed to insert new alokasi_kabupaten_kota: ' + errText);
       }
 
-      // Cascade update to parent alokasi_provinsi
-      if (alokasiProvinsiId) {
-        const allKabsRes = await fetch(`${url}/rest/v1/alokasi_kabupaten_kota?alokasi_provinsi_id=eq.${alokasiProvinsiId}`, { headers });
-        if (allKabsRes.ok) {
-          const allKabs = await allKabsRes.json();
-          const totalNominalProv = allKabs.reduce((s: number, k: any) => s + (k.id === id ? newNominal : k.nominal_alokasi), 0);
-          const totalRealisasiProv = allKabs.reduce((s: number, k: any) => s + (k.id === id ? newRealisasi : k.realisasi_total), 0);
-          const selisihProv = totalNominalProv - totalRealisasiProv;
-          const pctProv = totalNominalProv > 0 ? (totalRealisasiProv / totalNominalProv) * 100 : 0;
-
-          await fetch(`${url}/rest/v1/alokasi_provinsi?id=eq.${alokasiProvinsiId}`, {
-            method: 'PATCH',
-            headers,
-            body: JSON.stringify({
-              nominal_alokasi: totalNominalProv,
-              realisasi_total: totalRealisasiProv,
-              selisih: selisihProv,
-              persentase_penyerapan: pctProv,
-              updated_at: new Date().toISOString().split('T')[0]
-            })
-          });
-        }
-      }
-
+      // Database triggers automatically sync to parent alokasi_provinsi and tahun_anggaran
       await initDbConnection(true);
+      useAppStore.getState().incrementVersion();
       return;
     }
 
@@ -563,141 +501,208 @@ export async function updateAlokasiKabupatenKota(id: string, field: string, valu
       nilai_baru: fmtRupiah(value),
     });
 
-    const alokasiProvinsiId = kk.alokasi_provinsi_id;
-    if (alokasiProvinsiId) {
-      const allKabsRes = await fetch(`${url}/rest/v1/alokasi_kabupaten_kota?alokasi_provinsi_id=eq.${alokasiProvinsiId}`, { headers });
-      if (allKabsRes.ok) {
-        const allKabs = await allKabsRes.json();
-        const totalNominalProv = allKabs.reduce((s: number, k: any) => s + (k.id === id ? newNominal : k.nominal_alokasi), 0);
-        const totalRealisasiProv = allKabs.reduce((s: number, k: any) => s + (k.id === id ? newRealisasi : k.realisasi_total), 0);
-        const selisihProv = totalNominalProv - totalRealisasiProv;
-        const pctProv = totalNominalProv > 0 ? (totalRealisasiProv / totalNominalProv) * 100 : 0;
-
-        const patchProvRes = await fetch(`${url}/rest/v1/alokasi_provinsi?id=eq.${alokasiProvinsiId}`, {
-          method: 'PATCH',
-          headers,
-          body: JSON.stringify({
-            nominal_alokasi: totalNominalProv,
-            realisasi_total: totalRealisasiProv,
-            selisih: selisihProv,
-            persentase_penyerapan: pctProv,
-            updated_at: new Date().toISOString().split('T')[0]
-          })
-        });
-
-        if (patchProvRes.ok) {
-          const apRes = await fetch(`${url}/rest/v1/alokasi_provinsi?id=eq.${alokasiProvinsiId}`, { headers });
-          if (apRes.ok) {
-            const [ap] = await apRes.json();
-            const taId = ap?.tahun_anggaran_id;
-            if (taId) {
-              const allAlokasiProvsRes = await fetch(`${url}/rest/v1/alokasi_provinsi?tahun_anggaran_id=eq.${taId}`, { headers });
-              if (allAlokasiProvsRes.ok) {
-                const allAlokasiProvs = await allAlokasiProvsRes.json();
-                const totalNominalTA = allAlokasiProvs.reduce((s: number, p: any) => 
-                  s + (p.id === alokasiProvinsiId ? totalNominalProv : p.nominal_alokasi), 0);
-
-                await fetch(`${url}/rest/v1/tahun_anggaran?id=eq.${taId}`, {
-                  method: 'PATCH',
-                  headers,
-                  body: JSON.stringify({
-                    total_anggaran: totalNominalTA
-                  })
-                });
-              }
-            }
-          }
-        }
-      }
-    }
-
+    // PostgreSQL trigger (trg_alokasi_kabupaten_kota_sync) automatically syncs up
+    // to parent alokasi_provinsi, tahun_anggaran, and all audit tables with 100% BigInt precision!
     await initDbConnection(true); // force reload cache
+    useAppStore.getState().incrementVersion();
   } catch (err) {
     console.error('Failed to patch alokasi_kabupaten_kota:', err);
   }
 }
 
 // Data fetching stubs returning elements from memory cache
-export function getKabkotaByProvinsi(provinsiId: string, tahunAnggaranId?: string | null): AlokasiKabupatenKota[] {
-  // 1. Ambil daftar unik kabupaten/kota untuk provinsi ini
-  const uniqueKabMap = new Map<string, AlokasiKabupatenKota>();
-  for (const item of alokasiKabupatenKotaData) {
-    const pId = item.kabupaten_kota?.provinsi_id || (item as any).provinsi_id;
-    if (pId === provinsiId) {
-      const kId = item.kabupaten_kota_id || item.kabupaten_kota?.id || item.id;
-      if (kId && !uniqueKabMap.has(kId)) {
-        uniqueKabMap.set(kId, item);
-      }
+/**
+ * Memanggil Stored Procedure PostgreSQL `cascade_top_down_anggaran` secara otomatis
+ * Membagi APBN -> 38 Provinsi -> 514 Kabupaten/Kota dengan BigInt Integer Division presisi 100%
+ */
+export async function triggerTopDownCascade(tahunAnggaranId: string): Promise<boolean> {
+  const { url, anonKey } = getSupabaseConfig();
+  const headers = {
+    'apikey': anonKey,
+    'Authorization': `Bearer ${anonKey}`,
+    'Content-Type': 'application/json',
+  };
+
+  try {
+    const res = await fetch(`${url}/rest/v1/rpc/cascade_top_down_anggaran`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ target_tahun_id: tahunAnggaranId })
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      console.error('RPC cascade_top_down_anggaran failed:', err);
+      return false;
     }
+    await initDbConnection(true);
+    useAppStore.getState().incrementVersion();
+    return true;
+  } catch (err) {
+    console.error('Error triggering top-down cascade:', err);
+    return false;
   }
-  const baseKabsOfProv = Array.from(uniqueKabMap.values());
+}
 
-  if (!tahunAnggaranId) {
-    return baseKabsOfProv;
-  }
+/**
+ * Membagi alokasi satu provinsi ke seluruh anak kabupaten/kota dengan presisi BigInt 100%
+ */
+export async function distributeProvinsiToKabkota(provinsiId: string, tahunAnggaranId: string): Promise<boolean> {
+  const { url, anonKey } = getSupabaseConfig();
+  const headers = {
+    'apikey': anonKey,
+    'Authorization': `Bearer ${anonKey}`,
+    'Content-Type': 'application/json',
+    'Prefer': 'resolution=merge-duplicates',
+  };
 
-  // 2. Cek baris alokasi provinsi untuk tahunAnggaranId ini
-  const provAllocRows = alokasiProvinsiData.filter(
-    (p) => String(p.tahun_anggaran_id) === String(tahunAnggaranId) && p.provinsi_id === provinsiId
-  );
-  const provAllocIds = new Set(provAllocRows.map((p) => p.id));
+  try {
+    const provAlloc = alokasiProvinsiData.find(
+      p => String(p.tahun_anggaran_id) === String(tahunAnggaranId) && p.provinsi_id === provinsiId
+    );
+    if (!provAlloc || !provAlloc.nominal_alokasi) return false;
 
-  // Ambil data kab/kota yang sudah spesifik tersimpan di DB untuk alokasi provinsi tahun ini
-  const savedKabMap = new Map<string, AlokasiKabupatenKota>();
-  for (const item of alokasiKabupatenKotaData) {
-    if (item.alokasi_provinsi_id && provAllocIds.has(item.alokasi_provinsi_id)) {
-      const kId = item.kabupaten_kota_id || item.kabupaten_kota?.id;
-      if (kId) {
-        savedKabMap.set(kId, item);
-      }
-    }
-  }
+    const kabs = masterKabupatenKotaData.filter(k => k.provinsi_id === provinsiId);
+    if (kabs.length === 0) return false;
 
-  // Jika SEMUA kabupaten/kota di provinsi ini sudah memiliki alokasi spesifik di DB, return saved rows
-  if (baseKabsOfProv.length > 0 && savedKabMap.size >= baseKabsOfProv.length) {
-    return Array.from(savedKabMap.values());
-  }
+    const bTotal = BigInt(String(provAlloc.nominal_alokasi).split('.')[0]);
+    const bCount = BigInt(kabs.length);
+    const bBase = bTotal / bCount;
+    const bRem = bTotal % bCount;
 
-  // 3. Fallback / Distribusi Rata:
-  // Ambil nominal provinsi tahun ini
-  const provAlloc = provAllocRows[0];
-  const provNominal = provAlloc ? Number(provAlloc.nominal_alokasi || 0) : 0;
-  const provRealisasi = provAlloc ? Number(provAlloc.realisasi_total || 0) : 0;
-
-  if (baseKabsOfProv.length > 0) {
-    const count = baseKabsOfProv.length;
-    const baseNom = Math.floor(provNominal / count);
-    const remNom = provNominal % count;
-    const baseReal = Math.floor(provRealisasi / count);
-    const remReal = provRealisasi % count;
-
-    return baseKabsOfProv.map((k, idx) => {
-      const kId = k.kabupaten_kota_id || k.kabupaten_kota?.id || k.id;
-      // Jika kabupaten ini sudah punya data tersimpan spesifik di DB dengan nominal > 0, gunakan itu
-      if (savedKabMap.has(kId)) {
-        return savedKabMap.get(kId)!;
-      }
-
-      // Default: bagi rata alokasi provinsi
-      const nom = idx === count - 1 ? baseNom + remNom : baseNom;
-      const real = idx === count - 1 ? baseReal + remReal : baseReal;
-      const sel = nom - real;
-      const pct = nom > 0 ? (real / nom) * 100 : 0;
-
+    const rows = kabs.map((k, idx) => {
+      const bNom = idx === kabs.length - 1 ? bBase + bRem : bBase;
       return {
-        ...k,
-        id: `akk-${kId}-${tahunAnggaranId}`,
-        alokasi_provinsi_id: provAlloc?.id || k.alokasi_provinsi_id,
-        nominal_alokasi: nom,
-        realisasi_total: real,
-        selisih: sel,
-        persentase_penyerapan: Number(pct.toFixed(1)),
+        id: `akk-${k.id}-${tahunAnggaranId}`,
+        alokasi_provinsi_id: provAlloc.id,
+        kabupaten_kota_id: k.id,
+        provinsi_nama: provAlloc.provinsi?.nama_provinsi || 'Provinsi',
+        nominal_alokasi: bNom.toString(),
+        realisasi_total: '0',
+        selisih: bNom.toString(),
+        persentase_penyerapan: 0,
         updated_at: new Date().toISOString().split('T')[0],
       };
     });
+
+    const res = await fetch(`${url}/rest/v1/alokasi_kabupaten_kota`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(rows),
+    });
+
+    if (res.ok) {
+      await initDbConnection(true);
+      useAppStore.getState().incrementVersion();
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error('Error distributing to kabkota:', err);
+    return false;
+  }
+}
+
+// Data fetching stubs returning elements from memory cache with 100% BigInt Top-Down precision
+export function getKabkotaByProvinsi(provinsiId: string, tahunAnggaranId?: string | null): AlokasiKabupatenKota[] {
+  // 1. Ambil daftar master kabupaten/kota untuk provinsi ini
+  const masterKabs = masterKabupatenKotaData.filter(k => k.provinsi_id === provinsiId);
+  
+  // Fallback ke kabupaten/kota yang ada di data alokasi jika master data belum dimuat
+  const baseKabs = masterKabs.length > 0 ? masterKabs : (() => {
+    const uniqueMap = new Map<string, any>();
+    for (const item of alokasiKabupatenKotaData) {
+      const provAlloc = alokasiProvinsiData.find(ap => ap.id === item.alokasi_provinsi_id);
+      const pId = item.kabupaten_kota?.provinsi_id || provAlloc?.provinsi_id || (item as any).provinsi_id;
+      if (pId === provinsiId) {
+        const kId = item.kabupaten_kota_id || item.kabupaten_kota?.id || item.id;
+        if (kId && !uniqueMap.has(kId)) {
+          uniqueMap.set(kId, {
+            id: kId,
+            provinsi_id: pId,
+            nama_kabupaten_kota: item.kabupaten_kota?.nama_kabupaten_kota || kId,
+            kode_kabupaten_kota: item.kabupaten_kota?.kode_kabupaten_kota || kId,
+            tipe: item.kabupaten_kota?.tipe || 'KABUPATEN'
+          });
+        }
+      }
+    }
+    return Array.from(uniqueMap.values());
+  })();
+
+  if (!tahunAnggaranId) {
+    return alokasiKabupatenKotaData.filter(k => {
+      const provAlloc = alokasiProvinsiData.find(ap => ap.id === k.alokasi_provinsi_id);
+      return (k.kabupaten_kota?.provinsi_id === provinsiId) || (provAlloc?.provinsi_id === provinsiId);
+    });
   }
 
-  return baseKabsOfProv;
+  // 2. Ambil baris alokasi provinsi untuk tahunAnggaranId ini
+  const provAlloc = alokasiProvinsiData.find(
+    (p) => String(p.tahun_anggaran_id) === String(tahunAnggaranId) && p.provinsi_id === provinsiId
+  );
+  const provAllocId = provAlloc?.id;
+
+  // Ambil data kab/kota yang sudah tersimpan di DB untuk alokasi provinsi tahun ini
+  const savedKabMap = new Map<string, AlokasiKabupatenKota>();
+  for (const item of alokasiKabupatenKotaData) {
+    if (provAllocId && item.alokasi_provinsi_id === provAllocId) {
+      const kId = item.kabupaten_kota_id || item.kabupaten_kota?.id;
+      if (kId) savedKabMap.set(kId, item);
+    }
+  }
+
+  // Jika semua kabupaten/kota sudah tersimpan dengan nominal > 0
+  if (savedKabMap.size > 0 && (baseKabs.length === 0 || savedKabMap.size >= baseKabs.length)) {
+    return Array.from(savedKabMap.values());
+  }
+
+  // 3. Fallback / Top-Down BigInt integer division
+  const toBigIntHelper = (val: any): bigint => {
+    if (!val) return 0n;
+    const s = String(val).split('.')[0].replace(/[^0-9-]/g, '');
+    if (!s || s === '-') return 0n;
+    try { return BigInt(s); } catch { return 0n; }
+  };
+
+  const bProvNominal = toBigIntHelper(provAlloc?.nominal_alokasi || 0);
+  const bProvRealisasi = toBigIntHelper(provAlloc?.realisasi_total || 0);
+  const count = baseKabs.length;
+  const bCount = BigInt(count > 0 ? count : 1);
+  const bBaseNom = count > 0 ? bProvNominal / bCount : 0n;
+  const bRemNom = count > 0 ? bProvNominal % bCount : 0n;
+  const bBaseReal = count > 0 ? bProvRealisasi / bCount : 0n;
+  const bRemReal = count > 0 ? bProvRealisasi % bCount : 0n;
+
+  return baseKabs.map((k, idx) => {
+    const kId = k.id;
+    if (savedKabMap.has(kId) && toBigIntHelper(savedKabMap.get(kId)!.nominal_alokasi) > 0n) {
+      return savedKabMap.get(kId)!;
+    }
+
+    const nom = idx === count - 1 ? bBaseNom + bRemNom : bBaseNom;
+    const real = idx === count - 1 ? bBaseReal + bRemReal : bBaseReal;
+    const sel = nom - real;
+    const pct = nom > 0n ? Number((real * 1000n) / nom) / 10 : 0;
+
+    return {
+      id: `akk-${kId}-${tahunAnggaranId}`,
+      alokasi_provinsi_id: provAllocId || `prov-${provinsiId}-${tahunAnggaranId}`,
+      kabupaten_kota_id: kId,
+      provinsi_nama: provAlloc?.provinsi?.nama_provinsi || 'Provinsi',
+      nominal_alokasi: Number(nom),
+      realisasi_total: Number(real),
+      selisih: Number(sel),
+      persentase_penyerapan: pct,
+      updated_at: new Date().toISOString().split('T')[0],
+      kabupaten_kota: {
+        id: kId,
+        provinsi_id: provinsiId,
+        kode_kabupaten_kota: k.kode_kabupaten_kota || kId,
+        nama_kabupaten_kota: k.nama_kabupaten_kota,
+        tipe: k.tipe || 'KABUPATEN',
+      }
+    } as AlokasiKabupatenKota;
+  });
 }
 
 export function getAllKabkota(): AlokasiKabupatenKota[] {
@@ -780,7 +785,7 @@ export function getDashboardSummary(tahun: number = 2026): DashboardSummary {
     .map((t) => {
       const bNominal = toBigIntHelper(t.total_anggaran);
       const yearProvData = alokasiProvinsiData.filter(
-        (p) => String(p.tahun_anggaran_id) === String(t.id) || (p.tahun && Number(p.tahun) === Number(t.tahun))
+        (p) => String(p.tahun_anggaran_id) === String(t.id) || ((p as any).tahun && Number((p as any).tahun) === Number(t.tahun))
       );
       const bRealSum = yearProvData.reduce((s, p) => s + toBigIntHelper(p.realisasi_total), 0n);
       // For future or DRAFT years, realisasi is 0 if no disbursements recorded yet
@@ -1633,6 +1638,45 @@ export async function initAlokasiProvinsiEqualShare(tahunAnggaranId: string, tot
       headers,
       body: JSON.stringify(rows),
     });
+
+    // Also populate alokasi_kabupaten_kota for all 514 kabupaten/kota with exact BigInt precision
+    const kabsRes = await fetch(`${url}/rest/v1/kabupaten_kota?select=*&order=id.asc`, { headers });
+    const allKabs = kabsRes.ok ? await kabsRes.json() : [];
+
+    const kabRows: any[] = [];
+    if (Array.isArray(allKabs) && allKabs.length > 0) {
+      for (const pRow of rows) {
+        const provKabs = allKabs.filter((k: any) => k.provinsi_id === pRow.provinsi_id);
+        const kCount = provKabs.length;
+        if (kCount > 0) {
+          const bProvNom = BigInt(pRow.nominal_alokasi);
+          const bBaseK = bProvNom / BigInt(kCount);
+          const bRemK = bProvNom % BigInt(kCount);
+          provKabs.forEach((k: any, kIdx: number) => {
+            const kNom = kIdx === kCount - 1 ? bBaseK + bRemK : bBaseK;
+            kabRows.push({
+              id: `akk-${k.id}-${tahunAnggaranId}`,
+              alokasi_provinsi_id: pRow.id,
+              kabupaten_kota_id: k.id,
+              provinsi_nama: (provs.find((p: any) => p.id === pRow.provinsi_id)?.nama_provinsi) || 'Provinsi',
+              nominal_alokasi: kNom.toString(),
+              realisasi_total: '0',
+              selisih: kNom.toString(),
+              persentase_penyerapan: 0,
+              updated_at: new Date().toISOString().split('T')[0],
+            });
+          });
+        }
+      }
+    }
+
+    if (kabRows.length > 0) {
+      await fetch(`${url}/rest/v1/alokasi_kabupaten_kota`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(kabRows),
+      });
+    }
 
     if (res.ok) {
       await initDbConnection(true);

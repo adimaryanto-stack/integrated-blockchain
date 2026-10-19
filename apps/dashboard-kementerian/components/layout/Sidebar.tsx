@@ -6,9 +6,9 @@ import { useAppStore } from '@/lib/store';
 import {
   LayoutDashboard, MapPin, Building2,
   GraduationCap, Users, ChevronDown, ChevronRight,
-  Menu, X, Landmark, School
+  Menu, X, Landmark, School, LogOut
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const jenjangItems = [
   { label: 'Universitas (Strata 1)', href: '/dashboard/jenjang/universitas' },
@@ -20,8 +20,22 @@ const jenjangItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { sidebarOpen, toggleSidebar } = useAppStore();
+  const { sidebarOpen, toggleSidebar, currentUser, setCurrentUser, logout } = useAppStore();
   const [jenjangOpen, setJenjangOpen] = useState(pathname.includes('/jenjang'));
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('kementerian_user');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.email && parsed.email !== currentUser?.email) {
+            setCurrentUser(parsed);
+          }
+        } catch (e) {}
+      }
+    }
+  }, []);
 
   const isActive = (href: string) => pathname === href;
   const isJenjangActive = pathname.includes('/jenjang');
@@ -124,13 +138,30 @@ export default function Sidebar() {
         {/* Footer */}
         <div className="p-4 border-t border-border">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-xs font-bold text-white">
-              SA
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm">
+              {(currentUser?.username || 'KM').substring(0, 2).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-text-primary truncate">Super Admin</p>
-              <p className="text-[10px] text-text-muted truncate">admin@kemdikbud.go.id</p>
+              <p className="text-xs font-semibold text-text-primary truncate">
+                {currentUser?.username || 'Pejabat Kementerian'}
+              </p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-[9px] px-1.5 py-0.2 rounded font-semibold uppercase tracking-wider bg-indigo-100 text-indigo-800 border border-indigo-200">
+                  {currentUser?.role || 'KEMENTERIAN'}
+                </span>
+                <span className="text-[10px] text-text-muted truncate max-w-[85px]" title={currentUser?.email}>
+                  {currentUser?.email?.split('@')[0]}
+                </span>
+              </div>
             </div>
+            <Link
+              href="/login"
+              onClick={() => logout()}
+              title="Ganti Akun / Keluar"
+              className="p-1.5 text-text-muted hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors shrink-0"
+            >
+              <LogOut size={16} />
+            </Link>
           </div>
         </div>
       </aside>

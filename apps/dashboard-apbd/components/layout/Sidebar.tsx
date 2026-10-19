@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 import {
   LayoutDashboard, DollarSign, Building2,
   GraduationCap, Users, ChevronDown, ChevronRight,
-  Menu, X, Landmark, School
+  Menu, X, Landmark, School, LogOut
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -21,9 +21,23 @@ const jenjangItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { sidebarOpen, toggleSidebar } = useAppStore();
+  const { sidebarOpen, toggleSidebar, currentUser, setCurrentUser, logout } = useAppStore();
   const [jenjangOpen, setJenjangOpen] = useState(pathname.includes('/jenjang'));
   const [kabCount, setKabCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('apbd_user');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.email && parsed.email !== currentUser?.email) {
+            setCurrentUser(parsed);
+          }
+        } catch (e) {}
+      }
+    }
+  }, []);
 
   useEffect(() => {
     async function fetchKabCount() {
@@ -138,13 +152,30 @@ export default function Sidebar() {
         {/* Footer */}
         <div className="p-4 border-t border-border">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-600 to-teal-600 flex items-center justify-center text-xs font-bold text-white">
-              LP
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-600 to-indigo-700 flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm">
+              {(currentUser?.username || 'LP').substring(0, 2).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-text-primary truncate">BPKAD / Bappeda</p>
-              <p className="text-[10px] text-text-muted truncate">bpkad@lampungprov.go.id</p>
+              <p className="text-xs font-semibold text-text-primary truncate">
+                {currentUser?.username || 'Pejabat Pemda'}
+              </p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-[9px] px-1.5 py-0.2 rounded font-semibold uppercase tracking-wider bg-teal-100 text-teal-800 border border-teal-200">
+                  {currentUser?.role || 'BPKAD'}
+                </span>
+                <span className="text-[10px] text-text-muted truncate max-w-[85px]" title={currentUser?.email}>
+                  {currentUser?.email?.split('@')[0]}
+                </span>
+              </div>
             </div>
+            <Link
+              href="/login"
+              onClick={() => logout()}
+              title="Ganti Akun / Keluar"
+              className="p-1.5 text-text-muted hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors shrink-0"
+            >
+              <LogOut size={16} />
+            </Link>
           </div>
         </div>
       </aside>

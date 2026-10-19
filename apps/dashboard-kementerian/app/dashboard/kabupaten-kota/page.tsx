@@ -4,11 +4,11 @@ import { useState, useMemo, useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import PctBadge from '@/components/ui/PctBadge';
 import { useAppStore } from '@/lib/store';
-import { alokasiProvinsiData, getKabkotaByProvinsi, tahunAnggaranData, masterProvinsiData } from '@/lib/data';
+import { alokasiProvinsiData, alokasiKabupatenKotaData, getKabkotaByProvinsi, tahunAnggaranData, masterProvinsiData } from '@/lib/data';
 import { fmtRupiah, fmtTriliun } from '@/lib/utils/formatters';
 import { exportToExcel, getPctColorHex } from '@/lib/utils/excelExport';
 import { AlokasiKabupatenKota, AlokasiProvinsi } from '@/types';
-import { Search, Download, Plus } from 'lucide-react';
+import { Search, Download, Plus, Sparkles, RefreshCw } from 'lucide-react';
 
 
 export default function KabupatenKotaPage() {
@@ -57,23 +57,98 @@ export default function KabupatenKotaPage() {
     }
   }, [sortedProvinsiData, selectedProvinsi]);
 
+  const selectedProvAlloc = useMemo(() => {
+    return sortedProvinsiData.find(p => p.provinsi_id === selectedProvinsi) ||
+      alokasiProvinsiData.find(p => p.provinsi_id === selectedProvinsi && (!activeTahunObj || String(p.tahun_anggaran_id) === String(activeTahunObj.id)));
+  }, [sortedProvinsiData, selectedProvinsi, activeTahunObj, dataVersion]);
+
   const rawData = useMemo(() => {
     return getKabkotaByProvinsi(selectedProvinsi, activeTahunObj?.id);
   }, [selectedProvinsi, activeTahunObj, dataVersion]);
 
   const [localData, setLocalData] = useState<AlokasiKabupatenKota[]>(rawData);
+  const [isDistributing, setIsDistributing] = useState(false);
+  const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const handleDistributeProvinsi = async () => {
+    if (!activeTahunObj || !selectedProvinsi) return;
+    setIsDistributing(true);
+    setStatusMsg(null);
+    try {
+      const { distributeProvinsiToKabkota } = await import('@/lib/data');
+      const ok = await distributeProvinsiToKabkota(selectedProvinsi, activeTahunObj.id);
+      if (ok) {
+        setStatusMsg({
+          type: 'success',
+          text: `Top-Down BigInt Cascading untuk ${selectedProvName} berhasil dibagikan ke seluruh kabupaten/kota dengan presisi 100%!`
+        });
+      } else {
+        setStatusMsg({ type: 'error', text: 'Gagal mendistribusikan alokasi provinsi ke kabupaten/kota.' });
+      }
+    } catch (err) {
+      setStatusMsg({ type: 'error', text: 'Terjadi kesalahan sistem saat membagi alokasi.' });
+    } finally {
+      setIsDistributing(false);
+    }
+  };
+
+  const handleTopDownNational = async () => {
+    if (!activeTahunObj) return;
+    setIsDistributing(true);
+    setStatusMsg(null);
+    try {
+      const { triggerTopDownCascade } = await import('@/lib/data');
+      const ok = await triggerTopDownCascade(activeTahunObj.id);
+      if (ok) {
+        setStatusMsg({
+          type: 'success',
+          text: `Top-Down BigInt Cascading Nasional berhasil dieksekusi ke seluruh 38 Provinsi dan 514 Kabupaten/Kota tanpa selisih 1 Rupiah!`
+        });
+      } else {
+        setStatusMsg({ type: 'error', text: 'Gagal memproses cascading nasional.' });
+      }
+    } catch (err) {
+      setStatusMsg({ type: 'error', text: 'Terjadi kesalahan sistem saat cascading nasional.' });
+    } finally {
+      setIsDistributing(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsDistributing(true);
+    try {
+      const { initDbConnection } = await import('@/lib/data');
+      await initDbConnection(true);
+    } finally {
+      setIsDistributing(false);
+    }
+  };
 
   useEffect(() => {
     setLocalData(rawData);
-  }, [rawData]);
+
+    // Auto-distribusi jika kab/kota untuk provinsi ini belum dibagi di DB
+    if (activeTahunObj && selectedProvAlloc && Number(selectedProvAlloc.nominal_alokasi) > 0) {
+      const yearKabAllocations = alokasiKabupatenKotaData.filter(
+        (k: any) => k.alokasi_provinsi_id === selectedProvAlloc.id ||
+             (k.kabupaten_kota?.provinsi_id === selectedProvinsi && String(k.id).includes(String(activeTahunObj.id)))
+      );
+      const hasAlloc = yearKabAllocations.length > 0 && yearKabAllocations.some((k: any) => Number(k.nominal_alokasi) > 0);
+      if (!hasAlloc && rawData.length > 0) {
+        import('@/lib/data').then(({ distributeProvinsiToKabkota }) => {
+          distributeProvinsiToKabkota(selectedProvinsi, activeTahunObj.id);
+        });
+      }
+    }
+  }, [rawData, selectedProvinsi, activeTahunObj, selectedProvAlloc]);
 
   const filtered = useMemo(() => {
     let list = localData;
     if (search) {
-      list = list.filter(k => k.kabupaten_kota.nama_kabupaten_kota.toLowerCase().includes(search.toLowerCase()));
+      list = list.filter(k => (k.kabupaten_kota?.nama_kabupaten_kota || '').toLowerCase().includes(search.toLowerCase()));
     }
     return [...list].sort((a, b) =>
-      a.kabupaten_kota.nama_kabupaten_kota.localeCompare(b.kabupaten_kota.nama_kabupaten_kota, 'id')
+      (a.kabupaten_kota?.nama_kabupaten_kota || '').localeCompare(b.kabupaten_kota?.nama_kabupaten_kota || '', 'id')
     );
   }, [localData, search]);
 
@@ -223,8 +298,38 @@ export default function KabupatenKotaPage() {
       <Header title="Kabupaten / Kota" subtitle={`Data alokasi anggaran per kabupaten/kota — ${selectedProvName} Tahun ${activeTahun}`} />
 
       <div className="p-6">
+        {/* Status Notification Banner */}
+        {statusMsg && (
+          <div className={`mb-4 p-4 rounded-xl flex items-center justify-between gap-3 text-sm ${statusMsg.type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-rose-50 border border-rose-200 text-rose-800'}`}>
+            <span>{statusMsg.text}</span>
+            <button onClick={() => setStatusMsg(null)} className="font-semibold text-xs underline opacity-75 hover:opacity-100">Tutup</button>
+          </div>
+        )}
+
+        {/* KPI Province Budget Summary & Precision Check */}
+        <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+            <span className="text-xs text-text-muted">Jatah Alokasi Provinsi ({selectedProvName})</span>
+            <div className="text-base font-bold text-text-primary mt-0.5">{fmtRupiah(selectedProvAlloc?.nominal_alokasi || 0)}</div>
+          </div>
+          <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+            <span className="text-xs text-text-muted">Total Terbagi ke {filtered.length} Kab/Kota</span>
+            <div className="text-base font-bold text-indigo-600 mt-0.5">{fmtRupiah(totals.nominal)}</div>
+          </div>
+          <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+            <span className="text-xs text-text-muted">Presisi Top-Down Cascading</span>
+            <div className="text-base font-bold text-emerald-600 mt-0.5 flex items-center gap-1">
+              <span>
+                {Math.abs(Number(selectedProvAlloc?.nominal_alokasi || 0) - Number(totals.nominal)) === 0 
+                  ? '✓ 100% Cocok (0 Rp Selisih)' 
+                  : `Selisih: ${fmtRupiah(Math.abs(Number(selectedProvAlloc?.nominal_alokasi || 0) - Number(totals.nominal)))}`}
+              </span>
+            </div>
+          </div>
+        </div>
+
         {/* Toolbar */}
-        <div className="sheet-toolbar flex-wrap">
+        <div className="sheet-toolbar flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <span className="text-xs text-text-muted">Provinsi:</span>
             <select
@@ -233,7 +338,7 @@ export default function KabupatenKotaPage() {
               className="select-dropdown"
             >
               {sortedProvinsiData.map(p => (
-                <option key={p.provinsi_id} value={p.provinsi_id}>{p.provinsi.nama_provinsi}</option>
+                <option key={p.provinsi_id} value={p.provinsi_id}>{p.provinsi?.nama_provinsi || p.provinsi_id}</option>
               ))}
             </select>
           </div>
@@ -248,10 +353,32 @@ export default function KabupatenKotaPage() {
             />
           </div>
           <span className="text-xs text-text-muted flex-1">{filtered.length} kabupaten/kota</span>
-          <button className="btn btn-primary">
-            <Plus size={14} />
-            Tambah Kab/Kota
+          
+          <button
+            onClick={handleDistributeProvinsi}
+            disabled={isDistributing}
+            className="btn btn-primary bg-indigo-600 hover:bg-indigo-700 text-white font-medium flex items-center gap-1.5 shadow-sm"
+            title="Bagi rata jatah alokasi provinsi ini ke seluruh kabupaten/kotanya dengan integer division BigInt"
+          >
+            <Sparkles size={14} className={isDistributing ? 'animate-spin' : ''} />
+            {isDistributing ? 'Membagi...' : 'Auto-Bagi Jatah Provinsi'}
           </button>
+
+          <button
+            onClick={handleTopDownNational}
+            disabled={isDistributing}
+            className="btn btn-ghost border border-indigo-200 text-indigo-700 hover:bg-indigo-50 font-medium flex items-center gap-1.5"
+            title="Bagi rata APBN ke 38 Provinsi & 514 Kabupaten/Kota se-Indonesia"
+          >
+            <Sparkles size={14} className="text-indigo-600" />
+            Cascading Nasional
+          </button>
+
+          <button className="btn btn-ghost" onClick={handleRefresh} disabled={isDistributing}>
+            <RefreshCw size={14} className={isDistributing ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+
           <button className="btn btn-primary" onClick={handleExport}>
             <Download size={14} />
             Ekspor Excel
@@ -276,7 +403,7 @@ export default function KabupatenKotaPage() {
               {filtered.map((row, idx) => (
                 <tr key={row.id} className="hover:bg-indigo-50/50 transition">
                   <td className="sheet-cell text-center text-text-muted text-xs">{idx + 1}</td>
-                  <td className="sheet-cell text-left font-medium text-text-primary">{row.kabupaten_kota.nama_kabupaten_kota}</td>
+                  <td className="sheet-cell text-left font-medium text-text-primary">{row.kabupaten_kota?.nama_kabupaten_kota || row.kabupaten_kota_id}</td>
                   <td className="sheet-cell text-left text-text-secondary text-xs">{row.provinsi_nama}</td>
                   {renderEditableCell(row, 'nominal')}
                   {renderEditableCell(row, 'realisasi')}

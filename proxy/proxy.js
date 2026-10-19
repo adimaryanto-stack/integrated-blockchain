@@ -2763,6 +2763,15 @@ app.post('/rest/v1/rpc/:function', async (req, res) => {
       return res.json(dbRes.rows);
     }
 
+    else if (func === 'cascade_top_down_anggaran') {
+      const target_tahun_id = body.target_tahun_id || body.p_tahun_anggaran_id || body.tahun_anggaran_id;
+      if (!target_tahun_id) {
+        return res.status(400).json({ error: 'target_tahun_id is required' });
+      }
+      await pool.query('SELECT cascade_top_down_anggaran($1)', [target_tahun_id]);
+      return res.json({ success: true, message: 'Top-down cascading executed successfully' });
+    }
+
     return res.status(404).json({ error: `RPC function ${func} not supported` });
   } catch (err) {
     console.error(`[Proxy RPC Error] ${func}:`, err.message);

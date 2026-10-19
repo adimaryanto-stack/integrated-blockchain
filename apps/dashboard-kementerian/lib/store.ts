@@ -34,6 +34,18 @@ function saveAuditLogsToStorage(logs: AuditLogItem[]) {
   }
 }
 
+function getStoredUser(): User {
+  if (typeof window === 'undefined') return DEFAULT_USER;
+  try {
+    const stored = localStorage.getItem('kementerian_user');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed && parsed.email) return parsed;
+    }
+  } catch (err) {}
+  return DEFAULT_USER;
+}
+
 interface AppState {
   activeTahun: number;
   setActiveTahun: (tahun: number) => void;
@@ -47,6 +59,7 @@ interface AppState {
   // RBAC User Session State
   currentUser: User;
   setCurrentUser: (user: User) => void;
+  logout: () => void;
   // Audit Trail State
   auditLogs: AuditLogItem[];
   addAuditLog: (log: Omit<AuditLogItem, 'id' | 'timestamp'>) => void;
@@ -69,7 +82,22 @@ export const useAppStore = create<AppState>((set) => ({
 
   // RBAC User Session
   currentUser: DEFAULT_USER,
-  setCurrentUser: (user) => set({ currentUser: user }),
+  setCurrentUser: (user) => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('kementerian_user', JSON.stringify(user));
+      } catch (e) {}
+    }
+    set({ currentUser: user });
+  },
+  logout: () => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('kementerian_user');
+      } catch (e) {}
+    }
+    set({ currentUser: DEFAULT_USER });
+  },
 
   // Audit Logs (Pure Real-Time Logs — No Sample / Dummy Data)
   auditLogs: getStoredAuditLogs(),

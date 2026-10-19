@@ -9,7 +9,7 @@ import { alokasiProvinsiData, tahunAnggaranData, masterProvinsiData } from '@/li
 import { fmtRupiah, fmtTriliun } from '@/lib/utils/formatters';
 import { exportToExcel, getPctColorHex } from '@/lib/utils/excelExport';
 import { AlokasiProvinsi } from '@/types';
-import { Search, Download, RefreshCw, Plus } from 'lucide-react';
+import { Search, Download, RefreshCw, Plus, Sparkles } from 'lucide-react';
 
 export default function ProvinsiPage() {
   const { activeTahun, currentUser, dataVersion } = useAppStore();
@@ -52,17 +52,51 @@ export default function ProvinsiPage() {
   }, [activeTahunObj, dataVersion]);
 
   const [data, setData] = useState<AlokasiProvinsi[]>(realProvinsiData);
+  const [isDistributing, setIsDistributing] = useState(false);
+  const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const handleTopDownCascade = async () => {
+    if (!activeTahunObj) return;
+    setIsDistributing(true);
+    setStatusMsg(null);
+    try {
+      const { triggerTopDownCascade } = await import('@/lib/data');
+      const ok = await triggerTopDownCascade(activeTahunObj.id);
+      if (ok) {
+        setStatusMsg({
+          type: 'success',
+          text: `Top-Down BigInt Cascading berhasil dieksekusi! Alokasi APBN ${fmtRupiah(activeTahunObj.total_anggaran)} telah terbagi rata ke seluruh 38 Provinsi dan 514 Kabupaten/Kota dengan presisi 100% tanpa selisih 1 Rupiah.`
+        });
+      } else {
+        setStatusMsg({ type: 'error', text: 'Gagal mendistribusikan anggaran secara otomatis. Silakan periksa koneksi server.' });
+      }
+    } catch (err) {
+      setStatusMsg({ type: 'error', text: 'Terjadi kesalahan sistem saat membagi anggaran.' });
+    } finally {
+      setIsDistributing(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsDistributing(true);
+    try {
+      const { initDbConnection } = await import('@/lib/data');
+      await initDbConnection(true);
+    } finally {
+      setIsDistributing(false);
+    }
+  };
 
   useEffect(() => {
     setData(realProvinsiData);
 
-    // Auto-persist ke database alokasi_provinsi jika data di DB belum ada alokasi > 0
+    // Otomatisasi: jika tahun memiliki alokasi APBN tetapi data di DB belum lengkap 38 provinsi
     if (activeTahunObj && Number(activeTahunObj.total_anggaran) > 0) {
       const yearAllocations = alokasiProvinsiData.filter(p => String(p.tahun_anggaran_id) === String(activeTahunObj.id));
-      const hasAlloc = yearAllocations.some(p => Number(p.nominal_alokasi) > 0);
-      if (!hasAlloc) {
-        import('@/lib/data').then(({ initAlokasiProvinsiEqualShare }) => {
-          initAlokasiProvinsiEqualShare(activeTahunObj.id, Number(activeTahunObj.total_anggaran));
+      const hasFullAlloc = yearAllocations.length >= 38 && yearAllocations.every(p => Number(p.nominal_alokasi) > 0);
+      if (!hasFullAlloc) {
+        import('@/lib/data').then(({ triggerTopDownCascade }) => {
+          triggerTopDownCascade(activeTahunObj.id);
         });
       }
     }
@@ -225,8 +259,16 @@ export default function ProvinsiPage() {
       />
 
       <div className="p-6">
+        {/* Status Notification Banner */}
+        {statusMsg && (
+          <div className={`mb-4 p-4 rounded-xl flex items-center justify-between gap-3 text-sm ${statusMsg.type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-rose-50 border border-rose-200 text-rose-800'}`}>
+            <span>{statusMsg.text}</span>
+            <button onClick={() => setStatusMsg(null)} className="font-semibold text-xs underline opacity-75 hover:opacity-100">Tutup</button>
+          </div>
+        )}
+
         {/* Toolbar */}
-        <div className="sheet-toolbar">
+        <div className="sheet-toolbar flex-wrap gap-2">
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <input
@@ -238,12 +280,17 @@ export default function ProvinsiPage() {
             />
           </div>
           <span className="text-xs text-text-muted flex-1">{filtered.length} provinsi</span>
-          <button className="btn btn-primary">
-            <Plus size={14} />
-            Tambah Provinsi
+          <button
+            onClick={handleTopDownCascade}
+            disabled={isDistributing}
+            className="btn btn-primary bg-indigo-600 hover:bg-indigo-700 text-white font-medium flex items-center gap-1.5 shadow-sm"
+            title="Bagi rata anggaran APBN ke seluruh 38 provinsi dan 514 kabupaten/kota secara otomatis dengan presisi BigInt 100%"
+          >
+            <Sparkles size={14} className={isDistributing ? 'animate-spin' : ''} />
+            {isDistributing ? 'Membagi Otomatis...' : 'Auto-Distribusi Top-Down APBN'}
           </button>
-          <button className="btn btn-ghost">
-            <RefreshCw size={14} />
+          <button className="btn btn-ghost" onClick={handleRefresh} disabled={isDistributing}>
+            <RefreshCw size={14} className={isDistributing ? 'animate-spin' : ''} />
             Refresh
           </button>
           <button className="btn btn-primary" onClick={handleExport}>

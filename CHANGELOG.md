@@ -4,6 +4,55 @@ Semua perubahan penting pada proyek **Integrated Blockchain - Platform Transpara
 
 Format pencatatan berpedoman pada [Keep a Changelog](https://keepachangelog.com/id-ID/1.0.0/) dan menganut prinsip [Semantic Versioning](https://semver.org/lang/id/).
 
+## [2.6.2] - 2026-10-19
+
+### 🔐 Manajemen Sesi Pengguna, Halaman Login Bank & Standarisasi RBAC Multi-Portal
+- **Portal Bank Penyalur HIMBARA (Port 2022)**:
+  - **Halaman Login Baru (`app/login/page.tsx`)**:
+    - Implementasi antarmuka login perbankan modern dengan pilihan akun kilat (*Quick Login Presets*): *Head of Treasury & Kas Bank Mandiri*, *Disbursement Officer Bank BRI*, dan *Compliance Officer Bank BNI*.
+    - Validasi otentikasi mandiri, umpan balik visual, dan pengalihan dinamis ke dashboard perbankan.
+  - **Manajemen Sesi Zustand (`lib/store.ts`, `types/index.ts`)**:
+    - Penambahan `DEFAULT_BANK_USER`, state `currentUser`, `setCurrentUser`, dan `logout()` dengan persistensi ke `localStorage`.
+    - Perluasan enum `UserRole` perbankan mencakup `OPS_ADMIN`, `ADMIN_KEMENTERIAN`, `ADMIN_WILAYAH`, `OPERATOR`, dll.
+  - **Footer Navigasi Dinamis (`Sidebar.tsx`, `users/page.tsx`)**:
+    - Sidebar footer interaktif menampilkan inisial avatar pengguna aktif, nama akun, badge peran (*BANK* / *SUPER_ADMIN*), alamat email, dan tombol keluar (*LogOut*).
+    - Penanganan inisial nama aman (*safe fallback*) dan pemetaan label role dinamis pada manajemen pengguna bank.
+
+- **Portal Auditor BPK (Port 2023)**:
+  - **Sesi Pengguna Auditor (`lib/store.ts`, `Sidebar.tsx`)**:
+    - Implementasi `DEFAULT_AUDITOR_USER`, `currentUser`, `setCurrentUser`, dan `logout()` yang dipersistensikan secara aman per-tab di `sessionStorage`.
+    - Sidebar footer menampilkan avatar dinamis, nama auditor, badge peran (*AUDITOR* / *SUPER_ADMIN*), dan tombol keluar.
+
+- **Portal APBD Provinsi Lampung (Port 2025)**:
+  - **Sesi Pengguna Pemda & BPKAD (`lib/store.ts`, `Sidebar.tsx`)**:
+    - Definisi interface `ApbdUser`, `DEFAULT_APBD_USER`, sinkronisasi sesi `localStorage`, dan fungsi `logout()`.
+    - Sidebar footer dinamis menampilkan inisial pejabat pemda, badge dinamis (*BPKAD*, *BAPPEDA*, *DISDIK*, *INSPEKTORAT*), serta tombol ganti akun/keluar.
+
+- **Portal Kementerian (Port 2021)**:
+  - **Halaman Login Baru (`app/login/page.tsx`)**:
+    - Implementasi antarmuka login kementerian dengan preset akun resmi (*Super Admin Kemdikbudristek*, *Ditjen Anggaran DJA Kemenkeu*, dan *Auditor Pengawas BPKP*).
+    - Dukungan fungsi `logout()` dan pemulihan sesi pengguna kementerian dari `localStorage`.
+  - **Otomasi Cascading Anggaran Nasional & Presisi BigInt (`provinsi/page.tsx`, `kabupaten-kota/page.tsx`, `lib/data/index.ts`)**:
+    - Tombol aksi *Auto-Distribusi Top-Down APBN* di halaman Provinsi dan *Auto-Bagi Jatah Provinsi* / *Cascading Nasional* di halaman Kabupaten/Kota.
+    - Algoritma pembagian proporsional bilangan bulat BigInt (*zero-remainder top-down integer division*) memastikan alokasi 38 provinsi dan 514 kabupaten/kota se-Indonesia terbagi presisi tanpa selisih 1 Rupiah pun.
+  - **Backend Proxy & Database RPC (`proxy/proxy.js`, `scripts/setup_top_down_bigint_cascade.sql`)**:
+    - Rute RPC baru `/rest/v1/rpc/cascade_top_down_anggaran` pada Proxy REST API Gateway untuk memicu kalkulasi cascading langsung di level engine PostgreSQL.
+
+### 🌐 Portal Warga Civic-Tech: Smart Detection & Resolusi BPD Daerah (Port 2019)
+- **Deteksi Cerdas Status Kelembagaan (`dashboard.html`)**:
+  - Algoritma pengenalan otomatis status NEGERI vs SWASTA berdasarkan kombinasi nama institusi dan database (misal: Universitas Paramadina, Trisakti, Atma Jaya, Binus terverifikasi swasta; UI, UGM, ITB, Unila terverifikasi negeri).
+- **Resolusi Otomatis Rekening Giro Bank BPD Regional**:
+  - Rekening giro penampung dana sekolah dan universitas otomatis dipetakan ke bank pembangunan daerah terkait (Bank DKI untuk DKI Jakarta, Bank Lampung untuk Lampung, BPD Aceh Syariah untuk Aceh, Bank BJB untuk Jawa Barat, dll.).
+- **Penyelarasan Sumber Dana Kontekstual & Rekonsiliasi Kas Masuk**:
+  - Label sumber dana otomatis menyesuaikan jenjang: *BOPTN* dan *Bantuan Pendidikan Daerah* untuk universitas, *BOP PAUD* untuk PAUD, dan *BOS* untuk sekolah dasar/menengah.
+  - Penyelarasan total kas masuk dan belanja untuk entitas kampus (seperti Universitas Paramadina NPSN 031041).
+  - Penghapusan label saldo individual per-sumber dana pada kartu ringkasan untuk menjaga akurasi pembacaan publik.
+
+### 📋 Penyempurnaan Dokumentasi & Kebijakan AI Nasional (`README.md`)
+- Penambahan disclaimer tegas pada `README.md` terkait status pengembangan sistem sebagai prototype dengan data sampel, syarat minimal 2 programmer per dashboard untuk penulisan ulang kode produksi, serta penegasan kedaulatan data agar tidak menggunakan model AI luar negeri untuk audit anggaran demi keamanan big data nasional.
+
+---
+
 ## [2.6.1] - 2026-10-08
 
 ### 👤 Modul Profil Pengguna, Modal Kredensial & Scoped Access Control Satuan (Port 2024)

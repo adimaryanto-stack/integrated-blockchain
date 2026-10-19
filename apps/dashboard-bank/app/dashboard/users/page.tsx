@@ -7,18 +7,32 @@ import { supabase } from '@/lib/supabase';
 import { User, UserRole } from '@/types';
 import { Search, Plus, Edit3, Trash2, UserCheck, UserX } from 'lucide-react';
 
-const roleConfig: Record<UserRole, { label: string; color: string }> = {
+const roleConfig: Record<string, { label: string; color: string }> = {
   SUPER_ADMIN: { label: 'Super Admin', color: 'bg-purple-100 text-purple-700 border-purple-300' },
+  OPS_ADMIN: { label: 'Ops Admin', color: 'bg-emerald-100 text-emerald-700 border-emerald-300' },
   ADMIN: { label: 'Admin', color: 'bg-indigo-100 text-indigo-700 border-indigo-300' },
+  ADMIN_KEMENTERIAN: { label: 'Admin Kementerian', color: 'bg-violet-100 text-violet-700 border-violet-300' },
+  ADMIN_WILAYAH: { label: 'Admin Wilayah', color: 'bg-sky-100 text-sky-700 border-sky-300' },
   ADMIN_PROVINSI: { label: 'Admin Provinsi', color: 'bg-blue-100 text-blue-700 border-blue-300' },
   ADMIN_KABKOTA: { label: 'Admin Kab/Kota', color: 'bg-cyan-100 text-cyan-700 border-cyan-300' },
+  OPERATOR: { label: 'Operator', color: 'bg-orange-100 text-orange-700 border-orange-300' },
   VIEWER: { label: 'Viewer', color: 'bg-gray-100 text-gray-600 border-gray-300' },
   AUDITOR: { label: 'Auditor', color: 'bg-amber-100 text-amber-700 border-amber-300' },
   PUBLIC_RESEARCHER: { label: 'Public Researcher', color: 'bg-teal-100 text-teal-700 border-teal-300' },
 };
 
-const getRoleConfig = (role: string) => {
-  return roleConfig[role as UserRole] || { label: role || 'User', color: 'bg-gray-100 text-gray-600 border-gray-300' };
+const getRoleConfig = (role?: string) => {
+  if (!role) {
+    return { label: 'User', color: 'bg-gray-100 text-gray-600 border-gray-300' };
+  }
+  const normalized = role.toUpperCase();
+  return (
+    roleConfig[normalized] ||
+    roleConfig[role] || {
+      label: role.replace(/_/g, ' '),
+      color: 'bg-gray-100 text-gray-600 border-gray-300',
+    }
+  );
 };
 
 export default function UsersPage() {
@@ -53,9 +67,9 @@ export default function UsersPage() {
     if (!search) return data;
     const q = search.toLowerCase();
     return data.filter(u =>
-      u.username.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q) ||
-      roleConfig[u.role].label.toLowerCase().includes(q)
+      (u.username || '').toLowerCase().includes(q) ||
+      (u.email || '').toLowerCase().includes(q) ||
+      getRoleConfig(u.role).label.toLowerCase().includes(q)
     );
   }, [data, search]);
 
@@ -156,7 +170,8 @@ export default function UsersPage() {
     }
   };
 
-  const getInitials = (name: string) => {
+  const getInitials = (name?: string) => {
+    if (!name) return 'U';
     return name.split('.').map(s => s[0]?.toUpperCase()).join('').slice(0, 2);
   };
 
@@ -224,8 +239,8 @@ export default function UsersPage() {
                   </td>
                   <td className="sheet-cell text-left text-text-secondary text-xs">{user.email}</td>
                   <td className="sheet-cell text-center">
-                    <span className={`badge ${roleConfig[user.role].color}`}>
-                      {roleConfig[user.role].label}
+                    <span className={`badge ${getRoleConfig(user.role).color}`}>
+                      {getRoleConfig(user.role).label}
                     </span>
                   </td>
                   <td className="sheet-cell text-center">
@@ -305,8 +320,8 @@ export default function UsersPage() {
                   onChange={(e) => setFormRole(e.target.value as UserRole)}
                   className="select-dropdown w-full"
                 >
-                  {(Object.keys(roleConfig) as UserRole[]).map(role => (
-                    <option key={role} value={role}>{roleConfig[role].label}</option>
+                  {Object.entries(roleConfig).map(([roleKey, cfg]) => (
+                    <option key={roleKey} value={roleKey}>{cfg.label}</option>
                   ))}
                 </select>
               </div>
