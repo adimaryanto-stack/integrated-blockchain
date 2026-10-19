@@ -13,6 +13,14 @@ Sistem tata kelola dan transparansi keuangan pendidikan Indonesia terintegrasi d
 
 ---
 
+## ⚠️ Disclaimer & Ketentuan Penggunaan Khusus
+
+> [!WARNING]
+> **PERINGATAN PENTING / DISCLAIMER:**  
+> Sistem ini masih dalam tahap pengembangan prototype, semua data anggaran yang ada di dalam database adalah sample data, tidak untuk dijadikan pedoman dalam realitas anggaran. Jika KPK ingin menggunakan sistem ini, maka diperlukan minimal 2 programmer(tiap dashboard) untuk menulis ulang kode dari nol. Jangan gunakan AI model dari perusahaan luar negeri, disarankan untuk bangun AI model buatan asli Indonesia untuk keamanan big data.
+
+---
+
 ## 🏛️ Hak Cipta Resmi Terdaftar (HKI Kementerian Hukum RI)
 
 > 🛡️ **SURAT PENCATATAN CIPTAAN No. 001519028** (Nomor Permohonan: `EC002026188077`, Tanggal 1 Oktober 2026)  
