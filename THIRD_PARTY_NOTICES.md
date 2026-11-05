@@ -100,6 +100,11 @@ Berikut adalah daftar lengkap 54 dependensi pustaka open source yang digunakan d
 
 > **Catatan (v2.5.0)**: Dependensi No. 53–54 adalah modul bawaan (*built-in*) Node.js yang dimanfaatkan secara eksplisit oleh `proxy/connectionProbe.js` untuk melakukan resolusi DNS nyata dan pengujian koneksi TLS/HTTP ke endpoint API KPK, Kejaksaan, dan BPK/BPKP. Modul bawaan ini tidak memiliki lisensi terpisah di luar lisensi Node.js itu sendiri (MIT).
 
+> **Catatan Pembaruan Keamanan (v2.6.3 - 5 November 2026)**:
+> 1. Pustaka `express` diperbarui ke `^4.21.2` untuk memitigasi kerentanan keamanan upstream (*path-to-regexp* & *qs*).
+> 2. Pustaka `pg` (Node-Postgres) diperbarui ke `^8.22.0` bersamaan dengan penguatan batas *statement timeout* (30 detik), whitelisting tabel (`ALLOWED_TABLES`), sanitasi regex identifier (`/^[a-zA-Z0-9_]+$/`), serta mitigasi kerentanan replikasi PostgreSQL (CVE-2026-6471).
+> 3. Pustaka `react` (`19.2.4` / `19.2.7`) dan `next` (`16.2.4`) beroperasi dalam arsitektur murni *Client-Side Data Fetching* tanpa mengekspos endpoint *Server Actions* (`use server`), memitigasi vektor eksploitasi deserialisasi Flight protocol (CVE-2025-55182).
+
 ---
 
 ## 🎨 Aset Tipografi, Ikonografi, Peta & Data Publik

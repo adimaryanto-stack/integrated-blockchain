@@ -4,6 +4,36 @@ Semua perubahan penting pada proyek **Integrated Blockchain - Platform Transpara
 
 Format pencatatan berpedoman pada [Keep a Changelog](https://keepachangelog.com/id-ID/1.0.0/) dan menganut prinsip [Semantic Versioning](https://semver.org/lang/id/).
 
+## [2.6.3] - 2026-11-05
+
+### 🛡️ Penguatan Keamanan Sistem (Security Hardening): PostgreSQL, React 19, & Gateway Proxy
+- **Gateway REST API Proxy (`proxy/proxy.js`, `proxy/adminApi.js`, `proxy/package.json`)**:
+  - **Pencegahan SQL Injection & Whitelist Relasi Tabel**:
+    - Implementasi validasi ketat nama tabel (`ALLOWED_TABLES`) pada endpoint `/rest/v1/:table` mencakup 42 tabel master basis data. Permintaan terhadap relasi yang tidak diizinkan atau tabel katalog sistem langsung ditolak dengan kode status `403 Forbidden`.
+    - Sanitasi identifier kolom dengan ekspresi reguler ketat `^[a-zA-Z0-9_]+$` pada `parseFilters`, filter klausa `or=`, klausa pengurutan `order`, payload `POST` (INSERT), dan payload `PATCH` (UPDATE) guna menutup celah injeksi via *double-quote breakout*.
+    - Sanitasi arah pengurutan (`ASC`/`DESC`) dan spesifikasi nilai null (`NULLS FIRST`/`NULLS LAST`).
+  - **Whitelisting Prosedur Jarak Jauh (RPC Whitelist)**:
+    - Pembatasan pemanggilan fungsi di `/rest/v1/rpc/:function` secara eksplisit (`ALLOWED_RPC_FUNCTIONS`: `get_national_school_stats`, `get_national_statistics`, `get_unique_kecamatans_by_province`, `get_regency_school_counts`, `get_jenjang_summary`, `get_all_province_stats`, `cascade_top_down_anggaran`). Fungsi lain otomatis ditolak dengan `404 Not Found`.
+  - **Proteksi Denial-of-Service (DoS) & Parameter Clamping**:
+    - Clamping otomatis terhadap parameter paginasi `limit` (maksimal 10.000) dan `offset` (minimum 0) untuk mencegah *memory exhaustion* akibat alokasi memori berlebih.
+    - Penambahan `statement_timeout: 30000` (30 detik) dan `query_timeout: 30000` pada konfigurasi pool PostgreSQL (`pg.Pool`) di `proxy.js` dan `adminApi.js` guna memutus eksekusi query lambat yang berpotensi memicu DoS.
+  - **Redaksi Pesan Kesalahan Database (`sanitizeErrorMessage`)**:
+    - Penyaringan otomatis pesan kesalahan internal basis data agar tidak membocorkan *connection string*, kredensial pengguna, atau struktur query sensitif ke klien publik.
+  - **Pembaruan Dependensi Gateway**:
+    - Peningkatan versi pustaka `express` ke `^4.21.2` (memitigasi celah kerentanan *path-to-regexp* & *body-parser/qs*).
+    - Peningkatan pustaka PostgreSQL client driver `pg` ke `^8.22.0` (selaras dengan root package).
+
+- **Mitigasi Kerentanan Mesin PostgreSQL & Protokol Replikasi**:
+  - Audit konfigurasi PostgreSQL 16 port 2027 (`pgsql/data/postgresql.conf`) dan penegasan status `wal_level = replica` bawaan (bukan *logical*), memitigasi risiko eksekusi plugin *logical decoding* tanpa otorisasi (CVE-2026-6471 "PostGREShell").
+  - Verifikasi sanitasi fungsi ekstraksi waktu dan operator temporal pada modul database (CVE-2026-15741).
+
+- **Audit & Penyelarasan Keamanan React 19 / Next.js**:
+  - Penyelarasan dependensi React 19 (`react: 19.2.4` / `19.2.7`, `next: 16.2.4`) di seluruh dashboard kementerian, perbankan, auditor, pemda APBD, institusi pendidikan, dan civic-tech publik.
+  - Verifikasi arsitektur murni *Client-Side Data Fetching* tanpa mengekspos endpoint *Server Actions* (`use server`), memitigasi vektor deserialisasi protokol Flight React Server Components (CVE-2025-55182 / "React2Shell" & CVE-2025-55184).
+  - Pemeriksaan `dangerouslySetInnerHTML` di seluruh basis kode: dipastikan hanya digunakan untuk pendaftaran statis service worker PWA tanpa masukan dinamis pengguna.
+
+---
+
 ## [2.6.2] - 2026-10-19
 
 ### 🔐 Manajemen Sesi Pengguna, Halaman Login Bank & Standarisasi RBAC Multi-Portal

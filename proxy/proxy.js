@@ -27,7 +27,17 @@ const pool = new Pool({
   max: 20,              // Increase from default 10 → 20 concurrent connections
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
+  statement_timeout: 30000, // Timeout after 30s to mitigate DoS / slow query attacks
+  query_timeout: 30000,
 });
+
+// Helper: Sanitize database error messages to prevent credential/internal leaks
+function sanitizeErrorMessage(msg) {
+  if (typeof msg !== 'string') return 'Terjadi kesalahan sistem internal basis data.';
+  return msg
+    .replace(/postgresql:\/\/[^@]+@/gi, 'postgresql://***:***@')
+    .replace(/password=[^\s;&]+/gi, 'password=***');
+}
 
 // Middleware to log requests (only log slow or error responses)
 const adminApi = require('./adminApi');
@@ -2629,12 +2639,82 @@ app.post('/api/bank/inquiry', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────
+// Security Whitelists & Identifier Sanitization (PostgreSQL Hardening)
+// ─────────────────────────────────────────────────────────
+const IDENTIFIER_REGEX = /^[a-zA-Z0-9_]+$/;
+
+const ALLOWED_RPC_FUNCTIONS = new Set([
+  'get_national_school_stats',
+  'get_national_statistics',
+  'get_unique_kecamatans_by_province',
+  'get_regency_school_counts',
+  'get_jenjang_summary',
+  'get_all_province_stats',
+  'cascade_top_down_anggaran'
+]);
+
+const ALLOWED_TABLES = new Set([
+  'alokasi_kabupaten_kota',
+  'alokasi_provinsi',
+  'apbd_input_log',
+  'apbd_pendidikan_breakdown',
+  'apbd_provinsi',
+  'apbd_yearly_data',
+  'apbn_yearly_data',
+  'api_keys',
+  'audit_anomaly',
+  'audit_logs',
+  'bank_configs',
+  'budgets',
+  'csr_yearly_data',
+  'diskusi_rab',
+  'district_allocations',
+  'districts',
+  'fund_allocations',
+  'fund_transfers',
+  'incoming_funds',
+  'institusi',
+  'institusi_pendidikan',
+  'kabupaten_kota',
+  'kecamatan',
+  'mv_province_school_stats',
+  'notifications',
+  'pengeluaran_bulanan_institusi',
+  'project_expenses',
+  'project_photos',
+  'project_vendors',
+  'projects',
+  'province_school_stats',
+  'provinces',
+  'provincial_allocations',
+  'provinsi',
+  'regencies',
+  'rencana_anggaran',
+  'reports',
+  'rincian_pengeluaran_item',
+  'school_comments',
+  'school_likes',
+  'schools',
+  'sumber_dana_institusi',
+  'system_settings',
+  'tahun_anggaran',
+  'transaction_items',
+  'transactions',
+  'users',
+  'villages'
+]);
+
+// ─────────────────────────────────────────────────────────
 // RPC (Remote Procedure Call) emulation
 // ─────────────────────────────────────────────────────────
 app.post('/rest/v1/rpc/:function', async (req, res) => {
   const func = req.params.function;
   const body = req.body;
   // console.log(`[Proxy RPC] Called ${func} with body:`, body);
+
+  if (!ALLOWED_RPC_FUNCTIONS.has(func)) {
+    return res.status(404).json({ error: `RPC function '${func}' tidak diizinkan atau tidak ditemukan.` });
+  }
 
   try {
     if (func === 'get_national_school_stats') {
@@ -2775,7 +2855,7 @@ app.post('/rest/v1/rpc/:function', async (req, res) => {
     return res.status(404).json({ error: `RPC function ${func} not supported` });
   } catch (err) {
     console.error(`[Proxy RPC Error] ${func}:`, err.message);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: sanitizeErrorMessage(err.message) });
   }
 });
 
@@ -2790,6 +2870,7 @@ function parseFilters(queryParams) {
 
   for (const [key, rawVal] of Object.entries(queryParams)) {
     if (skip.has(key)) continue;
+    if (!IDENTIFIER_REGEX.test(key)) continue; // Security: sanitize column identifier
     const vals = Array.isArray(rawVal) ? rawVal : [rawVal];
 
     for (const val of vals) {
@@ -2844,6 +2925,7 @@ function parseFilters(queryParams) {
       const dotIdx = part.indexOf('.');
       if (dotIdx === -1) return null;
       const col = part.substring(0, dotIdx);
+      if (!IDENTIFIER_REGEX.test(col)) return null; // Security: validate column identifier
       const rest = part.substring(dotIdx + 1);
       const colCast = (col === 'id' || col.endsWith('_id')) ? `"${col}"::text` : `"${col}"`;
       if (rest.startsWith('ilike.')) {
@@ -2968,6 +3050,11 @@ app.all('/rest/v1/:table', async (req, res) => {
   const method = req.method;
   const q = req.query;
 
+  // Security: Validate table name against strict identifier pattern and allowed whitelist
+  if (!IDENTIFIER_REGEX.test(table) || (!ALLOWED_TABLES.has(table) && !MISSING_TABLES.has(table))) {
+    return res.status(403).json({ error: `Akses ditolak: relasi tabel '${table}' tidak diizinkan atau tidak valid.` });
+  }
+
   try {
     // ── GET / HEAD ────────────────────────────────────────
     if (method === 'GET' || method === 'HEAD') {
@@ -2986,16 +3073,25 @@ app.all('/rest/v1/:table', async (req, res) => {
         ? `SELECT * FROM (${baseQuery}) as _t WHERE ${whereClauses.join(' AND ')}`
         : baseQuery;
 
-      // ORDER BY — handle multi-column: order=date.desc,created_at.desc
+      // ORDER BY — handle multi-column: order=date.desc,created_at.desc with identifier validation
       if (q.order) {
         const parts = q.order.split(',').map(o => {
           const segments = o.split('.');
           const col = segments[0];
+          if (!IDENTIFIER_REGEX.test(col)) return null;
           const dir = segments[1] && segments[1].toLowerCase() === 'desc' ? 'DESC' : 'ASC';
-          const nulls = segments[2] ? ` NULLS ${segments[2].toUpperCase()}` : '';
+          let nulls = '';
+          if (segments[2]) {
+            const n = segments[2].toUpperCase();
+            if (n === 'FIRST' || n === 'LAST') {
+              nulls = ` NULLS ${n}`;
+            }
+          }
           return `"${col}" ${dir}${nulls}`;
-        });
-        sql += ` ORDER BY ${parts.join(', ')}`;
+        }).filter(Boolean);
+        if (parts.length > 0) {
+          sql += ` ORDER BY ${parts.join(', ')}`;
+        }
       }
 
       // COUNT for Content-Range
@@ -3013,13 +3109,16 @@ app.all('/rest/v1/:table', async (req, res) => {
         }
       }
 
-      // LIMIT & OFFSET
-      let offset = q.offset ? parseInt(q.offset) : 0;
-      let limit = q.limit ? parseInt(q.limit) : null;
+      // LIMIT & OFFSET with security clamping
+      let offset = q.offset ? Math.max(0, parseInt(q.offset) || 0) : 0;
+      let limit = q.limit ? Math.min(Math.max(1, parseInt(q.limit) || 1), 10000) : null;
       const rangeHeader = req.get('Range');
       if (rangeHeader && rangeHeader.startsWith('items=')) {
         const m = rangeHeader.match(/items=(\d+)-(\d+)/);
-        if (m) { offset = parseInt(m[1]); limit = parseInt(m[2]) - offset + 1; }
+        if (m) {
+          offset = Math.max(0, parseInt(m[1]) || 0);
+          limit = Math.min(Math.max(1, (parseInt(m[2]) || 0) - offset + 1), 10000);
+        }
       }
       if (limit !== null) sql += ` LIMIT ${limit} OFFSET ${offset}`;
 
@@ -3068,6 +3167,12 @@ app.all('/rest/v1/:table', async (req, res) => {
       }
 
       const columns = Object.keys(items[0]);
+      for (const col of columns) {
+        if (!IDENTIFIER_REGEX.test(col)) {
+          return res.status(400).json({ error: `Identifikasi kolom tidak valid: ${col}` });
+        }
+      }
+
       const vals = [];
       let idx = 1;
       const rowPlaceholders = items.map(item => {
@@ -3112,7 +3217,13 @@ app.all('/rest/v1/:table', async (req, res) => {
       if (whereClauses.length === 0) return res.status(400).json({ error: 'PATCH requires filter params' });
 
       let idx = values.length + 1;
-      const setClauses = Object.entries(req.body).map(([k, v]) => {
+      const entries = Object.entries(req.body);
+      for (const [k] of entries) {
+        if (!IDENTIFIER_REGEX.test(k)) {
+          return res.status(400).json({ error: `Identifikasi kolom tidak valid: ${k}` });
+        }
+      }
+      const setClauses = entries.map(([k, v]) => {
         values.push(v);
         return `"${k}" = $${idx++}`;
       });
@@ -3138,7 +3249,7 @@ app.all('/rest/v1/:table', async (req, res) => {
 
   } catch (err) {
     console.error(`[Proxy Error] ${method} on ${table}:`, err.message);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: sanitizeErrorMessage(err.message) });
   }
 });
 

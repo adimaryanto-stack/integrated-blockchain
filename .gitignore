@@ -7,6 +7,8 @@ web_modules/
 pgsql/
 postgrest/
 postgrest_v11/
+mingit/
+tools/
 pgsql_log.txt
 pgsql_log_txt
 *.log

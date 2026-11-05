@@ -7,6 +7,9 @@ const adminDbPool = new AdminDbPool({
   connectionString: process.env.DATABASE_URL || 'postgresql://postgres@localhost:2027/postgres',
   max: 10,
   idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+  statement_timeout: 30000,
+  query_timeout: 30000,
 });
 
 // Helper functions for Indonesian education institutions
